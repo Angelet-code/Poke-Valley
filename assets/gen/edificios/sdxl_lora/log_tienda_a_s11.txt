@@ -1,0 +1,3 @@
+assets\gen\edificios\sdxl_lora\tienda_a_s11_0.png
+assets\gen\edificios\sdxl_lora\tienda_a_s11_1.png
+801.0s

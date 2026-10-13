@@ -1,0 +1,2 @@
+assets\gen\edificios\flux768\tienda_s6_0.png
+74.2s

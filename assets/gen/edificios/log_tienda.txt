@@ -1,0 +1,5 @@
+assets\gen\edificios\tienda_s_0.png
+assets\gen\edificios\tienda_s_1.png
+assets\gen\edificios\tienda_s_2.png
+assets\gen\edificios\tienda_s_3.png
+65.2s

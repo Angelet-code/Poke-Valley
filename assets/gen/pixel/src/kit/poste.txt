@@ -1,0 +1,13 @@
+; poste: pie derecho de la tienda (5x6, se repite en vertical)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+1=#2b2025
+l=#b48750
+h=#986c48
+9=#795136
+
+1lh91
+1lh91
+1lh91
+1lh91
+1lh91
+1lh91

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maqueta IA local</title>
+<style>
+html,body{margin:0;height:100%;background:#151a12;color:#e4ecd8;font:13px/1.4 system-ui,"Segoe UI",sans-serif;overflow:hidden}
+#game{position:fixed;inset:0;display:grid;place-items:center}
+#help{position:fixed;left:12px;bottom:10px;background:rgba(0,0,0,.55);padding:6px 10px;border-radius:6px;pointer-events:none}
+kbd{background:#2c3626;border-radius:3px;padding:0 4px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+</head>
+<body>
+<div id="game"></div>
+<div id="help"><kbd>WASD</kbd>/<kbd>flechas</kbd> mover · <kbd>G</kbd> casillas lógicas 24 px · <span id="zoom"></span></div>
+<script>
+// Suelo "pintado" a la resolución del juego (480x270, casillas de 24 px reales):
+// colores planos, bordes orgánicos, sin cuadrícula visible. La cuadrícula es solo lógica.
+// Texturas y objetos generados con SDXL + IP-Adapter en local (assets/game/).
+const T = 24, VW = 480, VH = 270, MW = 40, MH = 26, W = MW * T, H = MH * T;
+const A = '../../assets/';
+const MONS = { bulbasaur: '0001', marill: '0183' };
+const ANIMS = ['Walk', 'Idle'];
+const ROW_FROM_ANGLE = [2, 1, 0, 7, 6, 5, 4, 3];
+const STEP = [[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,1]];
+
+const C = {
+  grassDark: [104, 145, 74], grass: [128, 172, 82], grassLight: [142, 184, 92], grassTip: [156, 194, 100],
+  dirtDark: [180, 143, 78], dirt: [202, 165, 88], dirtLight: [214, 180, 104], dirtShade: [166, 132, 76],
+  stone: [154, 122, 102], stone2: [146, 128, 104], stone3: [160, 132, 110], stoneHi: [178, 148, 124], stoneLo: [128, 102, 86], gap: [104, 86, 72],
+  water: [67, 154, 141], waterDeep: [56, 132, 124], waterHi: [118, 190, 174], waterRim: [196, 230, 214], bank: [176, 146, 92],
+};
+const GRASS = 0, DIRT = 1, PATH = 2, WATER = 3, BANK = 4;
+
+// ---- ruido ----
+const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+const vnoise = (x, y) => {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+};
+const fbm = (x, y) => vnoise(x, y) * .55 + vnoise(x * 2.03, y * 2.03) * .3 + vnoise(x * 4.1, y * 4.1) * .15;
+const mix = (a, b, t) => [0, 1, 2].map(i => a[i] + (b[i] - a[i]) * t);
+const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// ---- formas del terreno (continuas; la lógica se muestrea por casilla) ----
+const PATH_PTS = [[20 * T, -T], [20 * T, 8 * T], [19 * T, 12 * T], [12 * T, 13 * T], [2 * T, 14 * T]];
+const segDist = (px, py, [ax, ay], [bx, by]) => {
+  const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - ax - t * dx, py - ay - t * dy);
+};
+function terrainAt(x, y) {
+  // Deformación del dominio: bordes orgánicos.
+  const wx = x + (fbm(x / 26, y / 26) - .5) * 22, wy = y + (fbm(x / 26 + 7, y / 26 + 3) - .5) * 22;
+  const pond = Math.hypot((wx - 31 * T) / (6 * T), (wy - 19 * T) / (3.6 * T));
+  if (pond < 1) return pond > .9 ? BANK : WATER;
+  let d = Infinity;
+  for (let i = 0; i < PATH_PTS.length - 1; i++) d = Math.min(d, segDist(wx, wy, PATH_PTS[i], PATH_PTS[i + 1]));
+  if (d < 26) return PATH;
+  const clearing = Math.hypot((wx - 17 * T) / (6 * T), (wy - 15 * T) / (3.5 * T)) + (fbm(x / 40, y / 40) - .5) * .5;
+  if (clearing < 1 || d < 32 + fbm(x / 18, y / 18) * 12) return DIRT;
+  return GRASS;
+}
+
+// Losas: Voronoi con celdas de ~11 px.
+function flagstone(x, y) {
+  const S = 11, cx = Math.floor(x / S), cy = Math.floor(y / S);
+  let d1 = 1e9, d2 = 1e9, best = null;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const gx = cx + i, gy = cy + j, px = (gx + .2 + hash(gx, gy) * .6) * S, py = (gy + .2 + hash(gy, gx + 5) * .6) * S;
+    const d = Math.hypot(x - px, y - py);
+    if (d < d1) { d2 = d1; d1 = d; best = [px, py, gx, gy]; } else if (d < d2) d2 = d;
+  }
+  const edge = d2 - d1;
+  if (edge < 1.4) return C.gap;
+  const pick = hash(best[2] * 3, best[3] * 7);
+  let col = pick < .33 ? C.stone : pick < .66 ? C.stone2 : C.stone3;
+  if (edge < 3.2) col = (y - best[1]) + (x - best[0]) * .5 < 0 ? C.stoneHi : C.stoneLo; // luz arriba-izquierda
+  return col;
+}
+
+function paintGround(tex) {
+  const ter = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) ter[y * W + x] = terrainAt(x, y);
+  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? GRASS : ter[y * W + x];
+  const smp = (t, x, y) => { const i = ((y % t.h) * t.w + (x % t.w)) * 4; return [t.d[i], t.d[i + 1], t.d[i + 2]]; };
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d'), img = g.createImageData(W, H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const t = ter[y * W + x];
+    // Variación grande de tono para que no se note la repetición de la textura.
+    const v = .9 + fbm(x / 90, y / 90) * .2;
+    let col, k = v;
+    if (t === GRASS) {
+      col = smp(tex.hierba, x, y);
+      if (at(x, y + 1) !== GRASS || at(x, y + 2) !== GRASS) k *= 1.14; // labio claro sobre la tierra
+    } else if (t === DIRT) {
+      col = smp(tex.tierra, x, y);
+      if (at(x, y - 1) === GRASS || at(x, y - 2) === GRASS || at(x, y - 3) === GRASS) k *= .84; // sombra de la hierba
+    } else if (t === PATH) {
+      col = smp(tex.losas, x, y);
+      if (at(x, y - 1) === GRASS || at(x, y - 2) === GRASS) k *= .8;
+    } else if (t === BANK) {
+      col = smp(tex.tierra, x, y); k = .8;
+    } else {
+      const nearBank = [[0,-2],[0,2],[-2,0],[2,0]].some(([dx, dy]) => at(x + dx, y + dy) === BANK);
+      col = nearBank ? C.waterRim : smp(tex.agua, x, y); k = nearBank ? 1 : 1;
+    }
+    const o = (y * W + x) * 4;
+    img.data[o] = col[0] * k; img.data[o + 1] = col[1] * k; img.data[o + 2] = col[2] * k; img.data[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return { canvas: c, at };
+}
+
+// Piedras planas generadas: cara superior clara, lateral oscuro, sombra suave.
+function stoneTexture(scene, key, w, h, seed) {
+  const c = scene.textures.createCanvas(key, w, h + 3), g = c.getContext();
+  const blob = (cx, cy, rx, ry, fill) => {
+    g.fillStyle = fill; g.beginPath();
+    for (let a = 0; a < Math.PI * 2; a += .35) {
+      const r = 1 + (hash(seed, a * 10) - .5) * .25;
+      g.lineTo(cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r);
+    }
+    g.fill();
+  };
+  blob(w / 2 + 1, h / 2 + 3, w / 2 - 1, h / 2 - 1, 'rgba(40,60,30,.35)');   // sombra
+  blob(w / 2, h / 2 + 1, w / 2 - 1, h / 2 - 1, 'rgb(118,112,104)');         // lateral
+  blob(w / 2, h / 2 - .5, w / 2 - 2, h / 2 - 2.5, 'rgb(186,180,166)');      // cara superior
+  blob(w / 2 - 1.5, h / 2 - 2, w / 4, h / 5, 'rgb(206,200,186)');           // luz
+  c.refresh();
+}
+
+class Boot extends Phaser.Scene {
+  constructor() { super('boot'); }
+  preload() { for (const [k, id] of Object.entries(MONS)) this.load.xml(k + '-xml', `${A}sprites/pokemon/${id}/AnimData.xml`); }
+  create() { this.scene.start('world'); }
+}
+
+class World extends Phaser.Scene {
+  constructor() { super('world'); }
+  animDefs(k) {
+    return [...this.cache.xml.get(k + '-xml').querySelectorAll('Anim')]
+      .map(a => ({ name: a.querySelector('Name').textContent, fw: +a.querySelector('FrameWidth')?.textContent,
+        fh: +a.querySelector('FrameHeight')?.textContent, durs: [...a.querySelectorAll('Duration')].map(d => +d.textContent) }))
+      .filter(a => ANIMS.includes(a.name));
+  }
+  preload() {
+    for (const [k, id] of Object.entries(MONS))
+      for (const a of this.animDefs(k))
+        this.load.spritesheet(`${k}-${a.name}`, `${A}sprites/pokemon/${id}/${a.name}-Anim.png`, { frameWidth: a.fw, frameHeight: a.fh });
+    for (const k of ['hierba', 'tierra', 'agua', 'losas', 'arbol_a', 'arbol_b', 'arbusto_a', 'arbusto_b', 'flor'])
+      this.load.image(k, `${A}game/${k}.png`);
+  }
+  makeAnims(k) {
+    for (const a of this.animDefs(k)) {
+      const rows = Math.max(1, Math.floor(this.textures.get(`${k}-${a.name}`).source[0].height / a.fh));
+      for (let r = 0; r < 8; r++) this.anims.create({ key: `${k}-${a.name}-${r}`, repeat: -1,
+        frames: a.durs.map((d, i) => ({ key: `${k}-${a.name}`, frame: Math.min(r, rows - 1) * a.durs.length + i, duration: d * 1000 / 60 })) });
+    }
+  }
+
+  create() {
+    this.makeAnims('bulbasaur'); this.makeAnims('marill');
+    const tex = {};
+    for (const k of ['hierba', 'tierra', 'agua', 'losas']) {
+      const src = this.textures.get(k).getSourceImage(), cv = document.createElement('canvas');
+      cv.width = src.width; cv.height = src.height; const cx = cv.getContext('2d'); cx.drawImage(src, 0, 0);
+      tex[k] = { w: src.width, h: src.height, d: cx.getImageData(0, 0, src.width, src.height).data };
+    }
+    const { canvas, at } = paintGround(tex);
+    this.textures.addCanvas('ground', canvas);
+    this.add.image(0, 0, 'ground').setOrigin(0).setDepth(-10000);
+    this.at = at;
+
+    // Lógica por casilla: muestreada en el centro de cada casilla de 24 px.
+    this.blocked = new Set();
+    for (let ty = 0; ty < MH; ty++) for (let tx = 0; tx < MW; tx++)
+      if (at(tx * T + 12, ty * T + 12) === WATER) this.blocked.add(ty * MW + tx);
+
+    // ---- vegetación generada ----
+    const rnd = new Phaser.Math.RandomDataGenerator(['ia']);
+    this.solids = [];
+    const obj = (key, x, y, solidW, shadowW) => {
+      const s = this.add.image(x, y, key).setOrigin(.5, 1).setDepth(y);
+      if (shadowW) this.add.ellipse(x + 3, y - 2, shadowW, Math.round(shadowW / 3), 0x2c4422, .3).setDepth(-9000);
+      if (solidW) this.solids.push(new Phaser.Geom.Rectangle(x - solidW / 2, y - 8, solidW, 8));
+    };
+    for (const [x, y, k] of [[4, 4, 'a'], [8, 3, 'b'], [3, 9, 'b'], [35, 4, 'a'], [31, 3, 'b'], [37, 9, 'a'], [5, 22, 'a'], [10, 24, 'b'], [26, 25, 'a'], [36, 25, 'b'], [24, 4, 'a'], [28, 8, 'b']])
+      obj('arbol_' + k, x * T, y * T, 18, 50);
+    for (let i = 0; i < 40; i++) {
+      const x = rnd.between(10, W - 10), y = rnd.between(20, H - 4);
+      if (at(x, y) !== GRASS) continue;
+      if (i % 3 === 0) obj(rnd.pick(['arbusto_a', 'arbusto_b']), x, y, 14, 22);
+      else this.add.image(x, y, 'flor').setOrigin(.5, 1).setDepth(y);
+    }
+
+    // ---- Pokémon ----
+    const mon = (k, x, y) => {
+      const sh = this.add.ellipse(x, y, 16, 6, 0x2c4422, .35);
+      const s = this.add.sprite(x, y, `${k}-Idle`).setOrigin(.5, .72);
+      s.k = k; s.dir = 0; s.shadow = sh; s.play(`${k}-Idle-0`); return s;
+    };
+    this.player = mon('bulbasaur', 18 * T, 13 * T);
+    this.marill = mon('marill', 25 * T, 18 * T); this.marill.target = null; this.marill.wait = 1500;
+
+    this.cameras.main.setBounds(0, 0, W, H).startFollow(this.player, true, 1, 1).setRoundPixels(true);
+    this.target = this.add.rectangle(0, 0, T, T).setStrokeStyle(1, 0xffffff, .8).setOrigin(0).setDepth(9000);
+    this.grid = this.add.grid(0, 0, W, H, T, T).setOrigin(0).setOutlineStyle(0x000000, .18).setDepth(9001).setVisible(false);
+    this.keys = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,G');
+    this.keys.G.on('down', () => this.grid.setVisible(!this.grid.visible));
+  }
+
+  free(x, y) {
+    if (x < 6 || y < 6 || x > W - 6 || y > H - 2) return false;
+    if (this.blocked.has(Math.floor(y / T) * MW + Math.floor(x / T))) return false;
+    return !this.solids.some(r => r.contains(x, y));
+  }
+  moveMon(s, vx, vy, dt, speed = 84) {
+    const moving = vx || vy;
+    if (moving) {
+      const len = Math.hypot(vx, vy), sp = speed * dt / 1000;
+      const nx = s.x + vx / len * sp, ny = s.y + vy / len * sp;
+      if (this.free(nx, s.y)) s.x = nx;
+      if (this.free(s.x, ny)) s.y = ny;
+      s.dir = ROW_FROM_ANGLE[(Math.round(Math.atan2(vy, vx) / (Math.PI / 4)) + 8) % 8];
+    }
+    const key = `${s.k}-${moving ? 'Walk' : 'Idle'}-${s.dir}`;
+    if (s.anims.currentAnim?.key !== key) s.play(key, true);
+    s.setDepth(s.y); s.shadow.setPosition(s.x + 1, s.y).setDepth(s.y - 1);
+  }
+  update(_, dt) {
+    const k = this.keys;
+    this.moveMon(this.player, (k.D.isDown || k.RIGHT.isDown) - (k.A.isDown || k.LEFT.isDown), (k.S.isDown || k.DOWN.isDown) - (k.W.isDown || k.UP.isDown), dt);
+    const [dx, dy] = STEP[this.player.dir];
+    this.target.setPosition(Math.floor((this.player.x + dx * 16) / T) * T, Math.floor((this.player.y - 4 + dy * 16) / T) * T);
+    const m = this.marill;
+    if (!m.target) { m.wait -= dt; if (m.wait <= 0) m.target = { x: m.x + Phaser.Math.Between(-60, 60), y: m.y + Phaser.Math.Between(-40, 40) }; this.moveMon(m, 0, 0, dt); }
+    else {
+      const ddx = m.target.x - m.x, ddy = m.target.y - m.y, ox = m.x, oy = m.y;
+      if (Math.hypot(ddx, ddy) < 2) { m.target = null; m.wait = Phaser.Math.Between(1500, 4000); this.moveMon(m, 0, 0, dt); }
+      else { this.moveMon(m, ddx, ddy, dt, 50); if (m.x === ox && m.y === oy) { m.target = null; m.wait = 800; } }
+    }
+  }
+}
+
+const zoom = Math.max(1, Math.floor(Math.min(innerWidth / VW, innerHeight / VH)));
+document.getElementById('zoom').textContent = `×${zoom} · suelo pintado a 480×270`;
+new Phaser.Game({ type: Phaser.WEBGL, parent: 'game', width: VW, height: VH, zoom, pixelArt: true, roundPixels: true,
+  backgroundColor: '#151a12', scene: [Boot, World] });
+</script>
+</body>
+</html>

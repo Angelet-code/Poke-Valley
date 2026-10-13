@@ -1,0 +1,13 @@
+{
+  "id": "granero_kit",
+  "ancho": 8, "fondo": 4,
+  "alto_muro": 44,
+  "tejado": {"tipo": "dos_aguas", "material": "teja_roja", "pendiente": [2, 1], "vuelo": 6, "cumbrera_jitter": true, "semilla": 11},
+  "muro": "muro_madera",
+  "piezas": [
+    {"id": "porton", "x": "centro", "y": "suelo"},
+    {"id": "ventana", "x": 16, "y": "suelo+14"},
+    {"id": "ventana", "x": -16, "y": "suelo+14"},
+    {"id": "ventana", "x": "centro", "y": "suelo+56"}
+  ]
+}

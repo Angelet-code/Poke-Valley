@@ -1,0 +1,2 @@
+assets\gen\edificios\flux768\casaazul_s8_0.png
+67.2s

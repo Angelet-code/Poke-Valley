@@ -1,0 +1,11 @@
+; muro_esquina_izq: poste de esquina izquierdo (10x6, se repite en vertical)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+0=#1e1a31
+l=#84210b
+
+0lllllll00
+0lllllll00
+0lllllll00
+0lllllll00
+0lllllll00
+0lllllll00

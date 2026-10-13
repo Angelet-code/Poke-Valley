@@ -1,0 +1,2 @@
+assets\gen\edificios\flux\casa_s5_0.png
+901.7s

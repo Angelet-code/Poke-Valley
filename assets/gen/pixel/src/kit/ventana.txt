@@ -1,0 +1,29 @@
+; ventana: ventana de la casa V6 sin jardinera (18x13)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+1=#211a2f
+3=#450f1c
+4=#291b2c
+8=#3f1d1e
+a=#670e18
+g=#511e1c
+h=#7c0a13
+l=#84210b
+o=#673725
+q=#b05e36
+r=#dea473
+
+....................
+.111111111111111144.
+.lqqqqqqqqqqqqq1444.
+.lllqq888888qqqq444.
+.llooor4444rrrr4444.
+.aoorrrrrrrrrrr44a4.
+.aoorr111r111rr4aa4.
+.aaorr111r111rraaa4.
+.a33rr111r111rraaa1.
+.a33rrrrrrrrrrrgaa1.
+.aaorr111r111rrgaa1.
+.aaorr111r111rrgaa1.
+.haorr111r111rraaa1.
+..hrrrrrrrrrrrraaa1.
+....................

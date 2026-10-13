@@ -1,0 +1,4 @@
+{
+  "casa": {"archivo": "edificios/casa.png", "ancla": [52, 115], "colision": [104, 72], "tipo": "edificio"},
+  "tienda": {"archivo": "edificios/tienda.png", "ancla": [59, 69], "colision": [120, 72], "tipo": "edificio"}
+}

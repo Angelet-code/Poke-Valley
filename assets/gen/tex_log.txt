@@ -1,0 +1,7 @@
+assets\gen\tex\hierba_0.png
+49.2s
+assets\gen\tex\tierra_0.png
+24.3s
+assets\gen\tex\losas_0.png
+21.1s
+DONE

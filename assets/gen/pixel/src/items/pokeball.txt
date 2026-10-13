@@ -1,0 +1,29 @@
+; Poké Ball (roja). 14x14 en lienzo 16x16, vista 3/4 desde arriba (banda algo por debajo del centro).
+; o contorno rojo oscuro, r rojo, R brillo, d sombra roja, g contorno gris (mitad blanca),
+; w blanco, W blanco sombreado, k banda/aro del botón, s sombra en el suelo.
+o=#7a2222
+r=#d94444
+R=#f3837a
+d=#b02f2f
+g=#5a5660
+w=#f6f2e9
+W=#cfc8bb
+k=#3a343c
+s=#2c442280
+
+................
+......oooo......
+....ooRRrroo....
+...oRRrrrrrro...
+..oRrrrrrrrrro..
+..orrrrrrrrrdo..
+.orrrrrrrrrrddo.
+.orrrrkkkkrrddo.
+.okkkkkwwkkkkko.
+.gwwwwkwWkwwwWg.
+..gwwwkkkkwwWg..
+..gwwwwwwwwWWg..
+...gwwwwwwWWg...
+....ggwwWWgg....
+......gggg......
+....ssssssss....

@@ -1,0 +1,13 @@
+{
+  "id": "casa_kit",
+  "ancho": 6, "fondo": 3,
+  "alto_muro": 26,
+  "tejado": {"tipo": "dos_aguas", "material": "teja_roja", "pendiente": [5, 3], "vuelo": 6, "cumbrera_jitter": true},
+  "muro": "muro_madera",
+  "piezas": [
+    {"id": "puerta", "x": "centro", "y": "suelo"},
+    {"id": "ventana_jardinera", "x": 18, "y": "suelo+12"},
+    {"id": "ventana_jardinera", "x": -18, "y": "suelo+12"},
+    {"id": "chimenea", "x": -30, "y": "tejado", "sombra": true}
+  ]
+}

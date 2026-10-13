@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sprites PMD</title>
+<style>
+:root{--bg:#f3efe6;--fg:#2a2622;--card:#fffdf8;--muted:#776e62;--line:#e0d9cb}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--fg:#ece6da;--card:#24221f;--muted:#a59b8c;--line:#3a3631}}
+:root[data-theme="dark"]{--bg:#1a1917;--fg:#ece6da;--card:#24221f;--muted:#a59b8c;--line:#3a3631}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:28px 16px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px}
+.card h2{font-size:16px;margin:0 0 10px}
+canvas{image-rendering:pixelated;display:block;max-width:100%;height:auto;border-radius:6px}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.row figure{margin:0;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>Sprites de SpriteCollab (PMD) en movimiento</h1>
+<p class="sub">Sprites reales descargados, animados con los tiempos de su AnimData.xml. Escala ×3.</p>
+<div class="card"><h2>8 direcciones · Walk / Idle / Sleep / Eat</h2><div class="row" id="dirs"></div></div>
+<div class="card"><h2>Tamaño respecto a la casilla</h2><div class="row" id="scale"></div></div>
+</main>
+<script>
+const MONS={bulbasaur:'0001',marill:'0183'};
+const BASE='../../assets/sprites/pokemon/';
+const ANIMS=['Walk','Idle','Sleep','Eat'];
+async function loadMon(id){
+  const xml=new DOMParser().parseFromString(await (await fetch(BASE+id+'/AnimData.xml')).text(),'text/xml');
+  const out={};
+  for(const a of xml.querySelectorAll('Anim')){
+    const name=a.querySelector('Name').textContent;
+    if(!ANIMS.includes(name))continue;
+    const img=new Image(); img.src=BASE+id+'/'+name+'-Anim.png'; await img.decode();
+    out[name]={img,fw:+a.querySelector('FrameWidth').textContent,fh:+a.querySelector('FrameHeight').textContent,
+      dur:[...a.querySelectorAll('Duration')].map(d=>+d.textContent)};
+  }
+  return out;
+}
+const S=3, players=[];
+function player(canvas,anim,row,ox,oy){players.push({ctx:canvas.getContext('2d'),anim,row,ox,oy,f:0,t:0});}
+function frameAt(p,tick){
+  const total=p.anim.dur.reduce((a,b)=>a+b,0); let t=tick%total, i=0;
+  while(t>=p.anim.dur[i]){t-=p.anim.dur[i];i++;}
+  return i;
+}
+let tick=0;
+function loop(){
+  tick++;
+  const byCtx=new Map();
+  for(const p of players){ if(!byCtx.has(p.ctx)){byCtx.set(p.ctx,[]);} byCtx.get(p.ctx).push(p); }
+  for(const [ctx,ps] of byCtx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    if(ctx.bgDraw) ctx.bgDraw(ctx);
+    for(const p of ps){
+      const a=p.anim, i=frameAt(p,tick), rows=a.img.height/a.fh, r=Math.min(p.row,rows-1);
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(a.img,i*a.fw,r*a.fh,a.fw,a.fh,p.ox,p.oy,a.fw*S,a.fh*S);
+    }
+  }
+  requestAnimationFrame(loop);
+}
+// PMD rows: 0 S,1 SE,2 E,3 NE,4 N,5 NW,6 W,7 SW (tiempos en frames a 60 fps)
+(async()=>{
+  const data={};
+  for(const [k,id] of Object.entries(MONS)) data[k]=await loadMon(id);
+  const dirs=document.getElementById('dirs');
+  for(const [k,anims] of Object.entries(data)){
+    for(const name of ANIMS){
+      const a=anims[name]; if(!a)continue;
+      const rows=a.img.height/a.fh, cols=Math.min(rows,8);
+      const c=document.createElement('canvas'); c.width=a.fw*S*cols; c.height=a.fh*S;
+      for(let r=0;r<cols;r++) player(c,a,r,r*a.fw*S,0);
+      const f=document.createElement('figure'); f.appendChild(c);
+      f.insertAdjacentHTML('beforeend',`<figcaption>${k} · ${name}</figcaption>`); dirs.appendChild(f);
+    }
+  }
+  const sc=document.getElementById('scale');
+  for(const tile of [24,32]){
+    const c=document.createElement('canvas'); c.width=tile*6*S; c.height=tile*3*S;
+    const ctx=c.getContext('2d');
+    ctx.bgDraw=g=>{g.fillStyle='#7cbf5a';g.fillRect(0,0,c.width,c.height);g.strokeStyle='rgba(0,0,0,.25)';
+      for(let x=0;x<=6;x++){g.beginPath();g.moveTo(x*tile*S+.5,0);g.lineTo(x*tile*S+.5,c.height);g.stroke();}
+      for(let y=0;y<=3;y++){g.beginPath();g.moveTo(0,y*tile*S+.5);g.lineTo(c.width,y*tile*S+.5);g.stroke();}};
+    const wb=data.bulbasaur.Walk, wm=data.marill.Idle;
+    player(c,wb,0,(tile*1.5-wb.fw/2)*S,(tile*1.5-wb.fh/2-4)*S);
+    player(c,wm,0,(tile*3.5-wm.fw/2)*S,(tile*1.5-wm.fh/2-4)*S);
+    const f=document.createElement('figure'); f.appendChild(c);
+    f.insertAdjacentHTML('beforeend',`<figcaption>Casilla de ${tile} px${tile===24?' (escala nativa de PMD)':''}</figcaption>`); sc.appendChild(f);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>

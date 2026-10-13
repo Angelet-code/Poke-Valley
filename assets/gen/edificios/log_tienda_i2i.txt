@@ -1,0 +1,3 @@
+assets\gen\edificios\tienda_i2i_0.png
+assets\gen\edificios\tienda_i2i_1.png
+32.2s

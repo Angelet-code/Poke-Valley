@@ -1,0 +1,35 @@
+; caja_peras: caja de listones con peras y limas (25x20)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+1=#2b2025
+4=#3c3f2b
+5=#583f2f
+b=#895a39
+j=#6d8a30
+l=#b48750
+p=#dbc667
+q=#faf2b6
+y=#b09a3a
+z=#9fbe4e
+
+...........................
+.......ppp...jjj...ppp.....
+......ppppp.jjjjj.ppppp....
+....jjjpppjjjjjjppppppppp..
+...jjjjjpjjjjjjppppppppppp.
+...jjjjjjjjjj44ppppyyppppp.
+.1111111111111111111111111.
+.1llllllllllllllllllllll51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1555555555555555555555551.
+.1llllllllllllllllllllll51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1555555555555555555555551.
+.1llllllllllllllllllllll51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1555555555555555555555551.
+.1111111111111111111111111.
+...........................

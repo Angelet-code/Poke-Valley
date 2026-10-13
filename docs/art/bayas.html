@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Huerto de bayas</title>
+<style>
+  body { margin: 0; background: #1d2a1a; color: #e8efe0; font: 14px system-ui, sans-serif; }
+  #ui { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #ui button { background: #34482e; color: inherit; border: 1px solid #5b7a50; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+  #bayas { display: flex; flex-wrap: wrap; gap: 2px; padding: 0 12px 8px; }
+  #bayas img { width: 48px; height: 48px; image-rendering: pixelated; cursor: pointer; border: 2px solid transparent; border-radius: 4px; }
+  #bayas img.sel { border-color: #ffd65a; background: #34482e; }
+  canvas { display: block; margin: 0 12px; image-rendering: pixelated; max-width: calc(100% - 24px); }
+  kbd { background: #34482e; padding: 0 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="ui">
+  <b>Huerto de bayas</b> ·
+  <kbd>clic</kbd> plantar / cosechar · <kbd>clic der.</kbd> regar ·
+  <button id="regar">Regar todo</button>
+  <button id="dia">Pasar día</button>
+  <button id="todas">Ver todas las fases</button>
+  <span>Día <b id="ndia">1</b> · cosechadas: <span id="cosecha">0</span></span>
+</div>
+<div id="bayas"></div>
+<canvas id="c"></canvas>
+<script>
+// Fases (pret/pokeemerald): 0 arada, 1 semilla (montón de tierra), 2 brote, 3 alta, 4 flor, 5 bayas.
+// Regada = la tierra se oscurece. Pasar día: las casillas regadas crecen una fase y se secan.
+const T = 24, COLS = 14, ROWS = 8, PX = 2, PY = 2, PW = 10, PH = 4;  // huerto de PW×PH casillas
+const W = COLS * T, H = ROWS * T, BASE = '../../assets/';
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let S = 1;
+const img = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = s; });
+let data, IM = {}, sel = 'oran', dia = 1, cosechadas = 0;
+const huerto = [];
+for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) huerto.push({ x: PX + x, y: PY + y, fase: 0, baya: null, regada: false });
+
+function resize() {
+  S = Math.max(1, Math.floor(Math.min((innerWidth - 24) / W, (innerHeight - 140) / H)));
+  cv.width = W * S; cv.height = H * S; ctx.imageSmoothingEnabled = false;
+}
+
+function draw(t) {
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+  ctx.fillStyle = ctx.createPattern(IM.cesped, 'repeat'); ctx.fillRect(0, 0, W, H);
+  const tierra = ctx.createPattern(IM.tierra, 'repeat');
+  for (const c of huerto) {
+    ctx.fillStyle = tierra; ctx.fillRect(c.x * T, c.y * T, T, T);
+    if (c.regada) { ctx.fillStyle = 'rgba(48,26,10,.42)'; ctx.fillRect(c.x * T, c.y * T, T, T); }
+  }
+  const f2 = Math.floor(t / 600) % 2;  // vaivén de 2 fotogramas
+  for (const c of huerto) {
+    if (!c.fase) continue;
+    const bx = c.x * T + 4, by = c.y * T;
+    if (c.fase === 1) ctx.drawImage(IM.dirt_pile, bx, by + 6);
+    else if (c.fase === 2) ctx.drawImage(IM.sprout, f2 * 16, 0, 16, 16, bx, by + 4, 16, 16);
+    else ctx.drawImage(IM[c.baya], ((c.fase - 3) * 2 + f2) * 16, 0, 16, 32, bx, by - 12, 16, 32);
+  }
+  requestAnimationFrame(draw);
+}
+
+function celda(ev) {
+  const r = cv.getBoundingClientRect();
+  const x = Math.floor((ev.clientX - r.left) / r.width * W / T), y = Math.floor((ev.clientY - r.top) / r.height * H / T);
+  return huerto.find(c => c.x === x && c.y === y);
+}
+cv.addEventListener('click', ev => {
+  const c = celda(ev); if (!c) return;
+  if (c.fase === 0) { c.fase = 1; c.baya = sel; }
+  else if (c.fase === 5) { c.fase = 0; c.baya = null; document.getElementById('cosecha').textContent = ++cosechadas; }
+});
+cv.addEventListener('contextmenu', ev => { ev.preventDefault(); const c = celda(ev); if (c) c.regada = true; });
+document.getElementById('regar').onclick = () => huerto.forEach(c => c.regada = true);
+document.getElementById('dia').onclick = () => {
+  for (const c of huerto) { if (c.regada && c.fase && c.fase < 5) c.fase++; c.regada = false; }
+  document.getElementById('ndia').textContent = ++dia;
+};
+document.getElementById('todas').onclick = () => {
+  const nombres = Object.keys(data.bayas);
+  huerto.forEach((c, i) => {
+    const col = i % PW, fila = Math.floor(i / PW);
+    c.fase = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2][col]; c.regada = col >= 5;
+    c.baya = nombres[(fila * 3 + (col > 5 ? 1 : 0)) % nombres.length];
+  });
+};
+
+(async () => {
+  data = await (await fetch(BASE + 'sprites/bayas/bayas.json')).json();
+  [IM.cesped, IM.tierra, IM.dirt_pile, IM.sprout] = await Promise.all([
+    img(BASE + 'game/cesped_ref.png'), img(BASE + 'game/tierra_ref.png'),
+    img(BASE + 'sprites/bayas/fases/dirt_pile.png'), img(BASE + 'sprites/bayas/fases/sprout.png')]);
+  const lista = document.getElementById('bayas');
+  await Promise.all(Object.entries(data.bayas).map(async ([n, b]) => {
+    IM[n] = await img(BASE + 'sprites/bayas/' + b.png);
+    const ic = document.createElement('img'); ic.src = BASE + 'sprites/bayas/' + b.icono; ic.title = n;
+    ic.onclick = () => { sel = n; lista.querySelectorAll('img').forEach(e => e.classList.toggle('sel', e === ic)); };
+    if (n === sel) ic.classList.add('sel');
+    lista.appendChild(ic);
+  }));
+  resize(); addEventListener('resize', resize);
+  document.getElementById('todas').click();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

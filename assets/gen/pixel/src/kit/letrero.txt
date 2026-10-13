@@ -1,0 +1,22 @@
+; letrero: letrero colgado sin texto, con cuerdas (19x13)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+1=#2b2025
+9=#795136
+h=#986c48
+l=#b48750
+
+.....................
+....1...........1....
+....1...........1....
+....1...........1....
+.1111111111111111111.
+.1llllllllllllllllh1.
+.1l999999999999999h1.
+.1l9lllllllllllll9h1.
+.1l9lllllllllllll9h1.
+.1l9lllllllllllll9h1.
+.1l9lllllllllllll9h1.
+.1l999999999999999h1.
+.1hhhhhhhhhhhhhhhhh1.
+.1111111111111111111.
+.....................

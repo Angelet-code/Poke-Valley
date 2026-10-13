@@ -1,0 +1,5 @@
+assets\gen\edificios\casa_b_0.png
+assets\gen\edificios\casa_b_1.png
+assets\gen\edificios\casa_b_2.png
+assets\gen\edificios\casa_b_3.png
+95.2s

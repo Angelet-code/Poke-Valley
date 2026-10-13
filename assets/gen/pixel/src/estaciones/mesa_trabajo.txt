@@ -1,0 +1,51 @@
+; Banco de trabajo: 2 casillas de ancho x 1 de fondo, vista 3/4. Tablero de 3 tablones,
+; borde delantero, dos patas con travesaño, martillo y sierra encima (simples).
+; o contorno madera, l/m/d tonos del tablero, D madera oscura (canto y patas),
+; h mango de herramienta, k contorno metal, g/G metal, s sombra en el suelo.
+o=#4a2c18
+l=#d4a46c
+m=#bb884e
+d=#8f5e32
+D=#6b4225
+h=#7a4a28
+k=#3c4650
+g=#8c98a3
+G=#c8d0d8
+s=#2c442280
+
+................................................
+................................................
+................................................
+................................................
+.oooooooooooooooooooooooooooooooooooooooooooooo.
+ollllllllllllllllllllllllllllllllllllllllllllllo
+ommmmmkkkkkkkmmmmmmmdddddmmmmmmmmmmmmmmmmmmmmmmo
+ommmmmkGGGGGkmmmmmmmmmmmmmmmmmmmmmmmmmmmooooommo
+odddddkgggggkddddddddddddddkGGGGGGGGGGGGohhhoddo
+olllllkkkkkkkllllllllllllllkggggggggggggohohollo
+ommmmmmmohhommmmmmmmmmmmmmmmkgggggggggggohohommo
+ommmmmmmmohhommmmmmmmmmmmmmmmkgkgkgkgkgkohhhommo
+odddddddddohhoddddddddddddddddkdkdkdkdkdoooooddo
+ollllllllllohhollllllllllllllllllllllllllllllllo
+ommmmmmmmmmmohhommmmmmmmmmmmmmmmmmmmmmmmmmmmmmmo
+ommmmmdddddmmoooommmmmmmmmmmmmmmmmmmmmmmmmmmmmmo
+ommmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmo
+oddddddddddddddddddddddddddddddddddddddddddddddo
+oooooooooooooooooooooooooooooooooooooooooooooooo
+oDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDo
+oDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDo
+oooooooooooooooooooooooooooooooooooooooooooooooo
+..odDDo..................................odDDo..
+..odDDo..................................odDDo..
+..odDDo..................................odDDo..
+..odDDo..................................odDDo..
+..odDDo..................................odDDo..
+..odDDoooooooooooooooooooooooooooooooooooodDDo..
+..odDDoDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDodDDo..
+..odDDoooooooooooooooooooooooooooooooooooodDDo..
+..odDDo..................................odDDo..
+..odDDo..................................odDDo..
+..odDDo..................................odDDo..
+..ooooo..................................ooooo..
+.ssssssssssssssssssssssssssssssssssssssssssssss.
+................................................

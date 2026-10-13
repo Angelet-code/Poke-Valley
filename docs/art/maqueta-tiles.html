@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maqueta de baldosas</title>
+<style>
+html,body{margin:0;height:100%;background:#151a12;color:#e4ecd8;font:13px/1.4 system-ui,"Segoe UI",sans-serif;overflow:hidden}
+#game{position:fixed;inset:0;display:grid;place-items:center}
+#help{position:fixed;left:12px;bottom:10px;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:6px;pointer-events:none}
+kbd{background:#2c3626;border-radius:3px;padding:0 4px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+</head>
+<body>
+<div id="game"></div>
+<div id="help"><kbd>WASD</kbd> mover · <kbd>1</kbd> césped <kbd>2</kbd> tierra <kbd>3</kbd> losas <kbd>4</kbd> agua <kbd>5</kbd> flores <kbd>6</kbd> matorrales <kbd>7</kbd> objetos (<kbd>Q</kbd>/<kbd>E</kbd> elegir) · pincel: <b id="brush">tierra</b> · <kbd>clic izq.</kbd> pintar / poner · <kbd>clic der.</kbd> borrar (césped / quitar flores, matorrales u objetos) · <kbd>G</kbd> casillas 24 px · <kbd>M</kbd> mapa entero · <kbd>X</kbd> copiar mapa (JSON) · <span id="zoom"></span></div>
+<script>
+// Suelo por baldosas con autotile por esquinas ("rejilla doble"):
+// - El terreno se guarda en las esquinas de las casillas de 24 px (VERT).
+// - Cada píxel decide su terreno interpolando las 4 esquinas de su casilla + un ruido
+//   en coordenadas de mundo (así los bordes son orgánicos y continuos entre casillas).
+// - El color sale de texturas recortadas de la referencia original (assets/gen/prueba1_1.png,
+//   tools/quilt.py): cesped_ref y tierra_ref, de 288 px, sin pixelar ni recolorear.
+// - Encima, manchas grandes y suaves en coordenadas de mundo con los tonos medidos en la
+//   referencia, para que no se note la repetición.
+// - Tercer suelo, "losas": camino marcado. Es tierra con un mosaico de losas encima,
+//   dibujado a resolución de pantalla: la zona se reparte en piezas que encajan (diagrama
+//   de potencia: semillas con radio, mayoría grandes y pocas pequeñas), cada pieza es una
+//   losa con esquinas redondeadas, su tono, y un trazo de grosor variable alrededor
+//   (hilo fino arriba que se pierde, sombra más gruesa abajo que se afila en punta).
+// - Árboles: los de la referencia, recortados, más verdes (tools/recolor_hue.py) y limpiados
+//   con img2img (tools/comfy.py --init). Sprites con sombra, orden por profundidad (se pasa
+//   por detrás de la copa) y colisión solo en el tronco.
+// - Borde irregular pero nítido: sin línea y sin difuminar (solo antialias de 1 px).
+// - Objetos pixel art (items, estaciones, edificios): capa editable con el ratón (pincel 7),
+//   se guardan en el mapa (`objetos`) y se exportan con X. Ver OBJS.
+// Mapa inicial: trazado sobre la referencia (tools/map_trace.py -> mapas/referencia.json).
+// Otro mapa con ?mapa=nombre (p. ej. lagos_prueba, de tools/map_lakes_test.py).
+const MAP = (() => { const r = new XMLHttpRequest(); r.open('GET', `mapas/${new URLSearchParams(location.search).get('mapa') || 'referencia'}.json?` + Date.now(), false); r.send(); return JSON.parse(r.responseText); })();
+const T = 24, VW = 480, VH = 270, MW = MAP.mw, MH = MAP.mh, W = MW * T, H = MH * T;
+const A = '../../assets/';
+// Objetos pixel art a escala de mundo (1 px de imagen = 1 px de mundo): catálogos
+// assets/game/pixel/items.json y edificios.json, id -> { archivo (relativo a assets/game/pixel/),
+// ancla: [x, y] (píxel de apoyo, abajo-centro), colision: [w, h] (px de mundo, centrado en el
+// ancla y hacia arriba; [0, 0] = se pisa), tipo: item | estacion | edificio }. Si falta un
+// catálogo o una imagen, aviso en consola y se sigue sin ellos.
+const OBJS = {};
+for (const f of ['items', 'edificios']) {
+  try {
+    const r = new XMLHttpRequest(); r.open('GET', `${A}game/pixel/${f}.json?` + Date.now(), false); r.send();
+    if (r.status !== 200 && r.status !== 0) throw new Error('HTTP ' + r.status);
+    Object.assign(OBJS, JSON.parse(r.responseText));
+  } catch (e) { console.warn(`Catálogo ${f}.json no disponible:`, e.message); }
+}
+const TEX = 288;
+// Tonos de las manchas (medidos en la referencia): [oscura, clara].
+const GRASS_TONES = [[150, 176, 95], [176, 190, 110]], DIRT_TONES = [[186, 168, 112], [216, 196, 141]];
+// Mosaico de losas (medidas en px de mundo).
+const MOS_BIG = .85;                 // fracción de semillas grandes
+const MOS_R_BIG = [11, 16], MOS_R_SMALL = [3.5, 6];
+const MOS_PACK = .78;                // separación mínima entre semillas, en (r1 + r2)
+const MOS_GAP = 0;                   // media grieta entre losas (0 = pegadas, solo hilo y sombra)
+const MOS_HAIR = 0, MOS_SHADOW = .9; // grosor máx. del hilo (0 = sin hilo, solo sombra) y de la sombra de abajo
+const MOS_ROUND = 1.6;               // redondeo de esquinas (suavizado del mínimo)
+const MOS_SKIP = .05;                // losas que faltan (asoma la tierra)
+const MOS_FILL = .5;                 // opacidad del color propio de la losa (0 = solo el suelo de debajo y sombras)
+const MOS_SHADOW_A = .5;             // opacidad de la sombra de las losas
+// Algunas losas más claritas, para que se note el camino: fracción, color y opacidad.
+const MOS_LIGHT = .25, STONE_LIGHT = [234, 219, 170], MOS_LIGHT_FILL = .5;
+const MOS_DIM = .1;                  // oscurecimiento máx. de una losa hacia el tono de la tierra
+const STONE = [218, 200, 146], CRACK = [166, 144, 98], DIRT_MEAN = [196, 178, 122];
+// Árboles: posiciones (base del tronco) medidas en la referencia, en px de la referencia.
+const TREES_REF = [[50, 115], [290, 170], [395, 62], [480, 130], [560, 305], [400, 410], [25, 300], [1005, 230],
+  [1000, 540], [960, 655], [20, 575], [45, 715], [480, 915], [380, 955], [770, 915], [980, 935]];
+const TREE_N = 4, TREE_SRC_H = 360, TREE_H = 58, TREE_BASE_X = [129, 133, 105, 129], TREE_HIT = 6;
+// Calcomanías pintadas en el suelo, solo bien dentro del césped (lejos de tierra y agua):
+// matorrales verdes (generados aquí: ver BUSH) y, encima, matas de flores amarillas
+// (tools/cut_flowers.py), generadas con SDXL y reducidas. Rejilla de candidatos con densidad
+// por ruido lento (corros). px = píxeles de la referencia por píxel de la imagen.
+const DECALS = [
+  { name: 'mata', gen: true, step: 34, prob: .4, seed: 7, alpha: .5, margin: .1, s: [1, 1], gap: 16 },
+  { name: 'flor', dir: 'flores_nuevas', n: 33, px: .5, step: 17, prob: .6, seed: 0, alpha: .75, margin: .2, s: [.85, 1.15], gap: 9 },
+];
+// Rocas grises: recortadas de la referencia, repintadas limpias con SDXL y reducidas.
+// Posiciones de las rocas sueltas de la referencia (px de la imagen de 1024).
+const ROCKS_REF = [[160, 85], [150, 272], [208, 272], [160, 373], [662, 590], [260, 733], [920, 513]];
+const ROCK_N = 4, ROCK_H = 32;            // ROCK_H = alto a escala 1 (px de mundo)
+// Lagos (terreno 3). Agua: color medido en la referencia con manchas lentas. Donde el agua
+// tiene tierra firme justo encima, pared de roca (tools/cliff_strip.py: la de la referencia
+// enderezada y repintada con SDXL) y su sombra sobre el agua. En la orilla, línea oscura y
+// un filo claro en el césped, como en la referencia.
+const WATER = [99, 173, 180], WATER_TONES = [[84, 152, 166], [116, 190, 192]], WATER_SHADOW = [72, 132, 150];
+const CLIFF_H = 24, CLIFF_SHADOW = .5;  // alto de la pared (px de mundo) y largo de su sombra (x CLIFF_H)
+const CLIFF_LAND = 6;                   // tierra mínima encima del borde para que haya pared (px de mundo)
+const CLIFF_GAP = 10;                  // rendijas de agua más estrechas (px de mundo) junto a una pared: se rellenan de roca
+const CLIFF_FACING = .4;                // la orilla debe mirar hacia abajo: componente vertical mínima
+const SHORE_LINE = 1.5, SHORE_LIP = 1.6, SHORE_LIP_A = .7, SHORE_DARK = [44, 64, 46], SHORE_LIGHT = [200, 212, 112];
+// Matorral: grupos irregulares de 2-3 hojas redondas; cada hoja con posición y tamaño al azar
+// (semilla = la de la mata, así sale siempre igual) y separación mínima entre centros. Hoja =
+// círculo de color liso, más claro arriba; sombra = el mismo círculo bajado y algo mayor, más
+// oscuro. Se pintan de atrás adelante. Colores medidos en las matas de la referencia.
+// Medidas en px de mundo.
+const BUSH = { groups: [2, 5], perGroup: [2, 3], r: [2.6, 6.2], pack: .6, shadow: .3, shadowA: .9,
+  leaf: [[124, 168, 72], [132, 174, 78], [118, 162, 70]], light: [156, 190, 96], dark: [72, 112, 50] };
+const BRUSH_NAMES = ['césped', 'tierra', 'losas', 'agua', 'flores', 'matorrales', 'objetos'];
+const DECAL_BRUSH = { 4: 'flor', 5: 'mata' }, DECAL_R = 16; // radio del borrador de flores/matorrales (px de mundo)
+const OBJ_BRUSH = 6;                 // pincel de objetos (tecla 7): Q/E eligen el id, clic izq. pone, clic der. quita
+const ROW_FROM_ANGLE = [2, 1, 0, 7, 6, 5, 4, 3];
+
+const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+const vnoise = (x, y) => {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+};
+
+// Terreno en las esquinas: (MW+1) x (MH+1). 0 césped, 1 tierra, 2 losas (sobre tierra), 3 agua.
+const VERT = new Uint8Array((MW + 1) * (MH + 1));
+const vAt = (vx, vy) => VERT[Math.max(0, Math.min(MH, vy)) * (MW + 1) + Math.max(0, Math.min(MW, vx))];
+MAP.vert.forEach((row, vy) => row.forEach((v, vx) => { VERT[vy * (MW + 1) + vx] = v; }));
+
+// Manchas: dos campos lentos (oscuras y claras), con bordes suaves.
+const SPOT = [new Float32Array(W * H), new Float32Array(W * H)];
+const smooth = (e0, e1, v) => { const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+  const n1 = vnoise(x / 40 + 31, y / 40 + 7) * .8 + vnoise(x / 13 + 5, y / 13) * .2;
+  const n2 = vnoise(x / 34 + 91, y / 34 + 47) * .8 + vnoise(x / 11 + 3, y / 11 + 9) * .2;
+  SPOT[0][y * W + x] = smooth(.56, .68, n1);
+  SPOT[1][y * W + x] = smooth(.6, .72, n2) * .7;
+}
+const tone = (c, tones, i) => {
+  const a = SPOT[0][i], b = SPOT[1][i];
+  return [0, 1, 2].map(k => c[k] + (tones[0][k] - c[k]) * a * .8 + (tones[1][k] - c[k]) * b * .6);
+};
+
+// Escala de pantalla (zoom entero). El juego se dibuja a resolución de pantalla con la
+// cámara ampliada S veces: los sprites siguen siendo pixel art, pero el borde entre tierra
+// y césped se calcula a resolución de pantalla, así queda nítido (sin escalera de píxeles
+// de mundo ampliados ni el halo borroso que daba suavizarlos).
+const S = Math.max(1, Math.floor(Math.min(innerWidth / VW, innerHeight / VH)));
+const SW = W * S, SH = H * S;
+
+// Campo de tierra (>0 tierra, <0 césped) en cada píxel de pantalla: interpolación de las
+// 4 esquinas de la casilla + ruido en coordenadas de mundo (formas irregulares y
+// naturales).
+const edgeNoise = (x, y) => (vnoise(x / 12, y / 12) * .75 + vnoise(x / 5.5, y / 5.5) * .25 - .5) * .75;
+const FIELD = new Float32Array(SW * SH);
+const isDirt = v => +(v === 1 || v === 2);
+function computeField(x0, y0, x1, y1) { // en píxeles de mundo
+  for (let Y = Math.max(0, y0 * S); Y < Math.min(SH, y1 * S); Y++) for (let X = Math.max(0, x0 * S); X < Math.min(SW, x1 * S); X++) {
+    const x = (X + .5) / S, y = (Y + .5) / S;
+    const tx = Math.floor(x / T), ty = Math.floor(y / T), fx = x / T - tx, fy = y / T - ty;
+    const a = isDirt(vAt(tx, ty)), b = isDirt(vAt(tx + 1, ty)), c = isDirt(vAt(tx, ty + 1)), d = isDirt(vAt(tx + 1, ty + 1));
+    // Continuo también en casillas uniformes: un salto daría pendientes falsas en sus bordes.
+    FIELD[Y * SW + X] = a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy + edgeNoise(x, y) - .5;
+  }
+}
+computeField(0, 0, W, H);
+// Campo de losas (>0 dentro de la zona de losas), a resolución de mundo: mismo método.
+const PFIELD = new Float32Array(W * H);
+function computePathField(x0, y0, x1, y1) {
+  for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) for (let x = Math.max(0, x0); x < Math.min(W, x1); x++) {
+    const tx = Math.floor(x / T), ty = Math.floor(y / T), fx = (x + .5) / T - tx, fy = (y + .5) / T - ty;
+    const a = +(vAt(tx, ty) === 2), b = +(vAt(tx + 1, ty) === 2), c = +(vAt(tx, ty + 1) === 2), d = +(vAt(tx + 1, ty + 1) === 2);
+    // Siempre continuo (sin atajo de casilla uniforme): el mosaico mide distancias con él.
+    PFIELD[y * W + x] = a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy + edgeNoise(x, y) - .5;
+  }
+}
+computePathField(0, 0, W, H);
+// Campo de agua (>0 agua), a resolución de pantalla, con su propio ruido (orilla ondulada).
+// Orilla: ondas suaves y, encima, muescas pequeñas en pico (ruido "ridged"), como el césped
+// levantado de la referencia.
+// UPD: distancia (px de pantalla, con decimales) al borde de arriba del agua en la misma columna
+// (0 en tierra). El borde se sitúa entre píxeles por interpolación del campo, así el pie de la
+// pared no hace escalones. Fuera del mapa cuenta como agua: un lago que toca el borde de arriba
+// no tiene pared.
+const waterLow = (x, y) => (vnoise(x / 15 + 50, y / 15 + 20) - .5) * .4;
+// Orilla lisa (sin muescas): para saber hacia dónde mira la orilla.
+const waterSmooth = (x, y) => {
+  const tx = Math.floor(x / T), ty = Math.floor(y / T), fx = x / T - tx, fy = y / T - ty;
+  const a = +(vAt(tx, ty) === 3), b = +(vAt(tx + 1, ty) === 3), c = +(vAt(tx, ty + 1) === 3), d = +(vAt(tx + 1, ty + 1) === 3);
+  return a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy + waterLow(x, y);
+};
+const waterNoise = (x, y) => waterLow(x, y) + (Math.abs(vnoise(x / 7 + 7, y / 7 + 3) * 2 - 1) - .5) * .12;
+const WFIELD = new Float32Array(SW * SH), UPD = new Float32Array(SW * SH);
+function computeWaterField(x0, y0, x1, y1) {
+  const X0 = Math.max(0, x0 * S), X1 = Math.min(SW, x1 * S);
+  for (let Y = Math.max(0, y0 * S); Y < Math.min(SH, y1 * S); Y++) for (let X = X0; X < X1; X++) {
+    const x = (X + .5) / S, y = (Y + .5) / S;
+    const tx = Math.floor(x / T), ty = Math.floor(y / T), fx = x / T - tx, fy = y / T - ty;
+    const a = +(vAt(tx, ty) === 3), b = +(vAt(tx + 1, ty) === 3), c = +(vAt(tx, ty + 1) === 3), d = +(vAt(tx + 1, ty + 1) === 3);
+    WFIELD[Y * SW + X] = a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy + waterNoise(x, y) - .5;
+  }
+  for (let X = X0; X < X1; X++) {
+    let edge = -9999;
+    for (let Y = 0; Y < SH; Y++) {
+      const f = WFIELD[Y * SW + X];
+      if (f <= 0) { UPD[Y * SW + X] = 0; continue; }
+      if (Y > 0 && WFIELD[(Y - 1) * SW + X] <= 0) {
+        // Solo hay pared si encima hay tierra de verdad (CLIFF_LAND px), no una muesca de la orilla,
+        // y si la orilla lisa mira hacia abajo (como en la referencia: los lados no tienen pared).
+        const Yl = Y - 1 - CLIFF_LAND * S, fl = WFIELD[(Y - 1) * SW + X];
+        const x = (X + .5) / S, y = Y / S;
+        const gy = waterSmooth(x, y + 8) - waterSmooth(x, y - 8), gx = waterSmooth(x + 8, y) - waterSmooth(x - 8, y);
+        const down = gy / Math.max(1e-4, Math.hypot(gx, gy)) > CLIFF_FACING;
+        edge = down && (Yl < 0 || WFIELD[Yl * SW + X] <= 0) ? Y - .5 - fl / (f - fl) : -9999;
+      }
+      UPD[Y * SW + X] = Y + .5 - edge;
+    }
+  }
+}
+computeWaterField(0, 0, W, H);
+const wfAt = (X, Y) => WFIELD[Math.max(0, Math.min(SH - 1, Y)) * SW + Math.max(0, Math.min(SW - 1, X))];
+// ¿Hay agua cerca de (x, y)? Centro y 8 puntos a distancia r (px de mundo).
+const nearWater = (x, y, r) => [[0, 0], ...[0, 1, 2, 3, 4, 5, 6, 7].map(k => [Math.cos(k * .785) * r, Math.sin(k * .785) * r])]
+  .some(([dx, dy]) => wfAt(Math.round((x + dx) * S), Math.round((y + dy) * S)) > -.3);
+for (const dc of DECALS) {
+  dc.list = [];
+  const st = dc.step, k = dc.seed;
+  for (let y = st / 2; y < H; y += st) for (let x = st / 2; x < W; x += st) {
+    const dens = vnoise(x / 55 + 13 + k * 7, y / 55 + 71) * .8 + vnoise(x / 17 + 3, y / 17 + 40 + k * 5) * .2;
+    if (hash(x * 1.7 + k, y * .31) >= smooth(.5, .7, dens) * dc.prob) continue;
+    dc.list.push({ on: true, x: x + (hash(x, y * 2.1 + k) - .5) * st * .5, y: y + (hash(x * 3.3 + k, y) - .5) * st * .5,
+      r: hash(x * .7, y * 1.9 + k), flip: hash(x * 2.9 + k, y * .8) < .5, s: dc.s[0] + (dc.s[1] - dc.s[0]) * hash(y + k, x * 1.3) });
+  }
+}
+// ---- Mosaico de losas ----
+// Semillas: candidatas en la zona de losas, en orden pseudoaleatorio, primero las grandes;
+// una semilla entra si no queda demasiado cerca de otra (según sus radios).
+const SCELL = 16, SGW = Math.ceil(W / SCELL), SGH = Math.ceil(H / SCELL);
+let SEEDS = [], SGRID = [];
+function computeSeeds() {
+  SEEDS = []; SGRID = Array.from({ length: SGW * SGH }, () => []);
+  const cands = [];
+  for (let y = 1; y < H; y += 3) for (let x = 1; x < W; x += 3) if (PFIELD[y * W + x] > 0) {
+    const big = hash(x * .37, y * .59) < MOS_BIG;
+    const R = big ? MOS_R_BIG : MOS_R_SMALL;
+    cands.push({ x: x + hash(x, y * 1.3) * 3 - 1.5, y: y + hash(x * .7, y) * 3 - 1.5, r: R[0] + hash(x * 2.1, y) * (R[1] - R[0]),
+      order: (big ? 0 : 1) + hash(x * 1.1, y * 2.3) });
+  }
+  cands.sort((a, b) => a.order - b.order);
+  for (const c of cands) {
+    let ok = true;
+    forNear(c.x, c.y, 2, o => { if (Math.hypot(o.x - c.x, o.y - c.y) < MOS_PACK * (o.r + c.r)) ok = false; });
+    if (!ok) continue;
+    const k = SEEDS.length;
+    c.skip = hash(k * .13, c.x * .01 + c.y) < MOS_SKIP;
+    c.v = 1 - MOS_DIM * hash(c.x * 2.7, c.y * 1.9) ** 1.3;
+    c.light = hash(c.x * .91, c.y * 3.7) < MOS_LIGHT;
+    c.ph = [0, 1, 2, 3].map(q => hash(c.x * (q + 1.7), c.y * (q + .3)) * 6.283);
+    SEEDS.push(c);
+    SGRID[Math.min(SGH - 1, Math.max(0, Math.floor(c.y / SCELL))) * SGW + Math.min(SGW - 1, Math.max(0, Math.floor(c.x / SCELL)))].push(c);
+  }
+}
+function forNear(x, y, rad, fn) {
+  const gx = Math.floor(x / SCELL), gy = Math.floor(y / SCELL);
+  for (let j = gy - rad; j <= gy + rad; j++) for (let i = gx - rad; i <= gx + rad; i++)
+    if (i >= 0 && j >= 0 && i < SGW && j < SGH) for (const o of SGRID[j * SGW + i]) fn(o);
+}
+// Distancia (px de mundo) al borde de la zona de losas, con el campo interpolado.
+function pathDist(x, y) {
+  const xi = Math.min(W - 2, Math.max(0, Math.floor(x - .5))), yi = Math.min(H - 2, Math.max(0, Math.floor(y - .5)));
+  const fx = Math.min(1, Math.max(0, x - .5 - xi)), fy = Math.min(1, Math.max(0, y - .5 - yi));
+  const a = PFIELD[yi * W + xi], b = PFIELD[yi * W + xi + 1], c = PFIELD[(yi + 1) * W + xi], d = PFIELD[(yi + 1) * W + xi + 1];
+  const f = a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+  const g = Math.hypot(b - a + (a - b - c + d) * fy, c - a + (a - b - c + d) * fx);
+  return g < 1e-4 ? (f > 0 ? 99 : -99) : f / g;
+}
+const smin = (a, b, k) => { const h = Math.max(0, Math.min(1, .5 + .5 * (b - a) / k)); return b + (a - b) * h - k * h * (1 - h); };
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+// Color del suelo con el mosaico encima. (x, y) en px de mundo; dirtD = distancia al borde de la tierra.
+function mosaic(base, x, y, dirtD, tex) {
+  let s1 = null, p1 = Infinity;
+  const near = [];
+  forNear(x, y, 3, o => { const p = (o.x - x) ** 2 + (o.y - y) ** 2 - o.r * o.r; near.push([o, p]); if (p < p1) { p1 = p; s1 = o; } });
+  if (!s1 || s1.skip) return base;
+  // Distancia al borde de la pieza: mínimo suave de las distancias a cada bisectriz
+  // (esquinas redondeadas), limitada por el tamaño de la propia losa y por los bordes.
+  let e = s1.r * 1.5 - Math.hypot(x - s1.x, y - s1.y);
+  for (const [o, p] of near) if (o !== s1) e = smin(e, (p - p1) / (2 * Math.hypot(o.x - s1.x, o.y - s1.y)), MOS_ROUND);
+  e = smin(e, Math.min(dirtD, pathDist(x, y)) + MOS_GAP * .5, MOS_ROUND);
+  if (e < MOS_GAP - 1) return base;
+  // Trazo de grosor variable según el ángulo desde el centro de la losa.
+  const th = Math.atan2(y - s1.y, x - s1.x), ph = s1.ph;
+  const n1 = .5 + .5 * Math.sin(2 * th + ph[0]) * Math.sin(3 * th + ph[1]);
+  const n2 = .5 + .5 * Math.sin(th + ph[2]) * Math.cos(2 * th + ph[3]);
+  const w = MOS_HAIR * clamp01((n1 - .35) / .65) + MOS_SHADOW * Math.max(0, Math.sin(th)) ** 1.6 * (.45 + .55 * n2);
+  // El trazo va por dentro del borde de la pieza: así las losas se tocan sin grieta.
+  const cStroke = clamp01((e - MOS_GAP) * S + .5), cStone = clamp01((e - MOS_GAP - w) * S + .5);
+  if (cStroke <= 0) return base;
+  const col = s1.light ? STONE_LIGHT : STONE, fill = s1.light ? MOS_LIGHT_FILL : MOS_FILL, v = s1.light ? 1 : s1.v;
+  const st = [0, 1, 2].map(c => base[c] + (col[c] * v + (tex[c] - DIRT_MEAN[c]) * .6 - base[c]) * fill);
+  return [0, 1, 2].map(c => { const l = base[c] + (CRACK[c] - base[c]) * cStroke * MOS_SHADOW_A; return l + (st[c] - l) * cStone; });
+}
+
+const fieldAt = (X, Y) => (X < 0 || Y < 0 || X >= SW || Y >= SH) ? -1 : FIELD[Y * SW + X];
+
+class Boot extends Phaser.Scene {
+  constructor() { super('boot'); }
+  preload() { this.load.xml('bulbasaur-xml', `${A}sprites/pokemon/0001/AnimData.xml`); }
+  create() { this.scene.start('world'); }
+}
+
+class World extends Phaser.Scene {
+  constructor() { super('world'); }
+  preload() {
+    this.load.image('g0', `${A}game/cesped_ref.png`);
+    this.load.image('d0', `${A}game/tierra_ref.png`);
+    this.load.image('pared', `${A}game/lagos/pared.png`);
+    for (let i = 0; i < TREE_N; i++) this.load.image('arbol' + i, `${A}game/arboles/arbol_${i}.png`);
+    for (let i = 0; i < ROCK_N; i++) this.load.image('roca' + i, `${A}game/rocas/roca_${i}.png`);
+    for (const dc of DECALS) if (!dc.gen) for (let i = 0; i < dc.n; i++) this.load.image(`${dc.name}${i}`, `${A}game/${dc.dir}/${dc.name}_${i}.png`);
+    for (const id in OBJS) this.load.image('obj_' + id, `${A}game/pixel/${OBJS[id].archivo}`);
+    const xml = this.cache.xml.get('bulbasaur-xml');
+    this.anim = {};
+    for (const a of xml.querySelectorAll('Anim')) {
+      const name = a.querySelector('Name').textContent;
+      if (!['Walk', 'Idle'].includes(name)) continue;
+      this.anim[name] = { fw: +a.querySelector('FrameWidth').textContent, fh: +a.querySelector('FrameHeight').textContent,
+        durs: [...a.querySelectorAll('Duration')].map(d => +d.textContent) };
+      this.load.spritesheet('b-' + name, `${A}sprites/pokemon/0001/${name}-Anim.png`, { frameWidth: this.anim[name].fw, frameHeight: this.anim[name].fh });
+    }
+  }
+  // Textura reducida de antemano a ph px de alto en pantalla, a mitades (la GPU sin
+  // mipmaps dentaría los trazos al reducir mucho).
+  screenTex(name, ph) {
+    const src = this.textures.get(name).getSourceImage(), pw = Math.round(src.width * ph / src.height), key = `${name}_${ph}`;
+    if (!this.textures.exists(key)) {
+      let c = src, cw = src.width, ch = src.height;
+      do {
+        cw = Math.max(pw, Math.round(cw / 2)); ch = Math.max(ph, Math.round(ch / 2));
+        const n = document.createElement('canvas'); n.width = cw; n.height = ch;
+        const g = n.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, cw, ch); c = n;
+      } while (cw > pw || ch > ph);
+      this.textures.addCanvas(key, c).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+    return key;
+  }
+  pixels(key) {
+    const src = this.textures.get(key).getSourceImage(), c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height; const g = c.getContext('2d'); g.drawImage(src, 0, 0);
+    return g.getImageData(0, 0, src.width, src.height).data;
+  }
+  create() {
+    this.grass = this.pixels('g0');
+    this.dirt = this.pixels('d0');
+    const ck = this.screenTex('pared', CLIFF_H * S);
+    this.cliff = this.pixels(ck); this.cliffW = this.textures.get(ck).getSourceImage().width;
+    // Flores a escala de pantalla: px de referencia -> mundo (W/1024) -> pantalla (S), con espejo.
+    for (const dc of DECALS) {
+      dc.imgs = [];
+      if (!dc.gen) for (let i = 0; i < dc.n; i++) for (const flip of [false, true]) {
+        const src = this.textures.get(dc.name + i).getSourceImage(), k = dc.px * W / 1024 * S;
+        const c = document.createElement('canvas'); c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+        const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+        if (flip) { g.translate(c.width, 0); g.scale(-1, 1); }
+        g.drawImage(src, 0, 0, c.width, c.height);
+        dc.imgs[i * 2 + flip] = c;
+      }
+    }
+    this.canvas = this.textures.createCanvas('ground', SW, SH);
+    this.add.image(0, 0, 'ground').setOrigin(0).setScale(1 / S).setDepth(-10000);
+    computeSeeds();
+    this.redraw(0, 0, MW, MH);
+    // Caminar: animación Walk. Quieto: solo el primer fotograma de Idle (pose de reposo);
+    // el resto de Idle de PMD es un saltito que parece que anda.
+    for (let r = 0; r < 8; r++) {
+      const w = this.anim.Walk, i = this.anim.Idle;
+      this.anims.create({ key: `b-Walk-${r}`, repeat: -1,
+        frames: w.durs.map((d, k) => ({ key: 'b-Walk', frame: r * w.durs.length + k, duration: d * 1000 / 60 })) });
+      this.anims.create({ key: `b-Idle-${r}`, frames: [{ key: 'b-Idle', frame: r * i.durs.length }] });
+    }
+    this.shadow = this.add.ellipse(0, 0, 16, 6, 0x2c4422, .3);
+    // Árboles (fuera del camino de losas). Sombra proyectada abajo a la derecha, como en la referencia.
+    // Salen del mapa si trae `arboles` ([{x, y} en px de mundo; k variante y h alto opcionales);
+    // si no, de TREES_REF (px de la referencia de 1024, escalados). Los de la referencia se saltan
+    // si caen en el camino o junto al agua; los del mapa se ponen siempre (el generador decide).
+    // Variante y alto no indicados: por hash de la posición (sx, sy = la de la referencia, si la hay).
+    this.trees = []; this.arboles = []; this.rocas = []; // trees: colisiones; arboles/rocas: lo colocado, para exportar
+    const sc = W / 1024;
+    const arboles = MAP.arboles ? MAP.arboles.map(a => ({ ...a, mapa: true })) : TREES_REF.map(([rx, ry]) => ({ x: rx * sc, y: ry * sc, sx: rx, sy: ry }));
+    for (const a of arboles) {
+      const x = Math.round(a.x), y = Math.round(a.y), sx = a.sx ?? x, sy = a.sy ?? y;
+      // Como en la referencia, pueden estar sobre tierra, pero no sobre el camino de losas.
+      if (!a.mapa && (x < 4 || y < 4 || x > W - 4 || y > H - 1 || PFIELD[Math.min(H - 1, y) * W + x] > 0 || nearWater(x, y - 4, TREE_H * .35))) continue;
+      const k = Phaser.Math.Clamp(a.k ?? Math.floor(hash(sx, sy) * TREE_N), 0, TREE_N - 1), h = a.h ?? TREE_H * (.9 + .2 * hash(sy, sx));
+      const src = this.textures.get('arbol' + k).getSourceImage(), key = this.screenTex('arbol' + k, Math.round(h * S));
+      this.add.ellipse(x + h * .18, y - h * .08, h * .75, h * .32, 0x2c4422, .28).setDepth(y - 2);
+      this.add.image(x, y, key).setOrigin(TREE_BASE_X[k] / src.width, 1).setScale(1 / S).setDepth(y);
+      this.trees.push({ x, y, r: TREE_HIT + 4 }); this.arboles.push({ x, y, k, h: Math.round(h * 10) / 10 });
+    }
+    // Rocas: mismo trato que los árboles (profundidad por y, sombra suave y colisión). Del mapa
+    // (`rocas`: [{x, y}; k variante y s escala 0.5..1 opcionales]) o de ROCKS_REF.
+    const rocas = MAP.rocas ? MAP.rocas.map(r => ({ ...r, mapa: true })) : ROCKS_REF.map(([rx, ry]) => ({ x: rx * sc, y: ry * sc, sx: rx, sy: ry }));
+    for (const a of rocas) {
+      const x = Math.round(a.x), y = Math.round(a.y), sx = a.sx ?? x, sy = a.sy ?? y;
+      if (!a.mapa && (PFIELD[Math.min(H - 1, y) * W + x] > 0 || nearWater(x, y - 6, ROCK_H * .55))) continue;
+      const k = Phaser.Math.Clamp(a.k ?? Math.floor(hash(sx * 1.3, sy) * ROCK_N), 0, ROCK_N - 1);
+      const s = a.s ?? .5 + .1 * Math.floor(hash(sy, sx * .7) * 6), h = ROCK_H * s; // escala 0.5..1 en pasos de 0.1
+      const key = this.screenTex('roca' + k, Math.round(h * S)), wd = this.textures.get(key).getSourceImage().width / S;
+      this.add.ellipse(x + h * .08, y - h * .06, wd * 1.05, h * .3, 0x2c4422, .25).setDepth(y - 2);
+      this.add.image(x, y, key).setOrigin(.5, .95).setScale(1 / S).setDepth(y).setFlipX(hash(sx, sy * 2.3) < .5);
+      this.trees.push({ x, y: y - h * .2, r: wd * .42 }); this.rocas.push({ x, y, k, s: Math.round(s * 100) / 100 });
+    }
+    // Objetos pixel art (capa editable, pincel 7). Filtro NEAREST: píxel a píxel con el zoom entero.
+    this.objetos = []; this.blocks = []; this.objIdx = 0;
+    this.objIds = Object.keys(OBJS).filter(id => this.textures.exists('obj_' + id));
+    for (const id in OBJS) if (!this.objIds.includes(id)) console.warn('Objeto sin imagen (se omite):', id, OBJS[id].archivo);
+    for (const id of this.objIds) this.textures.get('obj_' + id).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    for (const o of MAP.objetos || []) this.addObj(o.id, o.x, o.y);
+    const [px0, py0] = MAP.inicio || [W / 2, H / 2]; // `inicio` opcional del mapa (px de mundo); si no, el centro
+    this.player = this.add.sprite(px0, py0, 'b-Idle').setOrigin(.5, .72); this.player.dir = 0;
+
+    const cam = this.cameras.main;
+    cam.setZoom(S).setBounds(0, 0, W, H).startFollow(this.player, true, 1, 1).setRoundPixels(true);
+    this.grid = this.add.grid(0, 0, W, H, T, T).setOrigin(0).setOutlineStyle(0x000000, .2).setDepth(9000).setVisible(false);
+    this.keys = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,G,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,Q,E,X');
+    this.brush = 1;
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'].forEach((k, i) => this.keys[k].on('down', () => { this.brush = i; this.setBrushLabel(); }));
+    // Q/E: objeto anterior/siguiente del catálogo (con el pincel de objetos). X: copia el mapa en JSON.
+    for (const [k, d] of [['Q', -1], ['E', 1]]) this.keys[k].on('down', () => {
+      if (this.brush !== OBJ_BRUSH || !this.objIds.length) return;
+      this.objIdx = (this.objIdx + d + this.objIds.length) % this.objIds.length; this.setBrushLabel();
+    });
+    this.keys.X.on('down', () => this.exportMap());
+    this.keys.G.on('down', () => this.grid.setVisible(!this.grid.visible));
+    // M: vista del mapa entero (zoom para que quepa) / vuelta a la vista de juego.
+    this.input.keyboard.on('keydown-M', () => {
+      this.overview = !this.overview;
+      if (this.overview) cam.stopFollow().removeBounds().setZoom(Math.min(VW * S / W, VH * S / H)).centerOn(W / 2, H / 2);
+      else cam.setZoom(S).setBounds(0, 0, W, H).startFollow(this.player, true, 1, 1);
+    });
+    this.input.mouse.disableContextMenu();
+    const paint = p => {
+      if (!p.isDown || this.brush === OBJ_BRUSH) return; // objetos: solo al pulsar, no al arrastrar (ver objClick)
+      if (DECAL_BRUSH[this.brush]) { // flores / matorrales: se ponen justo bajo el cursor (clic der.: se quitan)
+        const dc = DECALS.find(d => d.name === DECAL_BRUSH[this.brush]), x = p.worldX, y = p.worldY;
+        if (x < 0 || y < 0 || x > W || y > H) return;
+        if (p.rightButtonDown()) {
+          let changed = false;
+          for (const f of dc.list) if (f.on && Math.hypot(f.x - x, f.y - y) < DECAL_R) { f.on = false; changed = true; }
+          if (!changed) return;
+        } else {
+          if (dc.list.some(f => f.on && f.painted && Math.hypot(f.x - x, f.y - y) < dc.gap)) return; // separación al arrastrar
+          for (const f of dc.list) if (!f.painted && Math.hypot(f.x - x, f.y - y) < dc.gap) f.on = false; // sustituye a las automáticas
+          dc.list.push({ on: true, painted: true, x, y, r: Math.random(), flip: Math.random() < .5, s: dc.s[0] + (dc.s[1] - dc.s[0]) * Math.random() });
+        }
+        const tx = Math.floor(x / T), ty = Math.floor(y / T);
+        this.redraw(tx - 4, ty - 4, tx + 5, ty + 5);
+        return;
+      }
+      const vx = Math.round(p.worldX / T), vy = Math.round(p.worldY / T), val = p.rightButtonDown() ? 0 : this.brush;
+      if (vx < 0 || vy < 0 || vx > MW || vy > MH || vAt(vx, vy) === val) return;
+      VERT[vy * (MW + 1) + vx] = val;
+      computeField((vx - 3) * T, (vy - 3) * T, (vx + 3) * T, (vy + 3) * T);
+      computePathField((vx - 3) * T, (vy - 3) * T, (vx + 3) * T, (vy + 3) * T);
+      computeWaterField((vx - 3) * T, (vy - 3) * T, (vx + 3) * T, (vy + 3) * T);
+      computeSeeds();
+      this.redraw(vx - 3, vy - 3, vx + 3, vy + 5); // + la pared y su sombra, que bajan
+      this.dirty = true;
+    };
+    this.input.on('pointerdown', paint);
+    this.input.on('pointerdown', p => { if (this.brush === OBJ_BRUSH) this.objClick(p); });
+    this.input.on('pointermove', paint);
+    // Al soltar, redibujo completo: las semillas del mosaico pueden haber cambiado lejos.
+    this.input.on('pointerup', () => { if (this.dirty) { this.dirty = false; this.redraw(0, 0, MW, MH); } });
+  }
+
+  // ---- Capa de objetos (pixel art a escala 1; ancla = punto de apoyo) ----
+  // Ancla ajustada a la rejilla: items al centro de la casilla, 2 px por encima de su borde de
+  // abajo; estaciones y edificios con x en medias casillas e y en bordes de casilla.
+  objSnap(def, x, y) {
+    if (def.tipo === 'item') return [Math.floor(x / T) * T + T / 2, Math.floor(y / T) * T + T - 2];
+    return [Math.round(x / (T / 2)) * (T / 2), Math.round(y / T) * T];
+  }
+  // ¿Cabe aquí? Ni fuera del mapa ni sobre agua (ancla y esquinas de la colisión), ni con la
+  // colisión encima del jugador, ni dos objetos con el mismo ancla.
+  objFree(def, x, y) {
+    const [w, h] = def.colision || [0, 0], p = this.player;
+    const pts = [[x, y], [x - w / 2, y], [x + w / 2, y], [x - w / 2, y - h], [x + w / 2, y - h]];
+    if (pts.some(([px, py]) => px < 0 || py < 0 || px > W || py > H || wfAt(Math.round(px * S), Math.round(py * S)) > -.15)) return false;
+    if (w && h && Math.abs(p.x - x) < w / 2 + 4 && p.y > y - h - 4 && p.y < y + 4) return false;
+    return !this.objetos.some(o => o.x === x && o.y === y);
+  }
+  addObj(id, x, y) {
+    const def = OBJS[id], key = 'obj_' + id;
+    if (!def || !this.textures.exists(key)) { console.warn('Objeto desconocido o sin imagen (se omite):', id); return; }
+    const src = this.textures.get(key).getSourceImage(), [ax, ay] = def.ancla || [src.width / 2, src.height];
+    const o = { id, x, y, sprite: null, shadow: null };
+    if (def.tipo !== 'item') { // estaciones y edificios: sombra suave como la de las rocas, bajo la base
+      const fw = Math.max(src.width, (def.colision || [0])[0]);
+      o.shadow = this.add.ellipse(x + fw * .04, y - fw * .05, fw * 1.05, fw * .22, 0x2c4422, .25).setDepth(y - 2);
+    }
+    o.sprite = this.add.image(x, y, key).setOrigin(ax / src.width, ay / src.height).setDepth(y);
+    this.objetos.push(o); this.rebuildBlocks();
+  }
+  removeObj(o) {
+    o.sprite.destroy(); o.shadow?.destroy();
+    this.objetos.splice(this.objetos.indexOf(o), 1); this.rebuildBlocks();
+  }
+  // Rectángulos de colisión {x, y, w, h}: (x, y) = ancla; el rectángulo sube h desde el ancla.
+  rebuildBlocks() {
+    this.blocks = this.objetos.flatMap(o => { const [w, h] = OBJS[o.id].colision || [0, 0]; return w > 0 && h > 0 ? [{ x: o.x, y: o.y, w, h }] : []; });
+  }
+  inBlock(x, y) { return this.blocks.some(b => x >= b.x - b.w / 2 && x <= b.x + b.w / 2 && y >= b.y - b.h && y <= b.y); }
+  // Clic con el pincel de objetos: izq. pone el objeto elegido en la posición ajustada; der. quita
+  // el más cercano de los que tienen el cursor dentro de su sprite.
+  objClick(p) {
+    const x = p.worldX, y = p.worldY;
+    if (x < 0 || y < 0 || x > W || y > H) return;
+    if (p.rightButtonDown()) {
+      const hit = this.objetos.filter(o => o.sprite.getBounds().contains(x, y)).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+      if (hit) this.removeObj(hit);
+      return;
+    }
+    const id = this.objIds[this.objIdx];
+    if (!id) return;
+    const def = OBJS[id], [sx, sy] = this.objSnap(def, x, y);
+    if (this.objFree(def, sx, sy)) this.addObj(id, sx, sy);
+  }
+  setBrushLabel() {
+    document.getElementById('brush').textContent = BRUSH_NAMES[this.brush] + (this.brush === OBJ_BRUSH ? ': ' + (this.objIds[this.objIdx] || '(sin catálogo)') : '');
+  }
+  // Aviso breve en el sitio del nombre del pincel.
+  notice(txt) { document.getElementById('brush').textContent = txt; this.time.delayedCall(1500, () => this.setBrushLabel()); }
+  // X: el mapa actual (mismo formato que docs/art/mapas/*.json, más `objetos`, `arboles` y `rocas`
+  // tal como están colocados, en px de mundo) a la consola y al portapapeles.
+  exportMap() {
+    const vert = Array.from({ length: MH + 1 }, (_, vy) => Array.from(VERT.subarray(vy * (MW + 1), (vy + 1) * (MW + 1))));
+    const json = JSON.stringify({ mw: MW, mh: MH, vert, objetos: this.objetos.map(o => ({ id: o.id, x: o.x, y: o.y })), arboles: this.arboles, rocas: this.rocas });
+    console.log(json);
+    const fallo = () => this.notice('mapa en la consola (no se pudo copiar)');
+    try { navigator.clipboard.writeText(json).then(() => this.notice('mapa copiado'), fallo); } catch (e) { fallo(); }
+  }
+
+  // Redibuja las casillas [tx0..tx1) x [ty0..ty1) a resolución de pantalla. El interior
+  // de cada material conserva sus píxeles de mundo (textura y manchas); solo el borde
+  // usa la resolución fina, con cobertura de 1 píxel de pantalla.
+  redraw(tx0, ty0, tx1, ty1) {
+    const X0 = Math.max(0, tx0 * T * S), Y0 = Math.max(0, ty0 * T * S), X1 = Math.min(SW, tx1 * T * S), Y1 = Math.min(SH, ty1 * T * S);
+    const ctx = this.canvas.getContext(), img = ctx.getImageData(X0, Y0, X1 - X0, Y1 - Y0), out = img.data;
+    const gt = this.grass, dt = this.dirt;
+    for (let Y = Y0; Y < Y1; Y++) for (let X = X0; X < X1; X++) {
+      const x = Math.floor(X / S), y = Math.floor(Y / S), i = y * W + x, j = ((y % TEX) * TEX + (x % TEX)) * 4;
+      const f = fieldAt(X, Y);
+      // Distancia al contorno en píxeles de pantalla (campo / pendiente).
+      const gx = fieldAt(X + 1, Y) - fieldAt(X - 1, Y), gy = fieldAt(X, Y + 1) - fieldAt(X, Y - 1);
+      const dist = f / Math.max(1e-4, Math.hypot(gx, gy) / 2);
+      const a = Math.max(0, Math.min(1, dist + .5)); // cobertura del píxel
+      let col;
+      if (a <= 0) col = tone([gt[j], gt[j + 1], gt[j + 2]], GRASS_TONES, i);
+      else if (a >= 1) col = tone([dt[j], dt[j + 1], dt[j + 2]], DIRT_TONES, i);
+      else {
+        const g = tone([gt[j], gt[j + 1], gt[j + 2]], GRASS_TONES, i), d = tone([dt[j], dt[j + 1], dt[j + 2]], DIRT_TONES, i);
+        col = [0, 1, 2].map(c => g[c] + (d[c] - g[c]) * a);
+      }
+      if (a > 0 && PFIELD[i] > -.3) col = mosaic(col, (X + .5) / S, (Y + .5) / S, dist / S, [dt[j], dt[j + 1], dt[j + 2]]);
+      const wf = WFIELD[Y * SW + X];
+      if (wf > -.6) col = this.water(col, X, Y, x, y, i, wf);
+      const o = ((Y - Y0) * (X1 - X0) + (X - X0)) * 4;
+      out[o] = col[0]; out[o + 1] = col[1]; out[o + 2] = col[2]; out[o + 3] = 255;
+    }
+    ctx.putImageData(img, X0, Y0);
+    // Calcomanías, solo bien dentro del césped (se miran el centro y cuatro puntos del borde).
+    // Cada tipo se pinta opaco en una capa aparte (de arriba abajo) y la capa entera va al suelo
+    // con su opacidad: donde se solapan dos no se transparentan una a través de otra.
+    const layer = this.decalLayer ||= Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+    const lc = layer.getContext('2d');
+    ctx.save(); ctx.beginPath(); ctx.rect(X0, Y0, X1 - X0, Y1 - Y0); ctx.clip();
+    for (const dc of DECALS) {
+      lc.clearRect(X0, Y0, X1 - X0, Y1 - Y0);
+      lc.save(); lc.beginPath(); lc.rect(X0, Y0, X1 - X0, Y1 - Y0); lc.clip();
+      for (const f of dc.list.filter(f => f.on).sort((a, b) => a.y - b.y)) {
+        const im = dc.gen ? (f.img ||= this.makeBush(f.r)) : dc.imgs[Math.floor(f.r * dc.n) * 2 + f.flip], w = im.width * f.s, h = im.height * f.s;
+        const cx = f.x * S, cy = f.y * S;
+        if (cx + w / 2 < X0 || cx - w / 2 > X1 || cy + h / 2 < Y0 || cy - h / 2 > Y1) continue;
+        const pts = [[0, 0], [-w / 2, 0], [w / 2, 0], [0, -h / 2], [0, h / 2]];
+        // Las pintadas a mano van donde se pongan (solo fuera del agua); las automáticas, solo en césped.
+        if (pts.some(([dx, dy]) => (!f.painted && fieldAt(Math.round(cx + dx), Math.round(cy + dy)) > -dc.margin)
+          || wfAt(Math.round(cx + dx), Math.round(cy + dy)) > -dc.margin)) continue;
+        lc.drawImage(im, cx - w / 2, cy - h / 2, w, h);
+      }
+      lc.restore();
+      ctx.globalAlpha = dc.alpha;
+      ctx.drawImage(layer, X0, Y0, X1 - X0, Y1 - Y0, X0, Y0, X1 - X0, Y1 - Y0);
+    }
+    ctx.restore();
+    this.canvas.refresh();
+  }
+
+  // Un matorral (ver BUSH) dibujado a resolución de pantalla; seed en [0, 1).
+  makeBush(seed) {
+    let n = 0;
+    const rnd = () => hash(seed * 917.3 + n * 1.618, ++n * 7.31 + seed * 31.7);
+    const uni = (a, b) => a + (b - a) * rnd(), int = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+    const leaves = [];
+    let cx = 0, cy = 0;
+    const groups = int(...BUSH.groups);
+    for (let g = 0; g < groups; g++) {
+      if (g) { // cada grupo, junto a una hoja ya puesta, más repartidos a lo ancho
+        const l = leaves[Math.floor(rnd() * leaves.length)], ang = uni(0, 6.283), d = uni(.9, 1.5) * BUSH.r[1];
+        cx = l.x + Math.cos(ang) * d * 1.3; cy = l.y + Math.sin(ang) * d * .7;
+      }
+      let want = int(...BUSH.perGroup);
+      for (let t = 0; want && t < 60; t++) {
+        const r = uni(...BUSH.r), x = cx + uni(-1, 1) * r * 1.1, y = cy + uni(-.6, .6) * r;
+        if (leaves.some(o => Math.hypot(x - o.x, y - o.y) < BUSH.pack * (r + o.r))) continue;
+        leaves.push({ x, y, r, c: BUSH.leaf[int(0, BUSH.leaf.length - 1)] }); want--;
+      }
+      if (!leaves.length) leaves.push({ x: 0, y: 0, r: BUSH.r[1], c: BUSH.leaf[0] });
+    }
+    const pad = BUSH.r[1] * (1 + BUSH.shadow) + 2;
+    const x0 = Math.min(...leaves.map(l => l.x - l.r)) - pad, y0 = Math.min(...leaves.map(l => l.y - l.r)) - pad;
+    const x1 = Math.max(...leaves.map(l => l.x + l.r)) + pad, y1 = Math.max(...leaves.map(l => l.y + l.r)) + pad;
+    const c = document.createElement('canvas'); c.width = Math.ceil((x1 - x0) * S); c.height = Math.ceil((y1 - y0) * S);
+    const g = c.getContext('2d'), rgb = v => `rgb(${v[0]},${v[1]},${v[2]})`;
+    g.scale(S, S); g.translate(-x0, -y0);
+    // Sombras en una capa aparte (no se suman al solaparse), luego hojas encima, de atrás adelante.
+    leaves.sort((a, b) => a.y - b.y);
+    for (const l of leaves) {
+      g.globalAlpha = BUSH.shadowA; g.fillStyle = rgb(BUSH.dark);
+      g.beginPath(); g.arc(l.x, l.y + l.r * BUSH.shadow, l.r * (1 + BUSH.shadow * .35), 0, 6.2832); g.fill();
+      g.globalAlpha = 1;
+      const grad = g.createLinearGradient(0, l.y - l.r, 0, l.y + l.r * .2);
+      grad.addColorStop(0, rgb(l.c.map((v, k) => v + (BUSH.light[k] - v) * .35))); grad.addColorStop(1, rgb(l.c));
+      g.fillStyle = grad; g.beginPath(); g.arc(l.x, l.y, l.r, 0, 6.2832); g.fill();
+    }
+    return c;
+  }
+
+  // Agua, pared y orilla sobre el color de tierra firme col. (X, Y) píxel de pantalla.
+  water(col, X, Y, x, y, i, wf) {
+    const gx = wfAt(X + 1, Y) - wfAt(X - 1, Y), gy = wfAt(X, Y + 1) - wfAt(X, Y - 1);
+    const wd = wf / Math.max(1e-4, Math.hypot(gx, gy) / 2); // px de pantalla al borde (>0 agua)
+    const mixc = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+    // Orilla en tierra firme: filo claro y, pegada al agua, la línea oscura.
+    const cLip = clamp01((SHORE_LINE + SHORE_LIP) * S + wd + .5), cLine = clamp01(SHORE_LINE * S + wd + .5);
+    let land = mixc(mixc(col, SHORE_LIGHT, cLip * SHORE_LIP_A), SHORE_DARK, cLine);
+    const wa = clamp01(wd + .5);
+    if (wa <= 0) return land;
+    const ch = CLIFF_H * S, u = UPD[Y * SW + X];
+    let w = [0, 1, 2].map(c => WATER[c] + (WATER_TONES[0][c] - WATER[c]) * SPOT[0][i] * .35 + (WATER_TONES[1][c] - WATER[c]) * SPOT[1][i] * .4);
+    // Sombra de la pared: la de cada columna, y de las vecinas (hasta R px) con caída lineal,
+    // para que acabe suave donde acaba la pared.
+    const R = 4 * S, shAt = X2 => {
+      const q = Y * SW + Math.max(0, Math.min(SW - 1, X2)), u2 = UPD[q];
+      if (WFIELD[q] <= 0 || u2 < ch - S) return 0;
+      const sh = CLIFF_SHADOW * ch * (.7 + .6 * vnoise((X2 + .5) / S / 14 + 9, 3.7));
+      return clamp01((sh - (u2 - ch)) / S + .5);
+    };
+    if (u < ch * (1 + CLIFF_SHADOW * 1.3) + S) {
+      let sd = 0;
+      for (let d = -R; d <= R && sd < 1; d++) sd = Math.max(sd, shAt(X + d) * (1 - Math.abs(d) / (R + 1)));
+      w = mixc(w, WATER_SHADOW, sd * .8);
+    }
+    // Rendijas estrechas de agua entre pared y pared, o entre pared y tierra (donde una columna se
+    // queda sin pared en una escalera de la orilla): se rellenan con la roca de la vecina.
+    let gapU = -1;
+    const GAP = CLIFF_GAP * S;
+    if (u >= ch) {
+      const R = GAP, solid = X2 => {
+        const q = Y * SW + Math.max(0, Math.min(SW - 1, X2));
+        return WFIELD[q] <= 0 ? [1, 0] : UPD[q] < ch ? [2, UPD[q]] : [0, 0];
+      };
+      let l = [0, 0], r = [0, 0];
+      for (let d = 1; d <= R && !l[0]; d++) l = solid(X - d);
+      for (let d = 1; d <= R && !r[0]; d++) r = solid(X + d);
+      if (l[0] && r[0] && (l[0] === 2 || r[0] === 2)) gapU = l[0] === 2 && r[0] === 2 ? Math.max(l[1], r[1]) : l[0] === 2 ? l[1] : r[1];
+    }
+    if (gapU >= 0) {
+      const k = (Math.floor(gapU) * this.cliffW + X % this.cliffW) * 4;
+      w = mixc([this.cliff[k], this.cliff[k + 1], this.cliff[k + 2]], SHORE_DARK, clamp01(gapU - (ch - SHORE_LINE * S) + .5));
+    } else if (u < ch + 1) { // pared: la tira a lo alto desde el borde de arriba; pie y lados con línea oscura
+      const k = (Math.min(Math.round(ch) - 1, Math.floor(u)) * this.cliffW + X % this.cliffW) * 4;
+      let line = clamp01(u - (ch - SHORE_LINE * S) + .5);
+      const L = Math.ceil(SHORE_LINE * S);
+      // Línea en los lados solo donde la pared acaba contra agua abierta (no contra una rendija
+      // que se rellena: ahí sigue la roca).
+      for (let d = 1; d <= L; d++) for (const s of [-1, 1]) {
+        const at = X2 => Y * SW + Math.max(0, Math.min(SW - 1, X2)), q = at(X + s * d);
+        if (!(WFIELD[q] > 0 && UPD[q] >= ch)) continue;
+        let closed = false;
+        for (let e = d + 1; e <= d + GAP && !closed; e++) { const q2 = at(X + s * e); closed = WFIELD[q2] <= 0 || UPD[q2] < ch; }
+        if (!closed) line = Math.max(line, clamp01(SHORE_LINE * S - d + 1));
+      }
+      const rock = mixc([this.cliff[k], this.cliff[k + 1], this.cliff[k + 2]], SHORE_DARK, line);
+      w = mixc(w, rock, clamp01(ch - u + .5));
+    }
+    return mixc(land, w, wa);
+  }
+
+  update(_, dt) {
+    const k = this.keys, p = this.player;
+    const vx = (k.D.isDown || k.RIGHT.isDown) - (k.A.isDown || k.LEFT.isDown), vy = (k.S.isDown || k.DOWN.isDown) - (k.W.isDown || k.UP.isDown);
+    if (vx || vy) {
+      const len = Math.hypot(vx, vy), sp = 84 * dt / 1000;
+      // Colisión con troncos, rocas y rectángulos de los objetos: cada eje por separado, para
+      // deslizar al rozar. Si ya está dentro de un rectángulo (un edificio del mapa sobre el punto
+      // de salida), se le deja salir.
+      const blocked = (x, y) => wfAt(Math.round(x * S), Math.round(y * S)) > -.15 || this.trees.some(t => Math.hypot(x - t.x, (y - t.y) * 1.6) < t.r)
+        || (this.inBlock(x, y) && !this.inBlock(p.x, p.y));
+      const nx = Phaser.Math.Clamp(p.x + vx / len * sp, 8, W - 8), ny = Phaser.Math.Clamp(p.y + vy / len * sp, 12, H - 2);
+      if (!blocked(nx, p.y)) p.x = nx;
+      if (!blocked(p.x, ny)) p.y = ny;
+      p.dir = ROW_FROM_ANGLE[(Math.round(Math.atan2(vy, vx) / (Math.PI / 4)) + 8) % 8];
+    }
+    // TODO recoger: items (tipo "item") con el ancla a menos de 10 px de la del jugador.
+    const key = `b-${vx || vy ? 'Walk' : 'Idle'}-${p.dir}`;
+    if (p.anims.currentAnim?.key !== key) p.play(key, true);
+    p.setDepth(p.y); this.shadow.setPosition(p.x, p.y - 3).setDepth(p.y - 1);
+  }
+}
+
+document.getElementById('zoom').textContent = `×${S}`;
+new Phaser.Game({ type: Phaser.WEBGL, parent: 'game', width: VW * S, height: VH * S, pixelArt: true, roundPixels: true,
+  backgroundColor: '#151a12', scene: [Boot, World] });
+</script>
+</body>
+</html>

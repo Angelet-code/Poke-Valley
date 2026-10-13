@@ -1,0 +1,3 @@
+assets\gen\nativo\xl512_troncos_0.png
+assets\gen\nativo\xl512_troncos_1.png
+109.4s

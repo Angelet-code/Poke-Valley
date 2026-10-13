@@ -1,0 +1,160 @@
+{
+ "fuente": "pret/pokeemerald (Pokémon Esmeralda)",
+ "fases": [
+  "tierra",
+  "brote",
+  "alta",
+  "flor",
+  "bayas"
+ ],
+ "tierra": {
+  "png": "fases/dirt_pile.png",
+  "frame": [
+   16,
+   16
+  ],
+  "frames": 1
+ },
+ "brote": {
+  "png": "fases/sprout.png",
+  "frame": [
+   16,
+   16
+  ],
+  "frames": 2
+ },
+ "arbol": {
+  "frame": [
+   16,
+   32
+  ],
+  "frames_por_fase": 2,
+  "orden": [
+   "alta",
+   "flor",
+   "bayas"
+  ]
+ },
+ "bayas": {
+  "aguav": {
+   "png": "fases/aguav.png",
+   "icono": "iconos/aguav_berry.png"
+  },
+  "aspear": {
+   "png": "fases/aspear.png",
+   "icono": "iconos/aspear_berry.png"
+  },
+  "cheri": {
+   "png": "fases/cheri.png",
+   "icono": "iconos/cheri_berry.png"
+  },
+  "chesto": {
+   "png": "fases/chesto.png",
+   "icono": "iconos/chesto_berry.png"
+  },
+  "cornn": {
+   "png": "fases/cornn.png",
+   "icono": "iconos/cornn_berry.png"
+  },
+  "durin": {
+   "png": "fases/durin.png",
+   "icono": "iconos/durin_berry.png"
+  },
+  "figy": {
+   "png": "fases/figy.png",
+   "icono": "iconos/figy_berry.png"
+  },
+  "grepa": {
+   "png": "fases/grepa.png",
+   "icono": "iconos/grepa_berry.png"
+  },
+  "hondew": {
+   "png": "fases/hondew.png",
+   "icono": "iconos/hondew_berry.png"
+  },
+  "iapapa": {
+   "png": "fases/iapapa.png",
+   "icono": "iconos/iapapa_berry.png"
+  },
+  "kelpsy": {
+   "png": "fases/kelpsy.png",
+   "icono": "iconos/kelpsy_berry.png"
+  },
+  "lansat": {
+   "png": "fases/lansat.png",
+   "icono": "iconos/lansat_berry.png"
+  },
+  "leppa": {
+   "png": "fases/leppa.png",
+   "icono": "iconos/leppa_berry.png"
+  },
+  "liechi": {
+   "png": "fases/liechi.png",
+   "icono": "iconos/liechi_berry.png"
+  },
+  "lum": {
+   "png": "fases/lum.png",
+   "icono": "iconos/lum_berry.png"
+  },
+  "mago": {
+   "png": "fases/mago.png",
+   "icono": "iconos/mago_berry.png"
+  },
+  "nomel": {
+   "png": "fases/nomel.png",
+   "icono": "iconos/nomel_berry.png"
+  },
+  "oran": {
+   "png": "fases/oran.png",
+   "icono": "iconos/oran_berry.png"
+  },
+  "pamtre": {
+   "png": "fases/pamtre.png",
+   "icono": "iconos/pamtre_berry.png"
+  },
+  "pecha": {
+   "png": "fases/pecha.png",
+   "icono": "iconos/pecha_berry.png"
+  },
+  "persim": {
+   "png": "fases/persim.png",
+   "icono": "iconos/persim_berry.png"
+  },
+  "pomeg": {
+   "png": "fases/pomeg.png",
+   "icono": "iconos/pomeg_berry.png"
+  },
+  "rabuta": {
+   "png": "fases/rabuta.png",
+   "icono": "iconos/rabuta_berry.png"
+  },
+  "rawst": {
+   "png": "fases/rawst.png",
+   "icono": "iconos/rawst_berry.png"
+  },
+  "razz": {
+   "png": "fases/razz.png",
+   "icono": "iconos/razz_berry.png"
+  },
+  "sitrus": {
+   "png": "fases/sitrus.png",
+   "icono": "iconos/sitrus_berry.png"
+  },
+  "spelon": {
+   "png": "fases/spelon.png",
+   "icono": "iconos/spelon_berry.png"
+  },
+  "tamato": {
+   "png": "fases/tamato.png",
+   "icono": "iconos/tamato_berry.png"
+  },
+  "wepear": {
+   "png": "fases/wepear.png",
+   "icono": "iconos/wepear_berry.png"
+  },
+  "wiki": {
+   "png": "fases/wiki.png",
+   "icono": "iconos/wiki_berry.png"
+  }
+ }
+}

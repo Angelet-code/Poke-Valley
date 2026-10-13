@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+
+# Pruebas masivas de generación (solo en local)
+assets/gen/recursos/
+assets/gen/bakeoff*/
+

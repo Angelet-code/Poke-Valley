@@ -1,0 +1,50 @@
+{
+  "casa_kit": {
+    "archivo": "edificios/casa_kit.png",
+    "ancla": [
+      79,
+      177
+    ],
+    "colision": [
+      144,
+      72
+    ],
+    "tipo": "edificio"
+  },
+  "tienda_kit": {
+    "archivo": "edificios/tienda_kit.png",
+    "ancla": [
+      77,
+      127
+    ],
+    "colision": [
+      144,
+      72
+    ],
+    "tipo": "edificio"
+  },
+  "granero_kit": {
+    "archivo": "edificios/granero_kit.png",
+    "ancla": [
+      103,
+      215
+    ],
+    "colision": [
+      192,
+      96
+    ],
+    "tipo": "edificio"
+  },
+  "taller_kit": {
+    "archivo": "edificios/taller_kit.png",
+    "ancla": [
+      55,
+      112
+    ],
+    "colision": [
+      96,
+      48
+    ],
+    "tipo": "edificio"
+  }
+}

@@ -1,0 +1,3 @@
+assets\gen\nativo\flux256_palo_0.png
+assets\gen\nativo\flux256_palo_1.png
+90.2s

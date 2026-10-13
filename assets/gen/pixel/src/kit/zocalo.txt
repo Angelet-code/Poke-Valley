@@ -1,0 +1,7 @@
+; zocalo: zócalo: sombra + línea de base (24x2, se repite en horizontal)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+2=#30191d
+0=#1e1a31
+
+222222222222222222222222
+000000000000000000000000

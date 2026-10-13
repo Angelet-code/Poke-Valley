@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bocetos de estilo</title>
+<style>
+:root{--bg:#f3efe6;--fg:#2a2622;--card:#fffdf8;--muted:#776e62;--line:#e0d9cb;--accent:#3d8a57;--chip:#ebe5d8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--fg:#ece6da;--card:#24221f;--muted:#a59b8c;--line:#3a3631;--accent:#6cbf88;--chip:#302d29}}
+:root[data-theme="dark"]{--bg:#1a1917;--fg:#ece6da;--card:#24221f;--muted:#a59b8c;--line:#3a3631;--accent:#6cbf88;--chip:#302d29}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1320px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px;max-width:780px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:20px}
+.seg{display:inline-flex;background:var(--chip);border-radius:8px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--fg);padding:6px 12px;border-radius:6px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.15);font-weight:600}
+label{display:inline-flex;gap:6px;align-items:center;cursor:pointer;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr));gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font-size:17px;margin:0;display:flex;gap:10px;align-items:center}
+.tag{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;background:var(--accent);color:#fff;font-size:14px}
+.card ul{margin:6px 0 12px;padding-left:18px;color:var(--muted);font-size:14px}
+canvas{image-rendering:pixelated;display:block}
+.scene{width:100%;height:auto;border-radius:6px}
+.thumbs{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.thumbs figure{margin:0;text-align:center;font-size:12px;color:var(--muted)}
+.thumbs canvas{width:96px;height:96px;border-radius:6px}
+.note{margin-top:24px;color:var(--muted);font-size:14px;max-width:780px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bocetos de estilo · Pokémon Valley</h1>
+  <p class="sub">Misma escena en 4 estilos. Tiles de 32×32, resolución base 320×192 escalada. Fíjate en el contorno, el número de tonos, la saturación y el contraste. El dibujo es un boceto procedural: lo que se decide aquí es el <em>tratamiento</em>, no el sprite final.</p>
+  <div class="controls">
+    <div class="seg" id="valley">
+      <button data-v="0" class="on">Valle restaurado</button>
+      <button data-v="1">Valle marchito</button>
+    </div>
+    <label><input type="checkbox" id="grid"> Cuadrícula 32 px</label>
+    <label><input type="checkbox" id="target" checked> Casilla objetivo</label>
+  </div>
+  <div class="grid" id="cards"></div>
+  <p class="note">Puedes mezclar: por ejemplo, "contorno de A + colores de C" o "B con tramado". Dime letra(s) y ajustes (más/menos saturado, más/menos contraste).</p>
+</main>
+<script>
+const W = 320, H = 192;
+
+const MATS = {
+  grass:{h:100,s:.48,l:.46,env:1}, dirt:{h:32,s:.38,l:.5,env:1},
+  body:{h:168,s:.42,l:.56}, bulb:{h:118,s:.48,l:.40}, spot:{h:175,s:.40,l:.36},
+  eye:{h:358,s:.72,l:.47}, white:{h:45,s:.25,l:.93},
+  leaf:{h:128,s:.42,l:.34,env:1}, oran:{h:212,s:.62,l:.52}, cheri:{h:352,s:.65,l:.5},
+  trunk:{h:24,s:.32,l:.32,env:1}, canopy:{h:112,s:.45,l:.38,env:1},
+  rock:{h:215,s:.08,l:.56}, water:{h:198,s:.58,l:.5,env:1},
+  marill:{h:212,s:.62,l:.6}, belly:{h:48,s:.55,l:.86}, wood:{h:30,s:.42,l:.5},
+  flowerY:{h:48,s:.85,l:.62,env:1}, flowerP:{h:325,s:.5,l:.72,env:1},
+  blossom:{h:330,s:.6,l:.78,env:1}, eyeDark:{h:230,s:.25,l:.14}, ink:{h:0,s:0,l:0}
+};
+const NAMES = Object.keys(MATS);
+const ID = Object.fromEntries(NAMES.map((n,i)=>[n,i+1]));
+const INNER = new Set(['body','bulb','marill','leaf','canopy','trunk','wood']);
+
+const STYLES = [
+  {id:'A',name:'Clásico GBA',desc:['Contorno negro, también entre piezas','3 tonos por color, sin tramado','Colores saturados y limpios'],
+   outline:'ink',inner:true,ink:[24,22,34],tones:3,dither:0,sat:1.1,contrast:1.05,lift:0,hueShift:4,warm:0},
+  {id:'B',name:'Cálido (tipo Stardew)',desc:['Contorno de color: versión oscura de cada pieza','4 tonos; las sombras viran a azul/morado y las luces a amarillo','Paleta terrosa y cálida'],
+   outline:'selout',inner:true,tones:4,dither:0,sat:.92,contrast:1.0,lift:0,hueShift:22,warm:10},
+  {id:'C',name:'Pastel chill',desc:['Contorno suave, casi invisible','3 tonos, poco contraste','Colores lavados y luminosos'],
+   outline:'soft',inner:false,tones:3,dither:0,sat:.62,contrast:.72,lift:.07,hueShift:12,warm:4},
+  {id:'D',name:'Pintado con tramado',desc:['Contorno de color','4 tonos con tramado (dithering) en las transiciones','Más textura y volumen, estilo Mundo Misterioso'],
+   outline:'selout',inner:true,tones:4,dither:1,sat:.95,contrast:1.15,lift:-.01,hueShift:16,warm:0},
+];
+
+// ---------- color ----------
+function hsl2rgb(h,s,l){
+  h=((h%360)+360)%360; s=Math.max(0,Math.min(1,s)); l=Math.max(0,Math.min(1,l));
+  const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+  const [r,g,b]=h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x];
+  return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
+}
+function toward(h,target,amt){
+  const d=((target-h+540)%360)-180;
+  return h+Math.sign(d)*Math.min(Math.abs(d),amt);
+}
+function buildPalette(st,withered){
+  const n=st.tones, P={};
+  for(const [k,m] of Object.entries(MATS)){
+    let {h,s,l}=m;
+    if(st.warm) h=toward(h,40,st.warm);
+    if(withered&&m.env){ s*=.22; h=toward(h,38,45); l-=.05; }
+    const shades=[];
+    for(let i=-1;i<n;i++){
+      const t=i<0?-0.85:i/(n-1)-0.55;
+      const ll=l+st.lift+st.contrast*0.30*t;
+      const hh=t<0?toward(h,245,st.hueShift*-t*2):toward(h,55,st.hueShift*t*2);
+      const ss=Math.min(1,s*st.sat*(t<0?1.08:0.95));
+      shades.push(hsl2rgb(hh,ss,ll));
+    }
+    P[k]=shades;
+  }
+  P.ink=Array(n+1).fill(st.ink||[0,0,0]);
+  return P;
+}
+
+// ---------- noise ----------
+function hash(x,y){const s=Math.sin(x*127.1+y*311.7)*43758.5453;return s-Math.floor(s);}
+function vnoise(x,y){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
+}
+const BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+
+// ---------- buffer ----------
+let ST=null;
+class Buf{
+  constructor(w,h){this.w=w;this.h=h;this.m=new Uint8Array(w*h);this.t=new Uint8Array(w*h);}
+  in(x,y){return x>=0&&y>=0&&x<this.w&&y<this.h;}
+  set(x,y,mat,v){
+    x|=0;y|=0; if(!this.in(x,y))return;
+    const n=ST.tones;
+    const d=ST.dither?((BAYER[y&3][x&3]+.5)/16-.5)*ST.dither:0;
+    const tone=Math.max(0,Math.min(n-1,Math.floor(v*n+d)));
+    this.m[y*this.w+x]=ID[mat]; this.t[y*this.w+x]=tone+1;
+  }
+  raw(x,y,m,t){if(this.in(x,y)){this.m[y*this.w+x]=m;this.t[y*this.w+x]=t;}}
+  mat(x,y){return this.in(x,y)?this.m[y*this.w+x]:0;}
+}
+const L=(()=>{const v=[-.5,-.65,.57],n=Math.hypot(...v);return v.map(a=>a/n);})();
+function blob(b,cx,cy,rx,ry,mat,o={}){
+  for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++)
+    for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++){
+      const dx=(x+.5-cx)/rx, dy=(y+.5-cy)/ry, d=dx*dx+dy*dy;
+      if(d>1)continue;
+      const nz=Math.sqrt(1-d);
+      let i=dx*L[0]+dy*L[1]+nz*L[2];
+      if(o.flat) i=i*.4+.3;
+      const v=Math.max(0,Math.min(.999,(i+.35)/1.3+(o.bias||0)));
+      b.set(x,y,mat,v);
+    }
+}
+function line(b,x0,y0,x1,y1,r,mat){
+  const steps=Math.ceil(Math.hypot(x1-x0,y1-y0));
+  for(let s=0;s<=steps;s++){const t=s/steps;blob(b,x0+(x1-x0)*t,y0+(y1-y0)*t,r,r,mat);}
+}
+function rect(b,x,y,w,h,mat,v){for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)b.set(i,j,mat,v);}
+
+function outline(b){
+  const o=new Buf(b.w,b.h); o.m.set(b.m); o.t.set(b.t);
+  const mode=ST.outline;
+  if(ST.inner){
+    for(let y=1;y<b.h;y++)for(let x=1;x<b.w;x++){
+      const m=b.mat(x,y); if(!m||!INNER.has(NAMES[m-1]))continue;
+      for(const [nx,ny] of [[x,y-1],[x-1,y]]){
+        const n=b.mat(nx,ny);
+        if(n&&n!==m&&INNER.has(NAMES[n-1])){ mode==='ink'?o.raw(x,y,ID.ink,1):o.raw(x,y,m,0); break; }
+      }
+    }
+  }
+  if(mode!=='none'){
+    for(let y=0;y<b.h;y++)for(let x=0;x<b.w;x++){
+      if(b.mat(x,y))continue;
+      for(const [nx,ny] of [[x,y-1],[x,y+1],[x-1,y],[x+1,y]]){
+        const n=b.mat(nx,ny);
+        if(n){ if(mode==='ink')o.raw(x,y,ID.ink,1); else o.raw(x,y,n,mode==='soft'?1:0); break; }
+      }
+    }
+  }
+  return o;
+}
+
+// ---------- sprites ----------
+function bulbasaur(b){
+  blob(b,10,27,3.2,2.6,'body'); blob(b,22,27,3.2,2.6,'body');
+  blob(b,7,12,2.2,2.8,'body'); blob(b,25,12,2.2,2.8,'body');
+  blob(b,16,10,9,7,'bulb'); blob(b,16,4.5,3,3,'bulb');
+  for(let y=4;y<15;y++) b.set(16,y,'bulb',.05);
+  blob(b,16,19.5,11,7.5,'body');
+  for(const ex of [11,20]){
+    b.set(ex,17,'eye',.85);b.set(ex+1,17,'eye',.85);
+    b.set(ex,18,'eye',.5);b.set(ex+1,18,'eye',.5);
+    b.set(ex,19,'eye',.2);b.set(ex+1,19,'eye',.2);
+    b.set(ex,17,'white',.99);
+  }
+  for(const [x,y] of [[14,22],[15,23],[16,23],[17,23],[18,22]]) b.set(x,y,'body',.0);
+  for(const [x,y] of [[7,19],[8,19],[8,20],[24,18],[23,18],[24,19],[15,14],[16,14]]) b.set(x,y,'spot',.4);
+}
+function marill(b){
+  blob(b,27,25,3.2,3.2,'marill');
+  blob(b,10,8,3.5,4,'marill'); blob(b,22,8,3.5,4,'marill');
+  blob(b,10,8.5,1.6,2,'blossom',{flat:1}); blob(b,22,8.5,1.6,2,'blossom',{flat:1});
+  blob(b,16,19.5,10,10,'marill');
+  blob(b,16,24,6,5.5,'belly',{flat:1});
+  for(const ex of [12,20]){ b.set(ex,16,'eyeDark',.5); b.set(ex,17,'eyeDark',.5); b.set(ex,16,'white',.99); }
+  b.set(15,19,'eyeDark',.5); b.set(16,20,'eyeDark',.5); b.set(17,19,'eyeDark',.5);
+}
+function bush(b,berry){
+  blob(b,16,22,13,8.5,'leaf'); blob(b,9,16,7,6,'leaf'); blob(b,23,16,7,6,'leaf'); blob(b,16,12.5,8,6.5,'leaf');
+  if(!berry)return;
+  for(const [x,y] of [[8,15],[19,11],[24,19],[12,22],[19,24]]){
+    b.set(x,y,berry,.95);b.set(x+1,y,berry,.6);b.set(x,y+1,berry,.6);b.set(x+1,y+1,berry,.2);
+  }
+}
+function rock(b){
+  blob(b,16,23,11,7,'rock'); blob(b,21,20,6,4.5,'rock',{bias:.08});
+  for(const [x,y] of [[13,21],[14,22],[14,23],[15,24]]) b.set(x,y,'rock',.05);
+}
+function crate(b){
+  rect(b,4,8,24,4,'wood',.9); rect(b,4,12,24,16,'wood',.55);
+  for(let x=4;x<28;x++){b.set(x,17,'wood',.25);b.set(x,22,'wood',.25);}
+  for(let y=12;y<28;y++){b.set(4,y,'wood',.35);b.set(27,y,'wood',.35);}
+  rect(b,11,14,10,7,'white',.85);
+  for(const [x,y] of [[11,14],[12,15],[13,16],[14,17],[15,17],[16,17],[17,16],[18,15],[19,14],[20,14]]) b.set(x,y,'white',.45);
+}
+function tree(b,withered){
+  blob(b,48,96,9,14,'trunk'); blob(b,37,106,6,4,'trunk'); blob(b,59,106,6,4,'trunk');
+  if(withered){
+    line(b,48,90,28,52,2.4,'trunk'); line(b,48,90,68,48,2.4,'trunk'); line(b,48,88,48,34,2.6,'trunk');
+    line(b,28,52,18,40,1.6,'trunk'); line(b,68,48,78,36,1.6,'trunk'); line(b,48,40,40,28,1.4,'trunk');
+    for(const [x,y] of [[18,40],[78,36],[40,28],[50,32]]) blob(b,x,y,5,4,'canopy');
+    return;
+  }
+  for(const [x,y,rx,ry] of [[36,22,14,11],[60,22,14,11],[48,30,26,18],[26,46,20,16],[70,46,20,16],[48,58,34,22]])
+    blob(b,x,y,rx,ry,'canopy');
+  for(let i=0;i<40;i++){
+    const x=14+Math.floor(hash(i,7)*68), y=12+Math.floor(hash(i,9)*64);
+    if(b.mat(x,y)===ID.canopy){ b.set(x,y,'blossom',.9); b.set(x+1,y,'blossom',.5); }
+  }
+}
+
+// ---------- ground ----------
+function ground(b,withered){
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const p=vnoise(x/22,y/22);
+    b.set(x,y,'grass',p>.66?.38:p<.3?.68:.55);
+  }
+  for(let y=0;y<H-1;y++)for(let x=0;x<W;x++)
+    if(hash(x*3.1,y*7.7)<(withered?.008:.012)){b.set(x,y,'grass',.92);b.set(x,y+1,'grass',.3);}
+  for(let y=0;y<H;y++){
+    const cx=168+16*Math.sin(y/26), hw=11+3*vnoise(5,y/10);
+    for(let x=Math.floor(cx-hw);x<=cx+hw;x++){
+      const e=Math.abs(x-cx)/hw;
+      let v=e>.82?.3:.55;
+      if(hash(x*5.3,y*2.1)<.05)v=.85;
+      if(hash(x*1.7,y*9.1)<.04)v=.2;
+      b.set(x,y,'dirt',v);
+    }
+  }
+  const pcx=262,pcy=162,prx=50,pry=26;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const d=((x-pcx)/prx)**2+((y-pcy)/pry)**2;
+    if(d>=1&&d<1.14) b.set(x,y,'dirt',.35);
+    else if(d<1) b.set(x,y,'water',d>.7?.62:.42);
+  }
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const d=((x-pcx)/prx)**2+((y-pcy)/pry)**2;
+    if(d<.6&&hash(x*.9,y*4.3)<.01) for(let k=0;k<4;k++) b.set(x+k,y,'water',.97);
+  }
+  if(withered)return;
+  for(let i=0;i<34;i++){
+    const x=Math.floor(hash(i,1)*W), y=Math.floor(hash(i,2)*H);
+    if(b.mat(x,y)!==ID.grass)continue;
+    const pet=i%2?'flowerY':'flowerP';
+    for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]) b.set(x+dx,y+dy,pet,.8);
+    b.set(x,y,i%2?'white':'flowerY',.6);
+  }
+}
+
+// ---------- render ----------
+function obj(fn,w,h,...args){const b=new Buf(w,h);fn(b,...args);return outline(b);}
+function composite(dst,src,ox,oy){
+  for(let y=0;y<src.h;y++)for(let x=0;x<src.w;x++){
+    const i=y*src.w+x; if(!src.m[i])continue;
+    dst.raw(ox+x,oy+y,src.m[i],src.t[i]);
+  }
+}
+function toCanvas(b,pal,bg){
+  const c=document.createElement('canvas'); c.width=b.w; c.height=b.h;
+  const ctx=c.getContext('2d'), img=ctx.createImageData(b.w,b.h);
+  for(let i=0;i<b.m.length;i++){
+    let col=b.m[i]?pal[NAMES[b.m[i]-1]][b.t[i]]:bg;
+    if(!col)continue;
+    img.data.set([col[0],col[1],col[2],255],i*4);
+  }
+  ctx.putImageData(img,0,0); return c;
+}
+function scene(st,withered){
+  ST=st; const pal=buildPalette(st,withered);
+  const b=new Buf(W,H); ground(b,withered);
+  const objs=[
+    [obj(tree,96,112,withered),8,-14],
+    [obj(bush,32,32,withered?null:'oran'),110,22],
+    [obj(bush,32,32,withered?null:'cheri'),236,20],
+    [obj(bush,32,32,withered?null:'oran'),98,126],
+    [obj(rock,32,32),52,148],
+    [obj(rock,32,32),292,88],
+    [obj(crate,32,32),204,88],
+    [obj(bulbasaur,32,32),150,96],
+  ];
+  if(!withered) objs.push([obj(marill,32,32),190,140]);
+  objs.sort((a,c)=>(a[2]+a[0].h)-(c[2]+c[0].h)).forEach(([o,x,y])=>composite(b,o,x,y));
+  return toCanvas(b,pal);
+}
+function thumb(st,fn,arg){
+  ST=st; const pal=buildPalette(st,false);
+  const b=obj(fn,32,32,arg); return toCanvas(b,pal,pal.grass[Math.ceil(st.tones/2)]);
+}
+
+const S=3, state={withered:false,grid:false,target:true};
+function draw(){
+  const root=document.getElementById('cards'); root.innerHTML='';
+  for(const st of STYLES){
+    const card=document.createElement('section'); card.className='card';
+    card.innerHTML=`<h2><span class="tag">${st.id}</span>${st.name}</h2><ul>${st.desc.map(d=>`<li>${d}</li>`).join('')}</ul>`;
+    const src=scene(st,state.withered);
+    const cv=document.createElement('canvas'); cv.width=W*S; cv.height=H*S; cv.className='scene';
+    const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false; ctx.drawImage(src,0,0,W*S,H*S);
+    if(state.grid){ctx.strokeStyle='rgba(0,0,0,.22)';ctx.lineWidth=1;
+      for(let x=32;x<W;x+=32){ctx.beginPath();ctx.moveTo(x*S+.5,0);ctx.lineTo(x*S+.5,H*S);ctx.stroke();}
+      for(let y=32;y<H;y+=32){ctx.beginPath();ctx.moveTo(0,y*S+.5);ctx.lineTo(W*S,y*S+.5);ctx.stroke();}}
+    if(state.target){ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=S;ctx.strokeRect(160*S+S/2,128*S+S/2,32*S-S,32*S-S);}
+    card.appendChild(cv);
+    const th=document.createElement('div'); th.className='thumbs';
+    for(const [label,fn,arg] of [['Bulbasaur',bulbasaur],['Marill',marill],['Arbusto',bush,'oran'],['Caja envío',crate],['Roca',rock]]){
+      const f=document.createElement('figure'); const t=thumb(st,fn,arg);
+      const big=document.createElement('canvas'); big.width=96; big.height=96;
+      const bx=big.getContext('2d'); bx.imageSmoothingEnabled=false; bx.drawImage(t,0,0,96,96);
+      f.appendChild(big); f.insertAdjacentHTML('beforeend',`<figcaption>${label}</figcaption>`); th.appendChild(f);
+    }
+    card.appendChild(th); root.appendChild(card);
+  }
+}
+document.querySelectorAll('#valley button').forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll('#valley button').forEach(x=>x.classList.toggle('on',x===btn));
+  state.withered=btn.dataset.v==='1'; draw();
+});
+document.getElementById('grid').onchange=e=>{state.grid=e.target.checked;draw();};
+document.getElementById('target').onchange=e=>{state.target=e.target.checked;draw();};
+draw();
+</script>
+</body>
+</html>

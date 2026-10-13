@@ -1,0 +1,27 @@
+; teja_roja: muestra de teja roja: hilada vertical clara (izq.) y en sombra (der.), 10x8 por teja
+; generado por hacer_kit.py (kit de edificios); editable a mano
+n=#c3080c
+m=#b7080d
+j=#9c070f
+i=#830812
+9=#6e0a15
+6=#4f0e1b
+7=#590e1a
+3=#450f1c
+
+.7nnnnnnnnjjjjjjjj3.
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+77mmmmmmmnjiiiiiii33
+77777777773333333333
+77nnnnnnnnjjjjjjjj33
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+7mmmmmmmmnjiiiiiiii3
+77mmmmmmmnjiiiiiii33
+77777777773333333333

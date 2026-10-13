@@ -1,0 +1,26 @@
+; caja: caja de listones (19x17)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+l=#b48750
+b=#895a39
+5=#583f2f
+1=#2b2025
+
+.....................
+.1111111111111111111.
+.1llllllllllllllll51.
+.1bbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbb51.
+.1555555555555555551.
+.1llllllllllllllll51.
+.1bbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbb51.
+.1555555555555555551.
+.1llllllllllllllll51.
+.1bbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbb51.
+.1555555555555555551.
+.1111111111111111111.
+.....................

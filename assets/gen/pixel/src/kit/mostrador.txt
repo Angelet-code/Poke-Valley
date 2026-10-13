@@ -1,0 +1,33 @@
+; mostrador: tramo de mostrador: tablero + frontal de listones (24x24, se repite en horizontal)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+o=#de9f5f
+m=#cb935e
+l=#b48750
+b=#895a39
+5=#583f2f
+1=#2b2025
+
+oooooooooooooooooooooooo
+mmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmm
+llllllllllllllllllllllll
+111111111111111111111111
+llllllllllllllllllllllll
+bbbbbbbbbbbbbb5bbbbbbbbb
+bbbbbbbbbbbbbb5bbbbbbbbb
+bbbbbbbbbbbbbb5bbbbbbbbb
+555555555555555555555555
+llllllllllllllllllllllll
+bb5bbbbbbbbbbbbbbbbbbbbb
+bb5bbbbbbbbbbbbbbbbbbbbb
+bb5bbbbbbbbbbbbbbbbbbbbb
+555555555555555555555555
+llllllllllllllllllllllll
+bbbbbbbbbbbbbb5bbbbbbbbb
+bbbbbbbbbbbbbb5bbbbbbbbb
+bbbbbbbbbbbbbb5bbbbbbbbb
+555555555555555555555555
+555555555555555555555555
+111111111111111111111111

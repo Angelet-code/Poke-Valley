@@ -1,0 +1,2 @@
+assets\gen\edificios\flux768\casa832_s2_0.png
+136.4s

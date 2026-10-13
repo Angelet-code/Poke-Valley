@@ -1,0 +1,2 @@
+assets\gen\edificios\flux\tienda2_s12_0.png
+592.0s

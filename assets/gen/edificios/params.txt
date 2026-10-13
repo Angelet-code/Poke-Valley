@@ -1,0 +1,301 @@
+Edificios en pixel art (escala nativa, 1 px imagen = 1 px mundo, casilla 24 px) - 2026-10-13
+
+INTENTOS CON SDXL (tools/comfy.py, sd_xl_base_1.0, 1024x1024, 28 pasos, cfg 6.5, dpmpp_2m karras)
+  casa_s_0..3   txt2img seed 11 (lote de 4). Prompt: "pixel art game asset, 16-bit snes style,
+                top-down 3/4 view, one small cozy wooden cottage with terracotta tile roof, front wall
+                with a wooden door in the center and two windows, small chimney, clean flat colors,
+                dark outline, simple cel shading, isolated on plain magenta background, no text".
+                Negativo: el de comfy.py + "people, humans, characters, multiple buildings, isometric,
+                noise, dither, gradient". Solo s_0 sale aislada (2 plantas, muy detallada).
+  tienda_s_0..3 igual, seed 11, prompt del puesto con toldo a rayas verde/crema y cenefa roja.
+                s_0 es la mejor (puesto con toldo, mostrador, cajas).
+  casa_b_0..3   txt2img seed 101 + IP-Adapter --ref assets/gen/prueba1_1.png --ref-weight .4:
+                devuelve mapas enteros, no sirve.
+  *_i2i_0..1    img2img (--init init/<x>_init.png = dibujo a pixel ampliado x8 y desenfocado,
+                --denoise .5, seed 7) sobre el dibujo procedural.
+  px_*          reducciones con tools/pixel_sprite.py --h 110/120 --colors 16-18 --largest
+                (BOX + cuantizacion sin tramado + limpieza + contorno interior tintado).
+  Resultado: a 120 px la salida de SDXL queda blanda y ruidosa (sin rejilla de pixel regular,
+  la autocorrelacion del gradiente es plana entre 4 y 20 px), demasiado detallada para el gusto
+  del usuario (limpio, simple, cel plano).
+
+VERSION FINAL: tools/draw_edificios.py (dibujo a pixel con primitivas, paleta en el script).
+  assets/game/pixel/edificios/casa.png   120x120  huella 120x72, ancla (60,120)
+  assets/game/pixel/edificios/tienda.png 120x112  huella 120x72, ancla (60,112)
+  Previsualizacion: assets/gen/edificios/preview_edificios.png (tools/preview_edificios.py)
+
+=====================================================================================
+VERSION 2 (2026-10-13): FLUX.1-dev + LoRA pixel art -> reduccion por rejilla (tools/pixel_grid.py)
+=====================================================================================
+Generacion: tools/comfy.py --model flux (flux1-dev-Q4_K_S.gguf, T5 fp8 + clip_l, ae.safetensors),
+  --lora Top-Down_Pixel_Art_Flux_Lora_r1.safetensors:0.8, 1024x1024, 20 pasos, euler/simple,
+  guidance 3.5, cfg 1. ~215 s por imagen en la RTX 3060 Ti (8 GB). Todo en assets/gen/edificios/flux/.
+  Prompts completos: flux/prompt_casa.txt, flux/prompt_tienda.txt (3/4 lateral), flux/prompt_tienda2.txt
+  (de frente). Empiezan por "top-down pixel art of ..." (asi estan los captions de la LoRA) y acaban en
+  "isolated and centered on a solid flat magenta background, no cast shadow, no text".
+  casa_t    seed 1 (prompt inicial sin "no cast shadow"): tejado enorme, sombra proyectada.
+  casa_s2..6 seeds 2-6 prompt_casa: s2 con marco, s3 cabaña simple de frente (tejado granate),
+            s4 isometrica, s5 tejado largo y ventanas vacias, s6 = ELEGIDA (tejado rojo de tejas,
+            chimenea, puerta central, dos ventanas con jardineras).
+  tienda_s1..3 prompt_tienda: s1 y s3 isometricas; s2 = ELEGIDA (puesto de frente, toldo verde/crema,
+            mostrador con fruta y cajas).
+  tienda2_s11..13 prompt_tienda2: s11 muy simple (toldo + mesa), s12 con suelo pegado, s13 toldo ondulado.
+  La LoRA produce una rejilla de pixel REAL: paso fundamental 4 px a 1024 (a veces 8), ratio de
+  nitidez ~2.8-3.9 (SDXL base daba ~1.2 = sin rejilla).
+Reduccion: tools/pixel_grid.py (deteccion de paso/fase por energia de borde, un color por celda
+  = mediana del centro, re-render a 120 celdas de ancho porque 1024/4 = ~150-170 celdas de edificio,
+  cuantizacion sin tramado, despeckle, negros puros -> morado oscuro, magenta colado -> marron).
+  casa:   pixel_grid.py flux/casa_s6_0.png --w 120 --largest --shadow 180,36,116 --shadow-tol 45
+          --colors 24 --despeckle 2            -> 120x132, 24 colores (+1 alfa)
+  tienda: pixel_grid.py flux/tienda_s2_0.png --w 120 --largest --shadow 96,24,72 --shadow-tol 45
+          --colors 24 --despeckle 2            -> 120x100
+  (el color de --shadow se mide por imagen: color magenta-morado mas frecuente dentro del objeto;
+   casa_s3 necesito --bg2 136,20,68 --bg2-tol 28 porque su sombra no tocaba el fondo de forma util.)
+Alternativas procesadas: flux/px_casa_s3d.png (120x88, mas simple), flux/px_tienda2_s11.png (120x83).
+Hoja de finalistas x4 sobre cesped: flux/finalistas_x4.png. Previsualizacion final: flux/preview_flux.png.
+
+RUTA SDXL + pixel-art-xl (nerijs), assets/gen/edificios/sdxl_lora/: sd_xl_base_1.0 + LoRA 1.1,
+  prompt "pixel art, ..." (mismo contenido), 1024x1024, seeds 11-12 x2 imagenes,
+  a = 8 pasos cfg 1.5, b = 25 pasos cfg 5. Rejilla de 8 px limpia (ratio 3.6) pero ignora el fondo
+  magenta (gris/blanco), estilo sucio y recargado, casas estrechas y altas (120x165), a veces varios
+  objetos. Reducidos: sdxl_lora/px_casa_b_s11_0.png, px_casa_a_s12_0.png, px_tienda_b_s12_0.png.
+  Descartada frente a Flux.
+
+Entregado: assets/game/pixel/edificios/casa.png (120x132, ancla 60,132), tienda.png (120x100, ancla
+  60,100), colision 120x72. Los dibujos a primitivas anteriores en assets/game/pixel/edificios/v1_dibujo/.
+
+=====================================================================================
+VERSION 3 (2026-10-13): muestreo 1:1 + limpieza + retoque a mano (pixel art "de oficio")
+=====================================================================================
+Problema de la VERSION 2: el edificio ocupaba ~150-170 celdas a 1024 px (paso 4) y se RE-RENDERIZABA a
+  120 celdas (paso efectivo 5,13 px): cada linea quedaba remuestreada -> diagonales con dobles,
+  escalones irregulares, filas de tejas desalineadas. Ademas la IA ya trae dientes a 1:1.
+Generacion (assets/gen/edificios/flux768/, gen.sh): mismo modelo/LoRA/pasos que la V2 pero a 768x768:
+  la LoRA mantiene el paso de 4 px a cualquier resolucion (ratio ~2.8-3.0), asi que un edificio al ~60 %
+  del lienzo da ~105-117 celdas SIN re-render. Prompts: flux768/prompt_casa.txt, prompt_tienda.txt
+  ("small simple ... very simple, few details ... lots of empty space around"). ~102 s/imagen.
+  casa_s1..6: s1 y s3 pequeñas (60-80 celdas), s4 granero ancho y plano, s5 con sombra y escalera,
+             s6 alta con chimenea y sombra; s2 = ELEGIDA (cabaña de frente, tejado de tablas rojo,
+             puerta central, 2 ventanas, 107x118 celdas; pega: faroles laterales y tinte rosa).
+  casaazul_s2,7,8 (prompt_casa_azul.txt, fondo azul claro): la madera sale marron natural (el magenta
+             tiñe de rosa madera y tejado) y s2 trae chimenea; tejado "caja" distinto. Se usa solo como
+             referencia de paleta. casa832_s2 / casa896_s2: seed 2 a mas resolucion (ver abajo).
+  tienda_s1..6: s1 simple pero 77 celdas, s3/s4/s5/s6 isometricas; s2 = ELEGIDA (puesto de frente,
+             toldo 6 verdes + 5 crema, mostrador, carteles; 103x71 celdas sin la sombra).
+Receta (assets/gen/edificios/limpio/hacer.sh, reproducible):
+  1. pixel_grid.py SIN --w (un color por celda real, paso 4, fase detectada), --bg-tol 30 (con 70 se
+     comian los brillos rosados del tejado), tienda ademas --shadow 128,52,84 --shadow-tol 40.
+     -> limpio/casa_1a1.png 107x118, limpio/tienda_1a1.png 103x71.
+  2. pixel_clean.py --smooth 2 (+ --mirror left en la casa): casa 1030 huerfanos -> 0, 131 dobles -> 2,
+     1428 islas fundidas; tienda 231 huerfanos -> 0, 37 dobles -> 0. Recortes x12 antes|despues:
+     limpio/casa_auto_x12_tejado.png, casa_auto_x12_puerta.png, tienda_auto_x12_toldo.png, ..._mostrador.png.
+     Lo automatico NO basta: el tejado de la IA son regueros diagonales, las filas de tablas tienen
+     periodo 5,7 (no entero), las ventanas estan rotas y la silueta tiene dientes irregulares.
+  3. png_to_txt.py -> assets/gen/pixel/src/edificios/casa_raw.txt, tienda_raw.txt.
+  4. Retoques a mano con tools/pixel_txt.py, documentados en retoques_casa.py y retoques_tienda.py:
+     casa: faroles fuera; faldones redibujados a 2:1 exacto (tramos de 2, remate de 1 px en la esquina,
+           linea de luz de 2 px pegada al faldon izquierdo); cursos de tejado periodicos de 6 filas
+           (clara, 4 base, junta oscura); alero en V con bandas paralelas (contorno 2, sombra 6,
+           fascia 10, linea 2) que se juntan en el vertice; pared con cursos de troncos de 6 filas;
+           ventanas 16x13 con cruz y alfeizar; puerta 17x27 (hoja) con ventanuco de 2 cristales, panel
+           y pomo; postes rectos hasta el alero; base recta con escalon solo bajo la puerta; espejo de la
+           mitad izquierda (solo el pomo rompe la simetria). Paleta: madera marron calido (antes rojo-rosa),
+           sombras moradas, sin negro puro.
+     tienda: ensanchada de 103 a 119 px (13 franjas de 9 px: 7 verdes + 6 crema, simetrico); festones
+           iguales (anchos 9,9,7,3); viga roja, postes de 3 px, pared trasera con juntas cada 6 filas,
+           tablero del mostrador y frontal de tablones rectos; mercancia reducida a caja con etiqueta,
+           letrero, cajita de manzanas y saco (dibujados limpios a partir de los de la IA).
+  5. pixel_build.py -> assets/game/pixel/edificios/casa.png 105x115 (14 colores), tienda.png 119x69
+     (19 colores). pixel_clean --check: 0 huerfanos, 0 dobles en ambos; contorno superior de la casa =
+     tramos de 2 exactos; asimetria de la casa = 4 px (el pomo).
+Entregado: assets/game/pixel/edificios/casa.png (ancla 52,115), tienda.png (ancla 59,69), edificios.json;
+  la V2 en assets/game/pixel/edificios/v2_flux/ (casa.png, tienda.png, edificios.json).
+  Hoja: limpio/preview_limpio.png (x4 sobre cesped + caja 24x40 + Bulbasaur). Detalle: limpio/detalle_x12.png.
+Pendiente / limitaciones: la casa mide 105 px (4,4 casillas; el objetivo eran 120 +-8): la seed 2 a 768
+  no da mas y ensanchar por columnas rompe las diagonales; su colision se deja en 104x72 (la del json de
+  la V2, 120, dejaria aire bloqueado). Las luces son simetricas (al espejar); la V del alero es
+  geometrica (sin perspectiva de la IA).
+  casa832_s2: a 832x832 la seed 2 cambia de composicion (100x75 celdas, mas pequeña) -> descartada; casa896_s2 se
+  genero despues (cola gen_832.sh) y queda por mirar. La resolucion no es una forma fiable de controlar el ancho:
+  cada tamaño de latente da otra imagen.
+
+=====================================================================================
+VERSION 4 (2026-10-13): el dibujo de la V2 INTACTO, muestreado 1:1 y con los bordes limpios
+=====================================================================================
+La V3 se rechazo ("una casa nueva simplificada sin ningun detalle ni gracia"): el usuario quiere el
+  dibujo de la IA de la V2 (casa Flux seed 6, tienda Flux seed 2) tal cual, solo con bordes de pixel art.
+Causa de los dientes de la V2: la salida de 1024 px (paso 4) se re-renderizaba a 120 celdas (paso 5,13).
+Receta (assets/gen/edificios/limpio_v4/):
+  1. pixel_grid.py sobre los ORIGINALES flux/casa_s6_0.png y flux/tienda_s2_0.png SIN --w (un color por
+     celda real): casa paso 4,00 fase 0,00 (ratio 2,64/2,74) -> casa_1a1.png 154x170; tienda --pitch 4
+     (sola detectaba el armonico 12) fase 0,50 (ratio 2,44/2,91) -> tienda_1a1.png 151x126. Mismos
+     --largest --shadow (180,36,116 / 96,24,72) --shadow-tol 45 que la V2, --bg-tol 30, --colors 28.
+     Se ACEPTA el tamaño nativo (casa 6,4 casillas): huella 6x3 (colision 144x72).
+  2. pixel_clean.py --colors 28 --islands 2 --jaggy all --keep-arm 3 --smooth 1 (sin --mirror, --rows
+     ni --thin): casa 66 huerfanos -> 0, 322 dobles -> 4, 1070 islas de <= 2 px fundidas; tienda 26 -> 0,
+     154 -> 1, 468 islas. -> casa_auto.png, tienda_auto.png -> png_to_txt -> src/edificios/*_v4_raw.txt.
+  3. Retoques a mano con tools/pixel_txt.py (assets/gen/pixel/src/edificios/retoques_v4.py, cada bloque
+     explicado) -> casa_v4.txt, tienda_v4.txt -> pixel_build.py:
+     casa (597 px cambiados de 26 180): contorno superior del tejado a 2:1 exacto (faldones traseros
+       anclados en la cumbrera, codo vertical en x=19, hombros curvos simetricos, borde tras la chimenea);
+       la pendiente de la IA era ~1,7:1, los extremos suben <= 4 px. Alero: se conserva (pendiente de la
+       IA), solo se rellenan los pellizcos/huecos de la fascia naranja (izq y=113-115 y 127-130; der el
+       hueco de y=109-118 que ya traia la IA y el pellizco de y=129-130). Ventanas: marco de 2 px y
+       cristales 3x3 alineados (la derecha tenia un cristal roto). Chimenea: contorno completo. Base recta
+       en y=168. Remate: 19 px (huerfanos/dobles que dejaban los retoques).
+     tienda (240 px de 19 026): bordes laterales del toldo a 5:1 regular y simetricos; costuras de las
+       franjas con Bresenham entre sus extremos reales (abanico de la IA); linea de sombra bajo el toldo
+       continua; remate 11 px. Las cajas ya caen dentro de la huella (ancla en la base de la imagen).
+  4. Comprobacion: pixel_clean --check sobre los PNG construidos: casa 0 huerfanos / 0 dobles, contorno
+     superior = tramos de 2 exactos; tienda 0 / 0, bordes del toldo tramos de 5. 28 colores cada uno,
+     luminancia minima 29,8 (casa) y 34,9 (tienda): sin negro puro. Detalle x12 V2|V4: limpio_v4/detalle_x12.png;
+     hoja x4: limpio_v4/preview_v4.png.
+  Probado y descartado: desplazar verticalmente por columnas la banda del alero para forzarla a 2:1
+     (limpio_v4/intermedios/): cada columna tiene otro grosor y queda deshilachada.
+Entregado: assets/game/pixel/edificios/casa.png 154x170 (ancla 77,170; colision 144x72), tienda.png
+  151x126 (ancla 75,126; colision 144x72), edificios.json. V2 en edificios/v2_flux/, V3 en edificios/v3_limpio/.
+Imperfecciones que quedan (a proposito, son del dibujo de la IA): alero a ~1,7:1 con escalones de 1-2 px
+  (no 2:1 puro); textura de tejas no periodica; ventana derecha 8 px mas a la derecha que su espejo;
+  "bandas de 2 px" que cuenta pixel_clean (151 / 24) son zonas de sombra, no lineas.
+
+=====================================================================================
+VERSION 5 (2026-10-13): texturas y bordes redibujados "de oficio" sobre el dibujo de la V4
+=====================================================================================
+Veredicto del usuario sobre la V4: mejor, pero sigue sucia (alero "completamente roto", chimenea con
+  lineas dobles, rayas del toldo sucias, tejas sucias; la irregularidad de la cumbrera arriba le gusta).
+Receta (sin IA): casa_v4.txt / tienda_v4.txt -> assets/gen/pixel/src/edificios/retoques_v5.py (determinista,
+  semillas fijas; ayudantes nuevos en tools/pixel_txt.py: perfil_tramos, bandas, tejas, festones, abanico,
+  rematar) -> casa_v5.txt / tienda_v5.txt -> pixel_build.py -> limpio_v5/build/ -> assets/game/pixel/edificios/.
+  Principio: la textura se dibuja periodica con jitter sembrado (nunca ruido por pixel); la linea, con tramos
+  regulares. El diseño de la IA (proporciones, ventanas, jardineras, puerta, fruta, cajas, paleta) no se toca.
+  casa (11 440 px cambiados de 26 180; 21 colores, lum. min 29,8):
+    alero: las dos diagonales frontales a 5:3 exacto, tramos 2,2,1 desde el vertice (cumbrera x=68..77, eje
+      entre 72 y 73), espejadas: izq. de (67,100) a (1,139), der. de (78,100) a (149,142). La IA traia 1,78:1 y
+      1,64:1 con escalones de 1-4 px; el 2:1 puro habria subido la esquina derecha 7 px. Bandas paralelas con
+      los mismos tramos: contorno 1 + fascia naranja 5 + sombra 1 + tabla clara 4 + linea 1 (12 filas).
+      La cumbrera baja hasta la fascia sin contorno entre medias; esquinas en cuña con corte en y=143.
+    tejas: hiladas de 10 filas, tejas de 8 (medio desfase en impares; izq. a ras de la cumbrera, der. a ras
+      de la franja clara x=78..82 que se conserva), luz arriba/izquierda 1 px + base + junta 1 px con las dos
+      esquinas inferiores redondeadas. Rampa n m j i 9 6: faldon izq. m/n -> j (hacia el alero), faldon der.
+      i -> 9 -> 6 (hacia la derecha y el alero), juntas 7 (izq.) y 3 (der.). Jitter sembrado (semilla 5):
+      1/6 de tejas un tono arriba/abajo, 1/8 con la junta corrida 1 px; tejas cortadas a <10 px o <3 columnas
+      solo con la base. Sombra de la chimenea: un tono mas en x=126..131, y=51..62.
+    chimenea: contorno de 1 px en x=98/125 (antes '2'+'0' a la derecha y torcido 98->100 a la izquierda),
+      esquinas superiores a 45º, canto 'o', cuerpo 'r' con cara derecha 'q' (2 px), boca 16x10 con marco 'g',
+      interior 8/2 y labio 'o'; piedras: 4 hiladas (y=21-27, 28-34, 35-42, 43-49) de bloques planos r/q/o con
+      juntas '8' de 1 px; base recta en y=50 (el reguero de la IA hasta y=57 pasa a ser tejas).
+    silueta: contorno lateral de 1 px en x=0/153 (antes 2), muesca de (152,65) rellena; muro con contorno de
+      1 px (x=9 y x=144; x=8 y x=145 fuera). Poste de x=4-5 y muros, ventanas, puerta: intactos.
+  tienda (2 438 px de 19 026; 25 colores, lum. min 34,9):
+    toldo: 7 franjas en abanico regular y simetrico (costuras en y=12: 26/46/65/85/104/124; en y=42:
+      22/43/64/86/107/128; Bresenham), cada franja plana con 2 tonos (c/p en y=11-18, e/q en y=19-42);
+      costura '6' a la izquierda de cada crema y '8' a la derecha (como la IA); viga, linea, cenefa y ribete
+      lisos; los 5 verdes (e f g i j) y 2 cremas (q r) de cuantizacion fundidos en e / q.
+    faldon y=43-46: 2 tonos (4 / k) con costuras verticales 3/6; 21 festones iguales de 7 px (x=2..148,
+      muescas 1 y 2 px) sobre la sombra '0' de y=47-48. Cajas: 7 px de contornos dobles a 1 px.
+  Comprobacion (pixel_clean --check): casa 0 huerfanos / 0 dobles; tienda 0 / 0. Tramos de la fascia:
+    izq. 2,2,1 x13 + 2; der. 2,2,1 x14 (medidos sobre el PNG). Las "bandas de 2 px" (73 / 27) son zonas
+    de sombra y rellenos, no lineas. Maqueta (aldea_a) cargando los PNG nuevos sin errores de consola.
+Entregado: assets/game/pixel/edificios/casa.png 154x170 (ancla 77,170; colision 144x72), tienda.png
+  151x126 (ancla 75,126; colision 144x72), edificios.json sin cambios. V4 en edificios/v4_bordes/.
+  Hoja x4 V4|V5: limpio_v5/preview_v5.png. Detalle x12 V4|V5 (alero izq/der, vertice, chimenea, tejas,
+  toldo, festones, cajas): limpio_v5/detalle_x12.png.
+Imperfecciones que quedan: la esquina derecha del alero cae 3 px mas baja que la izquierda (la cumbrera
+  esta 4 px a la izquierda del centro, como en la IA); el muro de la fachada bajo el vertice conserva el
+  parche oscuro de la IA (x=67..76, y=107..116) y sus hiladas irregulares; las cajas y la fruta de la
+  tienda siguen siendo el dibujo de la IA (contornos de 1 px pero sombras de 2-3 px); el escalon del
+  festón coincide con la costura en 6 de los 21 festones (se corta 1 px).
+
+=====================================================================================
+VERSION 6 (2026-10-13): direccion de las tejas, chimenea de piedra y tienda redibujada, sobre la V5
+=====================================================================================
+Veredicto del usuario sobre la V5: toldo de la tienda PERFECTO (no se toca); la tienda en si caotica e
+  ilegible; la casa con lineas mucho mas limpias pero la DIRECCION de las tejas mal (la cumbrera va de
+  delante a atras, los faldones bajan a izquierda y derecha; la V5 ponia hiladas horizontales como si el
+  faldon mirase al espectador); chimenea plana y sin textura.
+Receta (sin IA): casa_v5.txt / tienda_v5.txt -> assets/gen/pixel/src/edificios/retoques_v6.py (determinista;
+  ayudantes nuevos en tools/pixel_txt.py: tejas_v, piedras, caja, pegar) -> casa_v6.txt / tienda_v6.txt ->
+  pixel_build.py -> limpio_v6/build/ -> assets/game/pixel/edificios/.
+  casa (8 213 px cambiados de 26 180; 23 colores, lum. min 29,8):
+    tejas: hiladas VERTICALES paralelas a la cumbrera (Mapa.tejas_v): columnas de 10 px, tejas de 8 filas,
+      medio desfase cada dos columnas; en cada teja la junta de 1 px va en el lado del alero (costura
+      continua entre hiladas) y abajo, la luz de 1 px arriba y en el lado de la cumbrera; esquinas del lado
+      del alero redondeadas solo donde existe la junta vecina. Izq.: columnas 58..67, 48..57, ... (luz pegada
+      a la cumbrera x=68); der.: junta en x=83 pegada a la franja clara x=78..82, columnas 84..93 ... 144..152.
+      Gradiente, tonos (n m j i 9 6, juntas 7/3), jitter (semilla 5: 1/6 tono, 1/8 junta corrida), franja
+      clara, cumbrera, alero 5:3 y sombra de la chimenea (x=126..131, y=51..62) como en la V5.
+    hastial pequeño sobre la puerta: el triangulo oscuro de la IA bajo las bandas del alero (y > linea
+      interior de las bandas, hasta y=125) pasa a tejadito a dos aguas con el mismo tratamiento: cumbrera 'p'
+      de 2 px (x=72..73, y=108..125), columnas 62..71 / 52..61 / 42..51 a la izq. y 74..83 ... a la der.,
+      tonos del faldon en sombra (9 / 6, luz i / 9, junta 3, semilla 9), fascia 'p' de 1 px en y=126, linea
+      '1' en y=127 y muro liso '4' en y=128. (Interpretacion del "small front gable over the door".)
+    chimenea: corona lisa r (y=2..17) con la boca de la V5, canto o (y=1), cara derecha q (x=123..124),
+      sombra o bajo la corona (y=18); mamposteria Mapa.piedras(99,19,124,49, alturas 6,7,6,6,6, anchos
+      4..7, semilla 11): 24 piedras de 3-6 px de ancho y 5-6 de alto, trabadas (medio bloque en hiladas
+      impares), esquinas redondeadas con mortero '8', luz arriba-izquierda (R nuevo #f2cda4 sobre r, r
+      sobre q, q sobre o), cara derecha un tono mas oscura (u nuevo #4b2a1b). Contorno 1 px y base y=50.
+    remate: 10 px (recortes de tejas en el contorno 2:1 y bajo la chimenea).
+  tienda (7 330 px de 19 026; 26 colores, lum. min 34,9): toldo (y<=48) intacto, cuerpo redibujado:
+    postes de 5 px (1 l h 9 1) en x=9..13, 97..101, 142..146; pared '3' con juntas '2' cada 6 filas;
+    ventanuco abierto x=102..141 y=49..65 (hueco de la IA) con repisa o/l/h/9/1 (y=66..70); balda x=16..56
+    (y=60..63) con dos tarros 9x11 (s/t/x nuevos) y letrero 19x10 colgado (x=66..84, y=52..61, sin texto);
+    mostrador x=9..96: tablero o + m(4) + l (y=79..84), arista '1' (85), tres listones de 5 filas (l b b b 5)
+    con una junta vertical alterna por liston, base '1' en y=102; mesa baja x=97..146 igual (tablero y=88..93,
+    base y=110); caja de manzanas 25x15 (x=15..39, y=68..82; estampas 5x5 v/u/w, 4 delante + 3 detras),
+    saco 14x19 (x=46..60, y=63..81; m/k/9), caja de peras/limas en la mesa (x=104..128, y=77..91; p/q/y y
+    j/z/4); abajo a la izq. las dos cajas (7..23 x 113..124 y 24..42 x 108..124) con saquito encima
+    (14..24 x 103..113) y sombra '0' en y=125. remate 35 px.
+  Comprobacion (pixel_clean --check --runs sobre los PNG): casa 0 huerfanos / 0 dobles (contorno superior
+    2:1 intacto); tienda 0 / 0 (bordes del toldo tramos de 5). Hoja x4 V5|V6: limpio_v6/preview_v6.png;
+    detalle x12 V5|V6 (faldon izq, faldon der/alero, cumbrera, chimenea, hastial, mostrador, balda, mesa,
+    cajas): limpio_v6/detalle_x12.png.
+Entregado: assets/game/pixel/edificios/casa.png 154x170 (ancla 77,170; colision 144x72), tienda.png
+  151x126 (ancla 75,126; colision 144x72), edificios.json sin cambios. V5 en edificios/v5_texturas/.
+Imperfecciones que quedan: la fruta son bultos de 5 px sin contorno completo (lee como "caja de fruta roja /
+  amarilla", no manzana a manzana); el borde izquierdo del tejado entre y=39..51 (codo x=19) sigue sin
+  contorno oscuro, como en la V4/V5; en el faldon derecho la junta de x=152 queda pegada al contorno x=153
+  (borde oscuro de 2 px); el "hastial pequeño" es una interpretacion: si el usuario se referia a otra cosa,
+  el bloque 2 de retoques_v6.py se quita y el triangulo vuelve a ser muro.
+
+=====================================================================================
+VERSION 7 (2026-10-13): tres cambios quirurgicos sobre la V6 (chimenea original, murillo de la V5, troncos)
+=====================================================================================
+Veredicto del usuario sobre la V6: la tienda mucho mejor y el tejado de la casa bien; pero (1) las dos cajas
+  de abajo a la izquierda de la tienda deben ser la PILA DE TRONCOS que traia el Flux original; (2) la chimenea
+  de hiladas regulares de piedras redondeadas se rechaza: tiene que parecerse mucho mas a la ORIGINAL (V2/V4:
+  piedra beige/crema de formas irregulares, mortero marron, corona clara con la boca oscura, lado derecho mas
+  oscuro); (3) el "hastial pequeño" sobre la puerta que añadio la V6 era un error: ese triangulo es muro de
+  fachada ("murillo"), no tejado. Nada mas puede cambiar.
+Receta (sin IA): casa_v6.txt (+ casa_v4.txt y casa_v5.txt como fuente de las zonas) / tienda_v6.txt ->
+  assets/gen/pixel/src/edificios/retoques_v7.py (determinista) -> casa_v7.txt / tienda_v7.txt -> pixel_build.py
+  -> limpio_v7/build/ -> assets/game/pixel/edificios/. El guion comprueba (assert) que fuera de las tres zonas
+  la diferencia con la V6 es 0.
+  casa (1 680 px cambiados de 26 180, todos dentro de las dos zonas; 22 colores, lum. min 29,8):
+    chimenea (caja x=98..125, y=0..49; 948 px distintos de la V6, solo 213 distintos de la V4 = 15 % de la caja):
+      se pega el bloque de casa_v4.txt (Mapa.pegar) con la silueta de la V6 (esquinas a 45º, lados x=98/125)
+      y se limpia lo minimo: contorno de 1 px (la V4 lo tenia doble '11' arriba a la izq., torcido 98->99 en
+      y=23..42 y ausente en y=43..49; a la derecha '2'+'0' y un escalon 125->124 desde y=24), los pixeles de
+      teja roja que invadian la esquina inferior izq. (x=99..104, y=43..49: 32 px) pasan a piedra oscura 'o',
+      '4' (#291b2c) se funde en '2' dentro de la boca (3 px) y en 'o' fuera (era sombra del contorno), la cara
+      derecha queda o|u (1+1 px, un tono mas oscura, sin doble linea), remate 1 px. Formas y tonos de las
+      piedras, corona y boca: los de la V4. Base recta y=50 y sombra sobre las tejas (x=126..131) de la V6.
+    murillo (x=10..143, y_alero[x]+12 .. 128; 732 px): se copia casa_v5.txt tal cual (0 px distintos de la V5):
+      muro oscuro de tablones con sus hiladas; bandas del alero de la V5 intactas. El bloque 2 de retoques_v6.py
+      (tejadillo) queda anulado.
+  tienda (496 px de 19 026, todos en la caja x=7..43, y=103..125; 28 colores, lum. min 34,9):
+    pila de 3 troncos de 18x9 (2 abajo en x=7..24 y 24..41 compartiendo la columna de contorno, 1 encima en
+    x=16..33 apoyado sobre la fila de contorno y=116), vistos de lado con el corte a la izquierda: disco crema
+    'C' #e3c892 (nuevo, el de items/tronco.png) con anillo en rombo 'F' #c1a068 (nuevo), corteza k (luz arriba
+    1 px) / b / 6 con una veta '66', contorno '1' de 1 px como el resto del puesto, sombra '0' en y=125
+    (x=8..42). El saquito no cabe junto a la pila (la caja acaba en x=43) y se quita. Toldo, mostrador,
+    mercancia, mesa: intactos (0 px fuera de la caja).
+  Comprobacion: pixel_clean --check --runs sobre los PNG: casa 0 huerfanos / 0 dobles (contorno superior 2:1
+    intacto), tienda 0 / 0 (bordes del toldo tramos de 5). Diff PNG V6 vs V7 fuera de las zonas: casa 0, tienda 0.
+    Hoja x4 V6|V7: limpio_v7/preview_v7.png; detalle x12 (chimenea V4|V6|V7, troncos V6|V7|item tronco.png,
+    puerta V5|V6|V7): limpio_v7/detalle_x12.png.
+Entregado: assets/game/pixel/edificios/casa.png 154x170 (ancla 77,170; colision 144x72), tienda.png
+  151x126 (ancla 75,126; colision 144x72), edificios.json sin cambios. V6 en edificios/v6_direccion/.
+Imperfecciones que quedan: la chimenea conserva la irregularidad de la IA (piedras sin contorno propio, mancha
+  oscura central en y=30..42): es lo pedido ("la misma chimenea, solo ordenada"); el corte de los troncos es un
+  disco de 5x7 con un anillo de 8 px, no caben dos anillos; el tronco de arriba se apoya sobre los de abajo
+  (no se encaja en el valle) para no generar contornos dobles donde tapa el disco del tronco derecho.

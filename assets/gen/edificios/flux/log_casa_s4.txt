@@ -1,0 +1,2 @@
+assets\gen\edificios\flux\casa_s4_0.png
+504.7s

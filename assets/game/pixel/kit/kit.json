@@ -1,0 +1,222 @@
+{
+  "balda": {
+    "archivo": "kit/balda.png",
+    "tamano": [
+      24,
+      4
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/balda.txt",
+    "descripcion": "balda de madera; se repite en horizontal"
+  },
+  "caja": {
+    "archivo": "kit/caja.png",
+    "tamano": [
+      21,
+      19
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/caja.txt",
+    "descripcion": "caja de listones vacía"
+  },
+  "caja_manzanas": {
+    "archivo": "kit/caja_manzanas.png",
+    "tamano": [
+      27,
+      22
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/caja_manzanas.txt",
+    "descripcion": "caja con manzanas"
+  },
+  "caja_peras": {
+    "archivo": "kit/caja_peras.png",
+    "tamano": [
+      27,
+      22
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/caja_peras.txt",
+    "descripcion": "caja con peras y limas"
+  },
+  "chimenea": {
+    "archivo": "kit/chimenea.png",
+    "tamano": [
+      30,
+      53
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/chimenea.txt",
+    "descripcion": "chimenea de mampostería (casa V6)"
+  },
+  "letrero": {
+    "archivo": "kit/letrero.png",
+    "tamano": [
+      21,
+      15
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/letrero.txt",
+    "descripcion": "letrero colgado sin texto"
+  },
+  "mostrador": {
+    "archivo": "kit/mostrador.png",
+    "tamano": [
+      24,
+      24
+    ],
+    "tipo": "tramo",
+    "fuente": "assets/gen/pixel/src/kit/mostrador.txt",
+    "descripcion": "tramo de mostrador de 24 px; el compositor añade los contornos laterales"
+  },
+  "muro_esquina_der": {
+    "archivo": "kit/muro_esquina_der.png",
+    "tamano": [
+      10,
+      6
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/muro_esquina_der.txt",
+    "descripcion": "poste de esquina derecho (se repite en vertical)"
+  },
+  "muro_esquina_izq": {
+    "archivo": "kit/muro_esquina_izq.png",
+    "tamano": [
+      10,
+      6
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/muro_esquina_izq.txt",
+    "descripcion": "poste de esquina izquierdo (se repite en vertical)"
+  },
+  "muro_madera": {
+    "archivo": "kit/muro_madera.png",
+    "tamano": [
+      24,
+      12
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/muro_madera.txt",
+    "descripcion": "muro de tablones de la casa (periodo 6 filas; se repite)"
+  },
+  "muro_tablas_oscuro": {
+    "archivo": "kit/muro_tablas_oscuro.png",
+    "tamano": [
+      24,
+      6
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/muro_tablas_oscuro.txt",
+    "descripcion": "pared trasera oscura de la tienda (periodo 6 filas)"
+  },
+  "porton": {
+    "archivo": "kit/porton.png",
+    "tamano": [
+      52,
+      44
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/porton.txt",
+    "descripcion": "portón de dos hojas (granero)"
+  },
+  "poste": {
+    "archivo": "kit/poste.png",
+    "tamano": [
+      5,
+      6
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/poste.txt",
+    "descripcion": "pie derecho (toldo); se repite en vertical"
+  },
+  "puerta": {
+    "archivo": "kit/puerta.png",
+    "tamano": [
+      38,
+      41
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/puerta.txt",
+    "descripcion": "puerta con marco (casa V6)"
+  },
+  "saco": {
+    "archivo": "kit/saco.png",
+    "tamano": [
+      16,
+      21
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/saco.txt",
+    "descripcion": "saco de arpillera"
+  },
+  "saquito": {
+    "archivo": "kit/saquito.png",
+    "tamano": [
+      13,
+      13
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/saquito.txt",
+    "descripcion": "saquito de arpillera"
+  },
+  "tarro": {
+    "archivo": "kit/tarro.png",
+    "tamano": [
+      11,
+      13
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/tarro.txt",
+    "descripcion": "tarro de cristal"
+  },
+  "teja_roja": {
+    "archivo": "kit/teja_roja.png",
+    "tamano": [
+      20,
+      16
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/teja_roja.txt",
+    "descripcion": "muestra de referencia de las tejas (el compositor las dibuja)"
+  },
+  "troncos": {
+    "archivo": "kit/troncos.png",
+    "tamano": [
+      23,
+      21
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/troncos.txt",
+    "descripcion": "pila de tres troncos de canto"
+  },
+  "ventana": {
+    "archivo": "kit/ventana.png",
+    "tamano": [
+      20,
+      15
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/ventana.txt",
+    "descripcion": "ventana lisa"
+  },
+  "ventana_jardinera": {
+    "archivo": "kit/ventana_jardinera.png",
+    "tamano": [
+      23,
+      21
+    ],
+    "tipo": "pieza",
+    "fuente": "assets/gen/pixel/src/kit/ventana_jardinera.txt",
+    "descripcion": "ventana con jardinera"
+  },
+  "zocalo": {
+    "archivo": "kit/zocalo.png",
+    "tamano": [
+      24,
+      2
+    ],
+    "tipo": "muestra",
+    "fuente": "assets/gen/pixel/src/kit/zocalo.txt",
+    "descripcion": "sombra + línea de base bajo el muro"
+  }
+}

@@ -1,0 +1,16 @@
+flux320_mesa_0: paso 4 -> 53x53 huerf 8 dobles 30
+flux320_mesa_1: paso 4 -> 48x29 huerf 0 dobles 10
+flux320_piedra_0: paso 4 -> 39x35 huerf 0 dobles 12
+flux320_piedra_1: paso 4 -> 31x26 huerf 2 dobles 16
+flux320_pokeball_0: paso 4 -> 31x30 huerf 0 dobles 8
+flux320_pokeball_1: paso 4 -> 32x36 huerf 0 dobles 3
+flux320_troncos_0: paso 4 -> 52x35 huerf 6 dobles 25
+flux320_troncos_1: paso 4 -> 50x37 huerf 8 dobles 29
+xl512_mesa_0: paso 8 -> 24x25 huerf 0 dobles 6
+xl512_mesa_1: paso 8 -> 64x64 huerf 0 dobles 32
+xl512_piedra_0: paso 8 -> 38x40 huerf 10 dobles 32
+xl512_piedra_1: paso 8 -> 64x63 huerf 4 dobles 53
+xl512_pokeball_0: paso 8 -> 29x30 huerf 3 dobles 11
+xl512_pokeball_1: paso 8 -> 57x60 huerf 0 dobles 21
+xl512_troncos_0: paso 8 -> 25x32 huerf 0 dobles 17
+xl512_troncos_1: paso 8 -> 53x64 huerf 2 dobles 66

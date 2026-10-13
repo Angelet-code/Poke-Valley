@@ -1,0 +1,2 @@
+assets\gen\edificios\flux\tienda_s1_0.png
+383.4s

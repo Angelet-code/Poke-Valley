@@ -1,0 +1,13 @@
+{
+  "id": "taller_kit",
+  "ancho": 4, "fondo": 2,
+  "alto_muro": 42,
+  "tejado": {"tipo": "un_agua", "material": "teja_verde", "vuelo": 6, "semilla": 3},
+  "muro": "muro_madera",
+  "piezas": [
+    {"id": "puerta", "x": 6, "y": "suelo"},
+    {"id": "mostrador", "x": -4, "y": "suelo", "ancho": 1, "alto": 20},
+    {"id": "tarro", "x": -8, "y": "suelo+20"},
+    {"id": "ventana", "x": -6, "y": "suelo+30"}
+  ]
+}

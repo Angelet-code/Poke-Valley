@@ -1,0 +1,32 @@
+; caja_manzanas: caja de listones con manzanas rojas (25x20)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+1=#2b2025
+5=#583f2f
+b=#895a39
+l=#b48750
+u=#7b2630
+v=#cf3f3f
+w=#f08c7e
+
+...........................
+.......vvv...vvv...vvv.....
+......vvvvv.vvvvv.vvvvv....
+....vvvvvvvvvvvvvvvvvvvvv..
+...vvvvvvvvvvvvvvvvvvvvvvv.
+...vvvvuuvvvvuuvvvvuuvvvvv.
+.1111111111111111111111111.
+.1llllllllllllllllllllll51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1555555555555555555555551.
+.1llllllllllllllllllllll51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1555555555555555555555551.
+.1llllllllllllllllllllll51.
+.1bbbbbbbbbbbbbbbbbbbbbb51.
+.1555555555555555555555551.
+.1111111111111111111111111.
+...........................

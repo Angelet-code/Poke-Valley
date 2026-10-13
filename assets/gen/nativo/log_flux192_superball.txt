@@ -1,0 +1,3 @@
+assets\gen\nativo\flux192_superball_0.png
+assets\gen\nativo\flux192_superball_1.png
+48.1s

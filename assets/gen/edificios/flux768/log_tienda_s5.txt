@@ -1,0 +1,2 @@
+assets\gen\edificios\flux768\tienda_s5_0.png
+99.2s

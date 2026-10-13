@@ -1,0 +1,21 @@
+; tarro: tarro de cristal azulado (9x11)
+; generado por hacer_kit.py (kit de edificios); editable a mano
+1=#2b2025
+h=#986c48
+s=#95b9c3
+t=#5b7f8c
+x=#3a5560
+
+...........
+....111....
+...1hhh1...
+...1ttt1...
+..1sstttx1.
+.1sstttttx1
+.1ssttttxx1
+.1sstttttx1
+.1ssttttxx1
+..1stttxx1.
+...1ttxx1..
+....1111...
+...........

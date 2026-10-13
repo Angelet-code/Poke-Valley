@@ -1,0 +1,3 @@
+assets\gen\edificios\sdxl_lora\casa_b_s12_0.png
+assets\gen\edificios\sdxl_lora\casa_b_s12_1.png
+890.9s

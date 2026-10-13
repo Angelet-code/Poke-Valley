@@ -1,0 +1,23 @@
+{
+  "id": "tienda_kit",
+  "ancho": 6, "fondo": 3,
+  "alto_muro": 76,
+  "tejado": {"tipo": "toldo", "vuelo": 4},
+  "muro": "muro_tablas_oscuro",
+  "postes": true,
+  "piezas": [
+    {"id": "balda", "x": 7, "y": "suelo+62", "ancho": 2},
+    {"id": "tarro", "x": 10, "y": "suelo+66"},
+    {"id": "tarro", "x": 22, "y": "suelo+66"},
+    {"id": "letrero", "x": 57, "y": "suelo+64"},
+    {"id": "poste", "x": 88, "y": "suelo", "alto": 76},
+    {"id": "mostrador", "x": 0, "y": "suelo+23", "ancho": 4},
+    {"id": "caja_manzanas", "x": 6, "y": "suelo+43"},
+    {"id": "saco", "x": 37, "y": "suelo+44"},
+    {"id": "mostrador", "x": 88, "y": "suelo+15", "ancho": 2},
+    {"id": "caja_peras", "x": 95, "y": "suelo+34"},
+    {"id": "troncos", "x": 0, "y": "suelo"},
+    {"id": "caja", "x": 26, "y": "suelo"},
+    {"id": "saquito", "x": 30, "y": "suelo+16"}
+  ]
+}
