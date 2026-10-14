@@ -1,0 +1,305 @@
+{
+ "escala": 2,
+ "elementos": [
+  {
+   "id": "arbol_alto",
+   "tipo": "arbol",
+   "archivo": "arbol_alto.png",
+   "w": 1643,
+   "h": 1729,
+   "ancla": [
+    821,
+    1727
+   ],
+   "huella": [
+    624,
+    1484,
+    1018,
+    1727
+   ],
+   "origen": "assets/gen/arcane/lago/arbol_alto_s1_0.png",
+   "sombra": {
+    "archivo": "arbol_alto_sombra.png",
+    "w": 1381,
+    "h": 641,
+    "dx": 64,
+    "dy": 1087
+   },
+   "k": 0.2615
+  },
+  {
+   "id": "arbol_bajo",
+   "tipo": "arbol",
+   "archivo": "arbol_bajo.png",
+   "w": 1217,
+   "h": 1561,
+   "ancla": [
+    608,
+    1559
+   ],
+   "huella": [
+    462,
+    1340,
+    754,
+    1559
+   ],
+   "origen": "assets/gen/arcane/lago/arbol_bajo_s3_0.png",
+   "sombra": {
+    "archivo": "arbol_bajo_sombra.png",
+    "w": 1340,
+    "h": 667,
+    "dx": -213,
+    "dy": 902
+   },
+   "k": 0.3928
+  },
+  {
+   "id": "arbusto",
+   "tipo": "roca",
+   "archivo": "arbusto.png",
+   "w": 1279,
+   "h": 1293,
+   "ancla": [
+    639,
+    1291
+   ],
+   "huella": [
+    153,
+    747,
+    1125,
+    1239
+   ],
+   "origen": "assets/gen/arcane/lago/arbusto_s2_0.png",
+   "sombra": {
+    "archivo": "arbusto_sombra.png",
+    "w": 1156,
+    "h": 636,
+    "dx": -21,
+    "dy": 657
+   },
+   "k": 0.1407
+  },
+  {
+   "id": "roca_0",
+   "tipo": "roca",
+   "archivo": "roca_0.png",
+   "w": 1297,
+   "h": 1226,
+   "ancla": [
+    648,
+    1224
+   ],
+   "huella": [
+    155,
+    709,
+    1141,
+    1174
+   ],
+   "origen": "assets/gen/arcane/lago/roca_0_s2_0.png",
+   "k": 0.185
+  },
+  {
+   "id": "roca_2",
+   "tipo": "roca",
+   "archivo": "roca_2.png",
+   "w": 1411,
+   "h": 1413,
+   "ancla": [
+    705,
+    1411
+   ],
+   "huella": [
+    169,
+    817,
+    1241,
+    1354
+   ],
+   "origen": "assets/gen/arcane/lago/roca_2_s1_0.png",
+   "k": 0.1283
+  },
+  {
+   "id": "roca_4",
+   "tipo": "roca",
+   "archivo": "roca_4.png",
+   "w": 1194,
+   "h": 854,
+   "ancla": [
+    597,
+    853
+   ],
+   "huella": [
+    143,
+    494,
+    1050,
+    818
+   ],
+   "origen": "assets/gen/arcane/lago/roca_4_s2_0.png",
+   "sombra": {
+    "archivo": "roca_4_sombra.png",
+    "w": 1635,
+    "h": 386,
+    "dx": -434,
+    "dy": 452
+   },
+   "k": 0.1592
+  },
+  {
+   "id": "roca_6",
+   "tipo": "roca",
+   "archivo": "roca_6.png",
+   "w": 1330,
+   "h": 1295,
+   "ancla": [
+    665,
+    1294
+   ],
+   "huella": [
+    159,
+    750,
+    1170,
+    1242
+   ],
+   "origen": "assets/gen/arcane/lago/roca_6_s1_0.png",
+   "k": 0.1496
+  },
+  {
+   "id": "tocon",
+   "tipo": "roca",
+   "archivo": "tocon.png",
+   "w": 1568,
+   "h": 1501,
+   "ancla": [
+    784,
+    1499
+   ],
+   "huella": [
+    188,
+    868,
+    1379,
+    1438
+   ],
+   "origen": "assets/gen/arcane/lago/tocon_s1_0.png",
+   "k": 0.0919
+  },
+  {
+   "id": "flores",
+   "tipo": "detalle",
+   "archivo": "flores.png",
+   "w": 1081,
+   "h": 978,
+   "ancla": [
+    540,
+    977
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/lago/flores_s1_0.png",
+   "k": 0.1221
+  },
+  {
+   "id": "piedras_0",
+   "tipo": "piedras",
+   "archivo": "piedras_0.png",
+   "w": 1441,
+   "h": 1130,
+   "ancla": [
+    720,
+    1129
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/lago/piedras_0_s2_0.png",
+   "k": 0.1686
+  },
+  {
+   "id": "sauce",
+   "tipo": "arbol",
+   "archivo": "sauce.png",
+   "w": 1374,
+   "h": 1522,
+   "ancla": [
+    687,
+    1520
+   ],
+   "huella": [
+    522,
+    1306,
+    851,
+    1520
+   ],
+   "origen": "assets/gen/arcane/lago/sauce_s2_0.png",
+   "sombra": {
+    "archivo": "sauce_sombra.png",
+    "w": 1542,
+    "h": 1471,
+    "dx": -204,
+    "dy": 77
+   },
+   "k": 0.3668
+  },
+  {
+   "id": "juncos",
+   "tipo": "roca",
+   "archivo": "juncos.png",
+   "w": 1095,
+   "h": 1605,
+   "ancla": [
+    547,
+    1603
+   ],
+   "huella": [
+    131,
+    928,
+    963,
+    1538
+   ],
+   "origen": "assets/gen/arcane/lago/juncos_s2_0.png",
+   "sombra": {
+    "archivo": "juncos_sombra.png",
+    "w": 1132,
+    "h": 1055,
+    "dx": -31,
+    "dy": 552
+   },
+   "k": 0.1205
+  },
+  {
+   "id": "muelle",
+   "tipo": "roca",
+   "archivo": "muelle.png",
+   "w": 1118,
+   "h": 1293,
+   "ancla": [
+    559,
+    1292
+   ],
+   "huella": [
+    134,
+    748,
+    983,
+    1240
+   ],
+   "origen": "assets/gen/arcane/lago/muelle_s2_0.png",
+   "sombra": {
+    "archivo": "muelle_sombra.png",
+    "w": 1489,
+    "h": 1074,
+    "dx": -291,
+    "dy": 254
+   },
+   "k": 0.3864
+  },
+  {
+   "id": "nenufar",
+   "tipo": "detalle",
+   "archivo": "nenufar.png",
+   "w": 1283,
+   "h": 908,
+   "ancla": [
+    641,
+    906
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/lago/nenufar_s2_0.png",
+   "k": 0.1403
+  }
+ ]
+}

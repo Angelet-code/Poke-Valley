@@ -1,7 +1,7 @@
 // Preload: todas las imágenes (terreno, árboles, rocas, objetos pixel art, bayas, Bulbasaur).
 /// <reference types="vite/client" />
 import Phaser from 'phaser';
-import { A, DIBUJO, ESPECIES, GALERIA, PELIPPER_DEX, REG, S, VH, VW, type AnimSet } from '../config';
+import { A, ARCANE, DIBUJO, ESPECIES, GALERIA, PELIPPER_DEX, REG, S, VH, VW, type AnimSet } from '../config';
 import { L, precargar } from '../render/Dibujo';
 import type { BayasData, ObjCatalog } from '../data/types';
 import { Terrain } from '../render/Terrain';
@@ -22,7 +22,7 @@ export class Preload extends Phaser.Scene {
     this.load.on('loaderror', (f: Phaser.Loader.File) => console.warn('No se pudo cargar', f.key, f.url));
 
     // Mapa en estilo dibujo: césped y arena del dibujo (sin calcomanías pixel) y sus elementos (SVG).
-    if (DIBUJO) { Terrain.preload(this, A, { cesped: `${L}suelo/cesped_ref.png`, tierra: `${L}suelo/tierra_ref.png`, decals: false }); precargar(this, this.registry.get(REG.dibujo)); }
+    if (DIBUJO) { const su = ARCANE ? 'suelo_arcane' : 'suelo'; Terrain.preload(this, A, { cesped: `${L}${su}/cesped_ref.png`, tierra: `${L}${su}/tierra_ref.png`, decals: false }); precargar(this, this.registry.get(REG.dibujo)); }
     else Terrain.preload(this, A);
     for (let i = 0; i < TREE_N; i++) this.load.image('arbol' + i, `${A}game/arboles/arbol_${i}.png`);
     // Pantalla de título (Title.ts): césped de fondo y flores.

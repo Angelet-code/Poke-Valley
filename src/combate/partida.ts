@@ -6,8 +6,14 @@ import { LINEAS } from '../data/pokedex';
 import { ataqueBasico, aprendizaje, getMove } from '../data/movimientos';
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, nivelPorExp } from './reglas';
+import { misionesDe, type EstadoMision, type Mision } from './misiones';
 
 export const CASILLAS = 10;
+// Probabilidad de que un salvaje salga shiny (la de los juegos desde la 6.ª generación).
+export const PROB_SHINY = 1 / 10;   // TEMPORAL para verlos; la buena es 1 / 4096
+// Piedra de hogar (como en el WoW): H, se canaliza unos segundos sin moverte ni recibir golpes y te lleva al pueblo.
+export const HOGAR_CARGA = 8;          // s
+export const HOGAR_CD = 5 * 60;        // s reales hasta poder usarla otra vez
 const CLAVE = 'pokemon-valley/aventura';
 const VERSION = 1;
 
@@ -17,6 +23,7 @@ export interface Miembro {
   movs: string[];              // movimientos que sabe, en el orden en que los aprendió
   barra: Atajo[];
   ps: number;                  // fracción de vida (0-1): se recupera sola fuera de combate
+  shiny?: boolean;             // va con el Pokémon, no con la forma: sigue siéndolo al evolucionar
 }
 export interface Estado {
   version: number; uid: number;
@@ -24,6 +31,9 @@ export interface Estado {
   items: Record<string, number>;
   dia: number; minuto: number;
   semilla: number;                            // del mundo: las zonas procedurales salen siempre igual (data/bosque.ts)
+  misiones?: Record<string, { n: number; hecha?: boolean }>;   // aceptadas en el tablón: lo que llevas (combate/misiones.ts)
+  alfas?: Record<string, number>;             // por zona: cuándo cayó su alfa (Date.now()); reaparece a los 5 min
+  hogar?: number;                             // Date.now() desde el que se puede volver a usar la piedra de hogar
 }
 export type Aviso =
   | { tipo: 'nivel'; uid: number; nivel: number }
@@ -43,7 +53,7 @@ export class Partida {
   constructor(e: Estado) { this.estado = e; }
 
   static nueva(): Partida {
-    const p = new Partida({ version: VERSION, uid: 1, equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9) });
+    const p = new Partida({ version: VERSION, uid: 1, equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
     const b = p.crear('bulbasaur', 1);
     p.estado.activo = b.uid;
     return p;
@@ -52,6 +62,7 @@ export class Partida {
     try {
       const e = JSON.parse(localStorage.getItem(CLAVE) ?? 'null') as Estado | null;
       if (!e || e.version !== VERSION || !e.equipo?.length) return null;
+      e.misiones ??= {}; e.alfas ??= {};
       return new Partida(e);
     } catch { return null; }
   }
@@ -69,12 +80,12 @@ export class Partida {
   forma(m: Miembro) { return formaDe(m.linea, m.nivel); }
 
   // Un Pokémon nuevo en tu equipo (al empezar, o capturado): con su barra ya puesta (movimientos y, detrás, las Balls).
-  crear(linea: string, nivel: number): Miembro {
+  crear(linea: string, nivel: number, shiny = false): Miembro {
     const f = formaDe(linea, nivel), movs = movsHasta(f.id, nivel);
     const barra: Atajo[] = Array.from({ length: CASILLAS }, () => null);
     movs.slice(0, CASILLAS - 2).forEach((m, i) => { barra[i] = { m }; });
     barra[CASILLAS - 2] = { i: 'pokeball' }; barra[CASILLAS - 1] = { i: 'oran' };
-    const m: Miembro = { uid: this.estado.uid++, linea, nivel, exp: expDeNivel(linea, nivel), movs, barra, ps: 1 };
+    const m: Miembro = { uid: this.estado.uid++, linea, nivel, exp: expDeNivel(linea, nivel), movs, barra, ps: 1, ...(shiny ? { shiny } : {}) };
     this.estado.equipo.push(m);
     return m;
   }
@@ -108,6 +119,33 @@ export class Partida {
   gastar(id: string): boolean {
     if (this.tiene(id) <= 0) return false;
     this.estado.items[id]--;
+    return true;
+  }
+
+  // Misiones del tablón (combate/misiones.ts).
+  get misiones(): Mision[] { return misionesDe(this.estado.semilla); }
+  estadoMision(m: Mision): EstadoMision {
+    const s = this.estado.misiones?.[m.id];
+    return !s ? 'nueva' : s.hecha ? 'hecha' : s.n >= m.n ? 'lista' : 'activa';
+  }
+  progresoMision(m: Mision): number { return Math.min(m.n, this.estado.misiones?.[m.id]?.n ?? 0); }
+  aceptar(m: Mision): void { (this.estado.misiones ??= {})[m.id] ??= { n: 0 }; }
+  // Algo que cuenta para las misiones aceptadas (derrotar o capturar a uno de la línea, o derrotar al alfa de la zona).
+  // Devuelve las que avanzan.
+  contar(tipo: 'derrotar' | 'capturar' | 'alfa', linea: string, zona: string): Mision[] {
+    const out: Mision[] = [];
+    for (const m of this.misiones) {
+      if (this.estadoMision(m) !== 'activa' || m.tipo !== tipo || (tipo === 'alfa' ? m.zona !== zona : m.linea !== linea)) continue;
+      this.estado.misiones![m.id].n++;
+      out.push(m);
+    }
+    return out;
+  }
+  // Entregar una misión lista: la recompensa (la experiencia la reparte quien llama, que sabe de avisos).
+  entregar(m: Mision): boolean {
+    if (this.estadoMision(m) !== 'lista') return false;
+    this.estado.misiones![m.id].hecha = true;
+    for (const [id, n] of m.premio.items) this.dar(id, n);
     return true;
   }
 

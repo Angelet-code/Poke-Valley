@@ -1,0 +1,2 @@
+assets\gen\ab_lago\pixel\juncos_s1_0.png
+64.2s

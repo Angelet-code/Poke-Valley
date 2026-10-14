@@ -17,10 +17,11 @@ para ganar experiencia. Al subir de nivel aprendes movimientos y evolucionas. Lo
 allí puedes convertirte en cualquiera de ellos para subirlo de nivel.
 
 ## 2. Mapas
-Los mapas son cerrados y están en estilo dibujo (elementos Klein). Por ahora hay dos.
+Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que falta están en
+[GDD-mundo.md](GDD-mundo.md). Los mapas son cerrados y están en estilo dibujo (elementos Klein).
 - **Pueblo**: el mapa `dibujo` de siempre. En él solo estás tú y los Pokémon que has capturado, que pasean por la
   plaza. El camino del sur lleva al bosque.
-- **Bosque**: es procedural y se genera de nuevo cada vez que entras (con la semilla de la partida).
+- **Bosque**: es procedural y sale siempre igual (con la semilla de la partida).
   - Lo cierra un borde espeso de árboles.
   - Dentro hay 6-7 claros unidos por senderos de tierra que salen de la entrada (abajo), árboles sueltos, rocas,
     arbustos, tocones, flores y, a veces, un estanque.
@@ -111,6 +112,16 @@ Los mapas son cerrados y están en estilo dibujo (elementos Klein). Por ahora ha
 - Si se queda, entra en tu equipo con su nivel y su vida y aparece en el pueblo.
 - Empiezas con 10 Poké Balls y 3 Bayas Aranja. Los derrotados a veces sueltan bayas o Balls.
 
+### 4.1 Shiny (2026-10-15)
+- Cada salvaje que aparece (también el alfa) tiene 1/4096 de salir shiny (`PROB_SHINY` en `combate/partida.ts`;
+  en la consola, `pv.scene.getScene('aventura').probShiny = 1` para probar).
+- Al entrar en pantalla destella (estrellas) y sale el aviso «¡Un X shiny!».
+- Capturado, el shiny va con el Pokémon (`Miembro.shiny`), no con la forma: sigue siéndolo al evolucionar, en la
+  cinemática y en el pueblo.
+- Sprites: id de sprite con `s` (`0262s`). Hojas shiny de SpriteCollab en `assets/sprites/pokemon/<dex>/shiny/`
+  (`python -I tools/shiny_paletas.py` las baja y escribe `src/data/gen/shiny.json`); las 5 que no existen se sacan
+  recoloreando la normal con la paleta de su Idle. El contorno de la -Luz se tiñe al cargar (`combate/sprites.ts`).
+
 ## 5. Niveles y movimientos
 - **Experiencia**: b·L/7, donde b ≈ stats base totales / 5 (Bulbasaur 64, la oficial). Los grupos de experiencia
   son los oficiales (`data/pokedex.ts`).
@@ -142,6 +153,12 @@ Los mapas son cerrados y están en estilo dibujo (elementos Klein). Por ahora ha
 ## 6. Pueblo y cambiar de Pokémon
 Tus otros Pokémon pasean por la plaza. Con F a su lado te conviertes en él e intercambiáis el sitio. El que dejas
 se queda paseando con su vida guardada. Cada uno conserva su nivel, su experiencia, sus movimientos y su barra.
+
+**Piedra de hogar** (como en el WoW): tecla H o clic en su casilla, a la izquierda de la barra. Se canaliza 8 s
+(barra de lanzamiento azul sobre la barra de atajos); moverte, recibir un golpe, usar un atajo, F o Esc la cortan.
+Al terminar te lleva a la plaza del pueblo desde cualquier zona. Se recarga en 5 min reales (se guarda en la
+partida, `Estado.hogar`, así que salir y volver no la reinicia). Constantes `HOGAR_CARGA` y `HOGAR_CD` en
+`src/combate/partida.ts`.
 
 ## 7. Animaciones de los movimientos
 Son las de **Pokémon Colleja**, copiadas en `src/fx/`.
@@ -191,7 +208,70 @@ Son las de **Pokémon Colleja**, copiadas en `src/fx/`.
 - El efecto arranca en el fotograma de golpe (HitFrame) de la animación PMD (`Attack` para contacto, `Shoot` a
   distancia y `Charge` para estado).
 - De noche, las partículas se suman como luz ("lighter").
-- Cuando hagan falta más animaciones, se añaden en el catálogo como en Colleja.
+
+### 7.1 Firmas: una animación propia por movimiento (2026-10-15)
+Con las plantillas, muchos movimientos se veían iguales: Ascuas y Lanzallamas compartían `stream:fire`, 72 golpes
+físicos iban con `strike:plain` y 33 de estado con `hex:plain`. El usuario pidió dos cosas:
+- **Variedad**, según la potencia: Ascuas sutil, Lanzallamas fuerte.
+- **Que cada movimiento se reconozca**: colmillos en Mordisco, una rueda de fuego en Rueda Fuego, un puño en cada
+  puñetazo, y en Puño Fuego un puño hecho de fuego.
+
+Cómo está montado (`src/fx/firmas/`):
+- **`index.ts`**: `animarMovimiento(ctx)` usa la firma del movimiento si la tiene; si no, la plantilla. Lo llaman
+  `Aventura` y la galería.
+- **`kit.ts`**: lo que comparten todas las firmas.
+  - Geometría atacante → objetivo en cualquier dirección.
+  - Fases: anticipar, cargar, carga épica, impacto compartido (reacción, rótulos, daño, sacudida) y "después"
+    (absorber, retroceso, flechas, estados).
+  - Gestos del sprite: embestida, salto, temblor, giro, estela.
+  - Dibujo libre en canvas.
+- **`formas.ts`**: formas vectoriales reconocibles, que se ven todas en `?galeria&formas`.
+  - Lista: puño, mano, pie, colmillos (`mandibula`, que se cierra), garras, rueda, cuerno, pico, taladro, aguja, ala,
+    pluma, hoja, gota, estrella, rayo, copo, nota, z, ojo, fantasma, espada, martillo, luna, corazón, espiral y
+    escudo.
+  - Se pintan con estilo de dibujo animado (relleno, partes claras y oscuras, borde y brillo), a cualquier tamaño y
+    ángulo.
+  - Su contorno se puede muestrear para soltar partículas por el borde: es lo que hace el puño de fuego.
+- **Un archivo por grupo de tipos**:
+  - `normal_golpes`, `normal_estado`.
+  - `mente` (Psíquico, Fantasma, Siniestro).
+  - `naturaleza` (Planta, Bicho, Veneno).
+  - `tierra` (Lucha, Roca, Tierra, Acero).
+  - `elementos` (Fuego, Agua, Hielo, Eléctrico).
+  - `cielo` (Volador, Hada, Dragón).
+- **`LEEME.md`**: la guía para escribir firmas. Reglas:
+  - Tiempo real: ≤ 900 ms, las épicas ≤ 1400.
+  - Vista desde arriba: todo orientado con `k.dir`.
+  - Escala relativa al Pokémon.
+  - Menos de 250 partículas.
+  - `k.impacto()` una vez en los de daño; `k.estado()` en los de estado.
+- **Ejemplos de referencia**:
+  - Ascuas: tres brasas.
+  - Lanzallamas: chorro grueso con lenguas de llama y humo.
+  - Puño Fuego: puño relleno de fuego, con llamas en el borde, que estalla.
+  - Rueda Fuego: aro de llamas que gira alrededor del usuario mientras embiste.
+  - Mordisco: mandíbulas oscuras que se abren y se cierran justo en el impacto.
+
+Las 389 firmas del juego se reparten así:
+- Normal (ataques): 46.
+- Normal (estado): 55.
+- Psíquico/Fantasma/Siniestro: 66.
+- Planta/Bicho/Veneno: 59.
+- Lucha/Roca/Tierra/Acero: 64.
+- Fuego/Agua/Hielo/Eléctrico: 62.
+- Volador/Hada/Dragón: 37.
+
+Se revisan en la galería, también con hojas de "larga exposición": varios instantes de cada animación superpuestos.
+
+Estado (2026-10-15): las 389 tienen firma. Las escribieron 7 agentes en paralelo, uno por grupo; Ciclón, que faltaba,
+se añadió después.
+- **Comprobación automática** de las 389 en la galería: ninguna da error, todas aplican el daño, duran ≤ 1,5 s,
+  tienen menos de 300 partículas y dibujan algo.
+- **Revisión visual** de todas, apuntando en diagonal.
+- **Lanzallamas** tiene su propio cono de fuego. Antes usaba el chorro de agua (`E.torrent`), con espuma.
+- **Reposo de los sprites** (`stage.reposar`, en `animarMovimiento`): al acabar cada movimiento, sus sprites vuelven
+  a su sitio, como el `settle` de Colleja al final de cada turno. Antes, una animación que acababa fuera de sitio
+  dejaba al Pokémon separado de su sombra.
 
 ## 8. Pendiente
 - Los movimientos con efectos especiales (Velo Sagrado, Deseo, Protección, Pantallas, climas…) solo se animan; no

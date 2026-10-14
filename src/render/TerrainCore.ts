@@ -11,6 +11,7 @@ export interface Paleta {
   grassTones: RGB[]; dirtTones: RGB[];                     // manchas lentas de tono (oscura, clara)
   stone: RGB; stoneLight: RGB; crack: RGB; dirtMean: RGB;  // losas del camino
   water: RGB; waterTones: RGB[]; waterShadow: RGB; shoreDark: RGB; shoreLight: RGB;
+  sinPared?: boolean;                                      // agua sin la pared de roca pixel art (estilo dibujo)
 }
 // Mosaico de losas (px de mundo).
 const MOS_BIG = 0.85, MOS_R_BIG = [11, 16], MOS_R_SMALL = [3.5, 6], MOS_PACK = 0.78, MOS_GAP = 0;
@@ -317,6 +318,7 @@ export class TerrainCore {
     if (wa <= 0) return land;
     const ch = CLIFF_H * S, u = UPD[Y * SW + X];
     let w: RGB = [0, 1, 2].map(c => WATER[c] + (WATER_TONES[0][c] - WATER[c]) * this.SPOT[0][i] * 0.35 + (WATER_TONES[1][c] - WATER[c]) * this.SPOT[1][i] * 0.4) as RGB;
+    if (this.paleta.sinPared) return mixc(land, w, wa);
     const R = 4 * S, shAt = (X2: number) => {
       const q = Y * SW + Math.max(0, Math.min(SW - 1, X2)), u2 = UPD[q];
       if (WFIELD[q] <= 0 || u2 < ch - S) return 0;

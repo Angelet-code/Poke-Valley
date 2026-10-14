@@ -6,6 +6,7 @@
 import type { MapData } from './types';
 import type { Paleta } from '../render/TerrainCore';
 import { hash } from '../util';
+import { ARCANE } from '../config';
 
 export const T = 24;
 export const MW = 42, MH = 38;
@@ -18,11 +19,21 @@ export const F = 1 / 3;
 export const PNG_X = 2;          // los PNG de elementos están a ×2 del dibujo
 
 // Colores del suelo medidos en el dibujo (los mismos que LabScene).
-export const PALETA_DIBUJO: Paleta = {
+const PALETA_KLEIN: Paleta = {
   grassTones: [[164, 186, 122], [178, 196, 134]], dirtTones: [[212, 190, 116], [228, 206, 134]],
   stone: [214, 206, 170], stoneLight: [232, 226, 192], crack: [178, 158, 124], dirtMean: [218, 194, 126],
   water: [87, 180, 185], waterTones: [[70, 164, 176], [110, 196, 200]], waterShadow: [62, 142, 160], shoreDark: [62, 84, 64], shoreLight: [214, 204, 140],
+  sinPared: true,   // la pared de roca del agua es pixel art: aquí el agua acaba en la línea de orilla (lago del modo aventura)
 };
+// Estilo Arcane (?set=arcane, docs/art/ARCANE.md): tonos medidos en las texturas de lab/assets/suelo_arcane/ y el agua,
+// la arena y la línea de tinta de la orilla en la referencia docs/art/ref/arcane_lago.png.
+const PALETA_ARCANE: Paleta = {
+  grassTones: [[112, 118, 86], [140, 146, 106]], dirtTones: [[190, 158, 116], [214, 182, 138]],
+  stone: [176, 166, 146], stoneLight: [200, 190, 166], crack: [120, 104, 86], dirtMean: [205, 172, 130],
+  water: [78, 116, 125], waterTones: [[64, 100, 110], [100, 136, 144]], waterShadow: [52, 82, 92], shoreDark: [38, 36, 34], shoreLight: [214, 184, 140],
+  sinPared: true,
+};
+export const PALETA_DIBUJO: Paleta = ARCANE ? PALETA_ARCANE : PALETA_KLEIN;
 
 // rol: lo que hace en el juego (casa = tu casa, panel de dormir/cocinar; almacen = donde se dejan los recursos;
 // tienda = la caja de Pelipper, para vender). luz: tipo (src/render/luces.ts) de las farolas.

@@ -10,7 +10,8 @@
 - **Escala:** referencia 1024 px = mundo de 576 px (24×24 casillas de 24 px). Factor 0.5625.
 - **Pokémon:** sprites de PMD de SpriteCollab (`assets/sprites/pokemon/<dex>/`), con `AnimData.xml`.
   Biblioteca completa descargada (2026-10-13): 981 especies, forma normal, todas las `*-Anim.png` +
-  `credits.txt` (sin Offsets/Shadow, formas ni shiny), ~220 MB, fuera de git salvo las especies que usa
+  `credits.txt` (sin Offsets/Shadow ni formas; shiny solo de las especies del juego, en `<dex>/shiny/`, con
+  `tools/shiny_paletas.py`, ver GDD-combate §4.1), ~220 MB, fuera de git salvo las especies que usa
   el juego (`.gitignore`). Índice `assets/sprites/pokemon/indice.json` (dex → {anim: [ancho, alto]});
   catálogo animado: `docs/art/pokedex-pmd.html`. Licencia CC BY-NC 4.0 (`LICENSE.md` en esa carpeta).
 - **El suelo no se pixela.** Se dibuja a resolución de pantalla (zoom entero S, 3 en la pantalla

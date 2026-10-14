@@ -1,8 +1,9 @@
 // Constantes globales de presentación (GDD §15): casilla de 24 px, resolución base 480×270
-// escalada a un zoom entero S que quepa en la ventana.
+// escalada a un zoom entero S que quepa en la ventana; luego la vista se estira a la ventana entera
+// (VW×VH crece con la proporción de la ventana, sin márgenes).
 export const A = '/assets/';
-export const VW = 480, VH = 270;
-export const S = Math.max(1, Math.floor(Math.min(innerWidth / VW, innerHeight / VH)));
+export const S = Math.max(1, Math.floor(Math.min(innerWidth / 480, innerHeight / 270)));
+export const VW = Math.max(480, Math.ceil(innerWidth / S)), VH = Math.max(270, Math.ceil(innerHeight / S));
 
 const params = new URLSearchParams(location.search);
 export const MAPA = params.get('mapa') || 'dibujo'; // dibujo = el pueblo en el estilo del lab (src/data/mapaDibujo.ts); aldea_d = el pueblo pixel art
@@ -14,6 +15,9 @@ export const NUEVA = params.has('nueva');
 export const GRANJA = params.get('modo') === 'granja';
 // ?galeria: galería de animaciones de movimientos (scenes/Galeria.ts) en lugar del título.
 export const GALERIA = params.has('galeria');
+// ?set=arcane: el escenario en estilo Arcane (docs/art/ARCANE.md): catálogo lab/assets/elementos_arcane/ (lo que
+// aún no tenga sale del catálogo dibujo), suelo con lab/assets/suelo_arcane/ y PALETA_ARCANE. Sin él, el estilo dibujo.
+export const ARCANE = params.get('set') === 'arcane';
 
 // Claves del registro de Phaser donde Boot deja los datos cargados.
 export const REG = { mapa: 'mapa', objs: 'objs', bayas: 'bayas', anims: 'anims', animsAldeanos: 'animsAldeanos', pelipper: 'animsPelipper', dibujo: 'dibujo' } as const;

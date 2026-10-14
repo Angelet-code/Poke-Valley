@@ -6,7 +6,9 @@
 import Phaser from 'phaser';
 import { REG, ROW_FROM_ANGLE, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
-import { crearMapa, type MapaAventura, type MapaId, type Punto, type Ronda } from '../data/bosque';
+import { crearMapa, type Alfa, type MapaAventura, type MapaId, type Punto, type Ronda } from '../data/bosque';
+import { FORMAS } from '../data/pokedex';
+import type { Mision } from '../combate/misiones';
 import { dentroDe, dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
 import { pipelineCel } from '../render/CelPipeline';
@@ -16,17 +18,18 @@ import { ESPECIES } from '../data/especies';
 import { BALL, ITEMS } from '../data/items';
 import { COLOR_TIPO, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
 import { animationFor } from '../fx/catalog';
-import { playMove, type MoveTexts } from '../fx/templates';
+import { type MoveTexts } from '../fx/templates';
+import { animarMovimiento } from '../fx/firmas';
 import { TYPE_FX } from '../fx/fx/palette';
 import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { MoveCue } from '../fx/tipos';
-import { CASILLAS, Partida, movsHasta, type Aviso, type Miembro } from '../combate/partida';
+import { CASILLAS, HOGAR_CARGA, HOGAR_CD, PROB_SHINY, Partida, movsHasta, type Aviso, type Miembro } from '../combate/partida';
 import {
   CLIMA_DE, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
   TURNO, VEL_PARALIZADO, alcance, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, probCaptura, statsDe,
   type Clima, type Stats,
 } from '../combate/reglas';
-import { ancla, cargar, clave, info, poner, type AnimId } from '../combate/sprites';
+import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
 import { ESTADO_CADA, TINTE_ESTADO, auraEstado } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
 import type { DatosEvolucion } from './Evolucion';
@@ -37,6 +40,15 @@ const TIRO = 150;                  // hasta dónde llega una Poké Ball
 const RESPAWN = 40;                // s hasta que vuelve a salir un salvaje en su sitio
 const CORREA = 330;                // px: un salvaje que te persigue más lejos de su sitio se vuelve (y se cura)
 const CURA_FUERA = 0.05;           // fracción de vida por segundo fuera de combate (6 s sin recibir)
+// Alfas (docs/GDD-mundo.md §2): más grandes, con aura, el triple de vida y un golpe anunciado en el suelo.
+const ALFA_ESCALA = 1.4;
+const ALFA_VIDA = 3;
+const ALFA_RESPAWN = 5 * 60;       // s
+const ALFA_CADA = 8;               // s entre golpes anunciados
+const ALFA_AVISO = 1.8;            // s que tarda en llenarse el círculo
+const ALFA_RADIO = 38;             // px (medio ancho del círculo; en el suelo se ve achatado)
+const ALFA_DANO = 0.35;            // fracción de tu vida si te pilla dentro
+const TABLON_CERCA = 44;           // px para abrir el tablón con F
 
 // Cómo se ve cada clima (capa de fx/weather.ts) y cómo tiñe la luz del mapa (multiplica la luz ambiente).
 const ASPECTO_CLIMA: Record<Clima, WeatherLook> = { lluvia: 'rain', sol: 'sun', arena: 'sand', nieve: 'snow', granizo: 'hail' };
@@ -67,17 +79,21 @@ export interface Luchador {
   temple: Temple; modo: 'pasear' | 'huir' | 'pelear' | 'volver'; casa: Punto; meta: Punto | null; espera: number;
   huirHasta: number; ultimoDano: number; rival: Luchador | null;
   muerto: boolean; enBall: boolean;
+  forma?: string;                      // forma fija (el alfa); si no, la de su nivel
+  alfa?: boolean; escala: number; aura?: Phaser.GameObjects.Image; auraSuelo?: Phaser.GameObjects.Ellipse; golpeAlfa: number;
+  shiny?: boolean; visto?: boolean;    // shiny: destella la primera vez que entra en pantalla (`visto`)
 }
 
 export class Aventura extends Phaser.Scene {
   partida!: Partida;
   mapa!: MapaAventura;
+  probShiny = PROB_SHINY;             // de cada salvaje que aparece (en la consola se puede subir para probar)
   stage!: Stage;
   jugador!: Luchador;
   salvajes: Luchador[] = [];
   vecinos: Luchador[] = [];
   objetivo: Luchador | null = null;
-  panel: 'movs' | null = null;         // panel de movimientos abierto (K): lo dibuja el HUD
+  panel: 'movs' | 'misiones' | null = null;   // panel abierto (K movimientos, F en el tablón): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
   listo = false;
   private terrain!: Terrain;
@@ -98,6 +114,13 @@ export class Aventura extends Phaser.Scene {
   // Clima del mapa (Danza Lluvia, Día Soleado…): hasta cuándo dura; daña por turnos a quien no aguanta la arena o el granizo.
   clima: { tipo: Clima; hasta: number } | null = null;
   private climaTic = 0;
+  // Golpe anunciado de un alfa: el círculo del suelo que se llena; al llenarse, daña a quien siga dentro.
+  private marca: { x: number; y: number; t0: number; t1: number; de: Luchador } | null = null;
+  private marcaG!: Phaser.GameObjects.Graphics;
+  private senal: Phaser.GameObjects.Text | null = null;   // "!" o "?" sobre el tablón
+  // Piedra de hogar canalizándose (s de juego): la barra de lanzamiento la pinta el HUD.
+  hogar: { t0: number; t1: number } | null = null;
+  private hogarLuz: Phaser.GameObjects.Ellipse | null = null;
 
   constructor() { super('aventura'); }
 
@@ -110,7 +133,7 @@ export class Aventura extends Phaser.Scene {
 
   private async montar(data: { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio' }, n: number): Promise<void> {
     this.blocks = []; this.piezas = []; this.luces = []; this.salvajes = []; this.vecinos = []; this.objetivo = null; this.panel = null; this.asignando = null;
-    this.cambiando = false; this.lanzando = false; this.luzJugador = null; this.clima = null; this.evolucionando = false;
+    this.cambiando = false; this.lanzando = false; this.luzJugador = null; this.clima = null; this.evolucionando = false; this.marca = null; this.senal = null; this.hogar = null; this.hogarLuz = null;
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva();
     const id = data.mapa ?? 'pueblo';
     this.mapa = crearMapa(id, this.partida.estado.semilla);
@@ -124,8 +147,10 @@ export class Aventura extends Phaser.Scene {
 
     this.terrain = new Terrain(this.mapa.datos, S, { paleta: PALETA_DIBUJO, decals: false });
     // Sprites de quien sale en este mapa (en paralelo al suelo).
-    const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => formaDe(m.linea, m.nivel).dex);
+    const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
     for (const r of this.mapa.salvajes) formas.push(formaDe(r.linea, r.nivel).dex);
+    if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
+    for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
     await Promise.all([this.terrain.calcular(this), cargar(this, formas)]);
     if (n !== this.montaje || !this.sys.isActive()) return;
     this.terrain.build(this);
@@ -142,6 +167,13 @@ export class Aventura extends Phaser.Scene {
     this.jugador.dir = lleg.dir;
     for (const r of this.mapa.salvajes) this.salvajes.push(this.crearSalvaje(r));
     if (this.mapa.id === 'pueblo') this.crearVecinos();
+    this.ponerAlfa();
+    if (this.mapa.tablon) {
+      const t = this.mapa.tablon;
+      this.senal = this.add.text(t.x, t.y - 34, '!', { fontFamily: '"Pixelify Sans", "Segoe UI", sans-serif', fontSize: `${18 * S}px`, fontStyle: 'bold', color: '#ffd84a', stroke: '#3a2412', strokeThickness: 3 * S })
+        .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setVisible(false);
+    }
+    this.marcaG = this.add.graphics().setDepth(-6000);
 
     this.anillo = this.add.ellipse(0, 0, 22, 8, 0xffd65a, 0.5).setVisible(false);
     this.barras = this.add.graphics().setDepth(1e5);
@@ -159,8 +191,8 @@ export class Aventura extends Phaser.Scene {
       if (this.mapa !== mapa) return;
       this.events.emit('zona', { nombre: mapa.nombre, lema: mapa.lema });
       this.aviso(mapa.id !== 'pueblo' ? mapa.bienvenida
-        : this.partida.estado.equipo.length > 1 ? 'El pueblo. Pulsa F junto a uno de tus Pokémon para convertirte en él. El camino del sur lleva al bosque.'
-        : 'El pueblo. Baja por el camino del sur hasta el bosque. Teclas 1-0: tu barra (K para colocar movimientos).');
+        : this.partida.estado.equipo.length > 1 ? 'El pueblo. Pulsa F junto a uno de tus Pokémon para convertirte en él, o junto al tablón de la plaza para ver las misiones.'
+        : 'El pueblo. F junto al tablón de la plaza: misiones. El camino del sur lleva al bosque. Teclas 1-0: tu barra (K para colocar movimientos).');
     });
   }
 
@@ -257,30 +289,108 @@ export class Aventura extends Phaser.Scene {
   }
 
   // ---- Luchadores ----
-  private crearLuchador(rol: Luchador['rol'], linea: string, nivel: number, x: number, y: number, miembro?: Miembro): Luchador {
-    const f = formaDe(linea, nivel), k = clave(f.dex), idle = info(f.dex).Idle, an = ancla(f.dex);
+  // Shiny: el de tu equipo si lo es (`miembro.shiny`); un salvaje, si se pide. Si sus hojas shiny aún no están
+  // cargadas (salvaje que acaba de salir shiny), sale con las normales y cambia en cuanto cargan.
+  private crearLuchador(rol: Luchador['rol'], linea: string, nivel: number, x: number, y: number, miembro?: Miembro, forma?: string, shiny = false): Luchador {
+    const f = forma ? FORMAS[forma] : formaDe(linea, nivel), sh = miembro?.shiny ?? shiny, dexS = idSprite(f.dex, sh);
+    const dex = listo(this, dexS) ? dexS : f.dex, k = clave(dex), idle = info(dex).Idle, an = ancla(dex);
     const spr = this.add.sprite(x, y, idle ? `${k}-${idle.hoja}` : '__DEFAULT');
-    poner(spr, f.dex, 'Idle', 0);
+    poner(spr, dex, 'Idle', 0);
     const ancho = Math.max(10, Math.min(34, an.ancho * 0.75));
     const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3);
     sombra.resetPipeline();
     const stats = statsDe(f.base, nivel);
-    return {
-      uid: `${rol}-${++this.uid}`, rol, linea, nivel, miembro, dex: f.dex, nombre: f.nombre, tipos: tiposDe(f.id),
+    const l: Luchador = {
+      uid: `${rol}-${++this.uid}`, rol, linea, nivel, miembro, dex, nombre: f.nombre, tipos: tiposDe(f.id),
       stats, ps: stats.hp, boosts: {}, boostHasta: {}, estado: null, estadoHasta: 0, ticEstado: 0, toxN: 0, auraEn: 0,
       x, y, dir: 0, anda: false, spr, sombra, fx: fxSprite(spr), alto: Math.min(56, an.alto),
       movs: miembro ? miembro.movs : movsHasta(f.id, nivel), cd: {}, gcd: 0, anim: null, animHasta: 0, quietoHasta: 0,
       temple: 'agresivo', modo: 'pasear', casa: { x, y }, meta: null, espera: Math.random() * 2, huirHasta: 0, ultimoDano: -99, rival: null,
-      muerto: false, enBall: false,
+      muerto: false, enBall: false, forma, escala: 1, golpeAlfa: 0, shiny: sh,
     };
+    if (dex !== dexS) void cargar(this, [dexS]).then(() => { if (l.spr.active && listo(this, dexS)) l.dex = dexS; });
+    return l;
   }
+  private formaL(l: Luchador) { return l.forma ? FORMAS[l.forma] : formaDe(l.linea, l.nivel); }
   private crearSalvaje(r: Ronda): Luchador {
-    const l = this.crearLuchador('salvaje', r.linea, r.nivel, r.x, r.y);
+    const l = this.crearLuchador('salvaje', r.linea, r.nivel, r.x, r.y, undefined, undefined, Math.random() < this.probShiny);
     l.ronda = r;
     const t = Math.random();
     l.temple = t < 0.25 ? 'amistoso' : t < 0.6 ? 'huidizo' : 'agresivo';
     return l;
   }
+  // El alfa de la zona: la forma fija, ×1,4, con aura y el triple de vida. Siempre peleón. Si cayó hace menos de
+  // 5 minutos (`estado.alfas`, en tiempo real), sale cuando toque.
+  private ponerAlfa(): void {
+    const a = this.mapa.alfa;
+    if (!a) return;
+    const cayo = this.partida.estado.alfas?.[this.mapa.id] ?? 0, falta = ALFA_RESPAWN * 1000 - (Date.now() - cayo);
+    if (falta <= 0) { this.salvajes.push(this.crearAlfa(a)); return; }
+    const mapa = this.mapa;
+    this.time.delayedCall(falta, () => { if (this.mapa === mapa && this.listo) { this.salvajes.push(this.crearAlfa(a)); this.aviso(`Ha vuelto el ${FORMAS[a.forma].nombre} alfa`); } });
+  }
+  private crearAlfa(a: Alfa): Luchador {
+    const l = this.crearLuchador('salvaje', a.linea, a.nivel, a.x, a.y, undefined, a.forma, Math.random() < this.probShiny);
+    l.alfa = true; l.escala = ALFA_ESCALA; l.temple = 'agresivo'; l.nombre += ' alfa';
+    l.alto = Math.min(80, l.alto * ALFA_ESCALA);
+    l.stats = { ...l.stats, hp: l.stats.hp * ALFA_VIDA }; l.ps = l.stats.hp;
+    l.sombra.setSize(l.sombra.width * ALFA_ESCALA, l.sombra.height * ALFA_ESCALA);
+    this.halo();
+    l.aura = this.add.image(a.x, a.y, 'halo').setTint(0xff6a3a).setBlendMode(Phaser.BlendModes.ADD);
+    l.auraSuelo = this.add.ellipse(a.x, a.y, 10, 4).setStrokeStyle(1, 0xff7a4a, 0.8);
+    l.aura.resetPipeline(); l.auraSuelo.resetPipeline();
+    l.golpeAlfa = this.ahora + 3;
+    return l;
+  }
+  // Destello de shiny: unas estrellas que salen del cuerpo y se apagan (como al entrar en combate en los juegos).
+  private destello(l: Luchador): void {
+    const cy = l.y - l.alto * 0.5 * l.escala;
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + Math.random() * 0.5, r = (12 + l.alto * 0.4) * l.escala;
+      const st = this.add.text(l.x, cy, '✦', { fontFamily: '"Segoe UI Symbol", "Segoe UI", sans-serif', fontSize: `${(8 + Math.random() * 5) * S}px`, color: '#fff6b0', stroke: '#c8a020', strokeThickness: 1 * S })
+        .setOrigin(0.5).setScale(0.2 / S).setDepth(1e5).setAlpha(0);
+      st.resetPipeline();
+      this.tweens.add({ targets: st, x: l.x + Math.cos(a) * r, y: cy + Math.sin(a) * r * 0.8, scale: 1 / S, alpha: { from: 1, to: 0 }, angle: 90,
+        delay: i * 60 + (i % 2) * 260, duration: 650, ease: 'Cubic.easeOut', onComplete: () => st.destroy() });
+    }
+  }
+  private halo(): void {
+    if (this.textures.exists('halo')) return;
+    const n = 64, c = this.textures.createCanvas('halo', n, n)!, g = c.getContext(), grad = g.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+    grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.35, 'rgba(255,255,255,0.35)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad; g.fillRect(0, 0, n, n); c.refresh(); c.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  }
+  // Golpe anunciado del alfa: se para, se carga y marca en el suelo dónde estás; el círculo se llena en ALFA_AVISO s.
+  private golpeAlfa(l: Luchador, r: Luchador): boolean {
+    if (this.marca || l.golpeAlfa > this.ahora || r.rol !== 'jugador' || Math.hypot(r.x - l.x, r.y - l.y) > 190) return false;
+    this.marca = { x: r.x, y: r.y, t0: this.ahora, t1: this.ahora + ALFA_AVISO, de: l };
+    l.golpeAlfa = this.ahora + ALFA_CADA + Math.random() * 3;
+    l.quietoHasta = this.ahora + ALFA_AVISO + 0.3; l.meta = null;
+    this.mirarA(l, r);
+    this.reproducir(l, 'Charge', ALFA_AVISO * 1000);
+    return true;
+  }
+  private pasoMarca(): void {
+    const g = this.marcaG, mk = this.marca;
+    g.clear();
+    if (!mk) return;
+    const l = mk.de, p = this.jugador;
+    if (l.muerto || l.modo !== 'pelear') { this.marca = null; return; }
+    const f = Math.min(1, (this.ahora - mk.t0) / (mk.t1 - mk.t0)), w = ALFA_RADIO * 2, h = ALFA_RADIO * 1.3;
+    g.fillStyle(0xff3a1a, 0.16).fillEllipse(mk.x, mk.y, w, h);
+    g.fillStyle(0xff4a2a, 0.22 + 0.2 * f).fillEllipse(mk.x, mk.y, w * f, h * f);
+    g.lineStyle(1.2, 0xff5a3a, 0.6 + 0.4 * Math.abs(Math.sin(this.ahora * 10))).strokeEllipse(mk.x, mk.y, w, h);
+    if (f < 1) return;
+    this.marca = null;
+    this.mirarA(l, mk);
+    this.reproducir(l, 'Attack');
+    this.cameras.main.shake(180, 0.004);
+    this.stage.hitFlash(l.fx, 150);
+    const dentro = ((p.x - mk.x) / ALFA_RADIO) ** 2 + ((p.y - mk.y) / (h / 2)) ** 2 < 1;
+    if (dentro && !p.muerto) this.danar(p, Math.max(1, Math.round(p.stats.hp * ALFA_DANO)), l);
+    else if (!p.muerto) this.stage.label(this.geo(p).top, '¡Esquivado!', 'good');
+  }
+
   // Tus otros Pokémon pasean por el pueblo, cerca de la plaza.
   private crearVecinos(): void {
     const otros = this.partida.estado.equipo.filter(m => m.uid !== this.partida.activo.uid);
@@ -294,7 +404,7 @@ export class Aventura extends Phaser.Scene {
     });
   }
   private quitar(l: Luchador): void {
-    l.spr.destroy(); l.sombra.destroy();
+    l.spr.destroy(); l.sombra.destroy(); l.aura?.destroy(); l.auraSuelo?.destroy();
     this.salvajes = this.salvajes.filter(q => q !== l);
     if (this.objetivo === l) this.objetivo = null;
   }
@@ -322,7 +432,7 @@ export class Aventura extends Phaser.Scene {
   // ---- Entrada ----
   private entradas(): void {
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K', false) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,H', false) as Record<string, Phaser.Input.Keyboard.Key>;
     // Al perder el foco (otra ventana, Alt+Tab) no llega el "soltar": que no se quede andando solo.
     const soltar = () => kb.resetKeys();
     this.game.events.on(Phaser.Core.Events.BLUR, soltar);
@@ -333,8 +443,10 @@ export class Aventura extends Phaser.Scene {
     kb.addCapture('TAB');
     this.keys.F.on('down', () => this.interactuar());
     this.keys.SPACE.on('down', () => this.interactuar());
-    this.keys.K.on('down', () => { this.panel = this.panel ? null : 'movs'; this.asignando = null; });
+    this.keys.H.on('down', () => this.usarHogar());
+    this.keys.K.on('down', () => { this.panel = this.panel === 'movs' ? null : 'movs'; this.asignando = null; });
     this.keys.ESC.on('down', () => {
+      if (this.hogar) { this.cortarHogar(); return; }
       if (this.asignando) { this.asignando = null; return; }
       if (this.panel) { this.panel = null; return; }
       if (this.objetivo) { this.objetivo = null; return; }
@@ -365,7 +477,9 @@ export class Aventura extends Phaser.Scene {
   // F / espacio: junto a uno de tus Pokémon del pueblo, convertirte en él.
   private interactuar(): void {
     if (!this.listo || this.jugador.muerto) return;
-    const p = this.jugador, v = this.vecinos.find(l => Math.hypot(l.x - p.x, l.y - p.y) < 32);
+    this.cortarHogar();
+    const p = this.jugador, v = this.vecinos.find(l => Math.hypot(l.x - p.x, l.y - p.y) < 32), t = this.mapa.tablon;
+    if (t && Math.hypot(t.x - p.x, t.y - p.y) < TABLON_CERCA) { this.panel = this.panel === 'misiones' ? null : 'misiones'; this.asignando = null; return; }
     if (v) { this.convertirse(v); return; }
     if (this.mapa.id === 'pueblo' && this.partida.estado.equipo.length > 1) this.aviso('Acércate a uno de tus Pokémon y pulsa F para convertirte en él');
   }
@@ -400,6 +514,7 @@ export class Aventura extends Phaser.Scene {
     }
     const a = m.barra[i];
     if (!a) return;
+    if (this.hogar) this.cortarHogar();
     if ('m' in a) this.usarMov(this.jugador, a.m, this.objetivo);
     else this.usarItem(a.i);
   }
@@ -464,7 +579,7 @@ export class Aventura extends Phaser.Scene {
     const targets = t === l || anim.template === 'aura' || anim.template === 'shield' ? [] : [this.geo(t)];
     this.time.delayedCall(2500, commit);   // por si la animación no llega al impacto
     try {
-      await playMove({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user: this.geo(l), targets,
+      await animarMovimiento({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user: this.geo(l), targets,
         losses: new Map([[t.uid, Math.min(1, r.dano / t.stats.hp)]]), commit, text: texts });
     } catch (e) { console.warn('animación', id, e); }
     commit();
@@ -520,6 +635,7 @@ export class Aventura extends Phaser.Scene {
   private danar(t: Luchador, n: number, de: Luchador | null): void {
     t.ps = Math.max(0, t.ps - n);
     t.ultimoDano = this.ahora;
+    if (t.rol === 'jugador' && this.hogar) this.cortarHogar('¡Te han interrumpido!');
     const g = this.geo(t);
     this.stage.label({ x: g.top.x + (Math.random() - 0.5) * 10, y: g.top.y }, `−${n}`, t.rol === 'jugador' ? 'bad' : 'neutral');
     if (t.ps <= 0) { this.debilitar(t, de); return; }
@@ -559,7 +675,11 @@ export class Aventura extends Phaser.Scene {
     if (t.rol === 'jugador') { this.caer(); return; }
     this.tweens.add({ targets: t.fx, alpha: 0, delay: 700, duration: 600, onComplete: () => this.quitar(t) });
     if (de?.rol === 'jugador') this.recompensa(t);
-    this.reaparecer(t.ronda);
+    if (t.alfa) {
+      (this.partida.estado.alfas ??= {})[this.mapa.id] = Date.now();
+      this.guardar();
+      this.ponerAlfa();
+    } else this.reaparecer(t.ronda);
   }
   private reaparecer(r?: Ronda): void {
     if (!r) return;
@@ -568,12 +688,39 @@ export class Aventura extends Phaser.Scene {
   }
   // Experiencia para el que manejas y, a veces, algo que suelta (bayas, alguna Ball).
   private recompensa(t: Luchador): void {
-    const yo = this.partida.activo, exp = expPor(t.linea, t.nivel);
+    const yo = this.partida.activo, exp = expPor(t.linea, t.nivel) * (t.alfa ? ALFA_VIDA : 1);
     this.stage.label(this.geo(this.jugador).top, `+${exp} exp`, 'strong', 300);
     this.procesar(this.partida.ganarExp(yo, exp));
     const r = Math.random();
-    const suelta = r < 0.18 ? 'oran' : r < 0.24 ? 'sitrus' : r < 0.32 ? 'pokeball' : r < 0.35 ? 'superball' : null;
-    if (suelta && ITEMS[suelta]) { this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`); }
+    if (t.alfa) {   // el alfa suelta siempre algo mejor: una Ball buena y una Baya Zidra
+      const ball = this.mapa.id === 'lago' ? 'ultraball' : 'superball';
+      this.partida.dar(ball); this.partida.dar('sitrus');
+      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} y ${ITEMS.sitrus.nombre}`);
+    } else {
+      const suelta = r < 0.18 ? 'oran' : r < 0.24 ? 'sitrus' : r < 0.32 ? 'pokeball' : r < 0.35 ? 'superball' : null;
+      if (suelta && ITEMS[suelta]) { this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`); }
+    }
+    this.contarMision(t.alfa ? 'alfa' : 'derrotar', t.linea);
+    this.guardar();
+  }
+  // ---- Misiones (tablón del pueblo; las pinta el HUD) ----
+  private contarMision(tipo: 'derrotar' | 'capturar' | 'alfa', linea: string): void {
+    for (const m of this.partida.contar(tipo, linea, this.mapa.id)) {
+      const n = this.partida.progresoMision(m), lista = n >= m.n;
+      this.stage.label(this.geo(this.jugador).top, lista ? '¡Misión cumplida!' : `${n}/${m.n}`, 'strong', 500);
+      if (lista) this.aviso('¡Misión cumplida! Entrégala en el tablón del pueblo.');
+    }
+  }
+  aceptarMision(m: Mision): void {
+    if (this.partida.estadoMision(m) !== 'nueva') return;
+    this.partida.aceptar(m);
+    this.guardar();
+  }
+  entregarMision(m: Mision): void {
+    if (!this.partida.entregar(m)) return;
+    this.stage.label(this.geo(this.jugador).top, `+${m.premio.exp} exp`, 'strong', 200);
+    this.aviso(`Recompensa: ${m.premio.exp} exp, ${m.premio.items.map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`).join(', ')}`);
+    this.procesar(this.partida.ganarExp(this.partida.activo, m.premio.exp));
     this.guardar();
   }
   private procesar(av: Aviso[]): void {
@@ -599,14 +746,14 @@ export class Aventura extends Phaser.Scene {
   // sigue donde estaba (el tiempo en pausa no cuenta para enfriamientos ni estados: `desfase`).
   private async evolucionar(antes: ReturnType<typeof formaDe>, aprende: string[]): Promise<void> {
     const p = this.jugador, m = this.partida.activo, f = formaDe(m.linea, m.nivel);
-    await cargar(this, [f.dex]);
+    await cargar(this, [idSprite(f.dex, m.shiny)]);
     // Si mientras cargaba ha cambiado de mapa o se ha debilitado, la forma nueva sale al volver a montar el mapa.
     if (this.jugador !== p || p.muerto || this.cambiando || !this.listo || this.evolucionando) return;
     this.evolucionando = true;
     const cam = this.cameras.main, pausaEn = this.game.loop.time;
     const datos: DatosEvolucion = {
-      de: { dex: antes.dex, nombre: antes.nombre, stats: statsDe(antes.base, m.nivel), tipos: tiposDe(antes.id) },
-      a: { dex: f.dex, nombre: f.nombre, stats: statsDe(f.base, m.nivel), tipos: tiposDe(f.id) }, nivel: m.nivel,
+      de: { dex: p.dex, nombre: antes.nombre, stats: statsDe(antes.base, m.nivel), tipos: tiposDe(antes.id) },
+      a: { dex: idSprite(f.dex, m.shiny), nombre: f.nombre, stats: statsDe(f.base, m.nivel), tipos: tiposDe(f.id) }, nivel: m.nivel,
       color: COLOR_TIPO[tiposDe(f.id)[0]] ?? 0xffffff, aprende,
       x: (p.spr.x - cam.worldView.x) * cam.zoom, y: (p.spr.y - cam.worldView.y) * cam.zoom, escala: cam.zoom * p.spr.scaleX,
       pose: { tex: p.spr.texture.key, frame: p.spr.frame.name, ox: p.spr.originX, oy: p.spr.originY, dir: p.dir, flipX: p.spr.flipX },
@@ -669,6 +816,7 @@ export class Aventura extends Phaser.Scene {
     const p = this.jugador, t = this.objetivo;
     if (this.lanzando) return;
     if (!t || t.rol !== 'salvaje' || t.muerto) { this.aviso('Elige a un salvaje para lanzarle la Poké Ball'); return; }
+    if (t.alfa) { this.aviso('Un alfa no se deja capturar: derrótalo'); return; }
     if (Math.hypot(t.x - p.x, t.y - p.y) > TIRO) { this.aviso('Acércate más para lanzar la Poké Ball'); return; }
     this.partida.gastar(id);
     this.lanzando = true; p.gcd = this.ahora + GCD;
@@ -706,11 +854,12 @@ export class Aventura extends Phaser.Scene {
   }
   private capturado(t: Luchador, ball: string): void {
     t.muerto = true;
-    const m = this.partida.crear(t.linea, t.nivel);
+    const m = this.partida.crear(t.linea, t.nivel, t.shiny);
     m.ps = Math.max(0.1, t.ps / t.stats.hp);
     this.quitar(t);
     this.aviso(`¡Has capturado a ${t.nombre} (Nv ${t.nivel}) con la ${ITEMS[ball]?.nombre ?? 'Ball'}! Te espera en el pueblo.`);
     this.stage.label(this.geo(this.jugador).top, '★', 'strong');
+    this.contarMision('capturar', t.linea);
     this.reaparecer(t.ronda);
     this.guardar();
   }
@@ -719,7 +868,7 @@ export class Aventura extends Phaser.Scene {
   private pensar(l: Luchador, dt: number): void {
     if (l.muerto || l.enBall) return;
     const quieto = l.estado === 'slp' || l.estado === 'frz' || l.quietoHasta > this.ahora;
-    const vel = (60 + Math.min(60, (formaDe(l.linea, l.nivel).base[5]) * 0.3)) * (l.estado === 'par' ? VEL_PARALIZADO : 1);
+    const vel = (60 + Math.min(60, (this.formaL(l).base[5]) * 0.3)) * (l.estado === 'par' ? VEL_PARALIZADO : 1);
     l.anda = false;
     if (quieto) return;
     const p = this.jugador;
@@ -733,6 +882,7 @@ export class Aventura extends Phaser.Scene {
     if (l.modo === 'pelear') {
       const r = l.rival;
       if (!r || r.muerto || Math.hypot(l.x - l.casa.x, l.y - l.casa.y) > CORREA) { l.modo = 'volver'; l.rival = null; return; }
+      if (l.alfa && this.golpeAlfa(l, r)) return;
       // El movimiento listo más fuerte (a veces uno de estado), si llega; si no, acercarse.
       const listos = l.movs.map(id => getMove(id)!).filter(m => m && (l.cd[m.id] ?? 0) <= this.ahora);
       const dano = listos.filter(m => m.basePower > 0).sort((a, b) => b.basePower - a.basePower);
@@ -788,6 +938,11 @@ export class Aventura extends Phaser.Scene {
   // Sprite, sombra y animación de cada luchador según lo que hace (más lo que le sumen las animaciones de movimientos).
   private dibujar(l: Luchador): void {
     const k = this.stage.k, f = l.fx;
+    if (l.shiny && !l.visto && !l.muerto && this.cameras.main.worldView.contains(l.x, l.y - l.alto / 2)) {
+      l.visto = true;
+      this.destello(l);
+      if (l.rol === 'salvaje') this.aviso(`¡Un ${l.nombre} shiny!`);
+    }
     if (!l.muerto && this.ahora >= l.animHasta) {
       const a: AnimId = l.estado === 'slp' ? 'Sleep' : l.anda ? 'Walk' : 'Idle';
       const key = `${clave(l.dex)}-${a}-${a === 'Sleep' ? 0 : l.dir}`;
@@ -801,7 +956,7 @@ export class Aventura extends Phaser.Scene {
         poner(l.spr, l.dex, l.anim, l.dir, { startFrame: Math.max(0, fr - 1) });
       }
     }
-    l.spr.setPosition(l.x + f.dx / k, l.y + f.dy / k).setScale(f.sx, f.sy).setAngle(f.rot).setAlpha(f.alpha * (l.enBall ? 0 : 1)).setDepth(l.y);
+    l.spr.setPosition(l.x + f.dx / k, l.y + f.dy / k).setScale(f.sx * l.escala, f.sy * l.escala).setAngle(f.rot).setAlpha(f.alpha * (l.enBall ? 0 : 1)).setDepth(l.y);
     // Golpe: silueta blanca. Si no, el tinte de su estado (quemado rojizo, envenenado morado, congelado azul…).
     if (f.flash > 0.5) { if (!l.spr.tintFill) l.spr.setTintFill(0xffffff); }
     else {
@@ -813,6 +968,13 @@ export class Aventura extends Phaser.Scene {
     if (l.estado === 'frz' && !l.muerto) { if (l.spr.anims.isPlaying) l.spr.anims.pause(); } else if (l.spr.anims.isPaused) l.spr.anims.resume();
     if (l.estado && !l.muerto && !l.enBall && this.ahora >= l.auraEn) this.auraDe(l);
     l.sombra.setPosition(l.x, l.y - 1).setDepth(l.y - 1).setVisible(!l.enBall).setAlpha(l.muerto ? f.alpha : 1);
+    // Aura del alfa: un resplandor rojizo que late detrás del cuerpo y un anillo en el suelo.
+    if (l.aura && l.auraSuelo) {
+      const late = 0.5 + 0.5 * Math.sin(this.ahora * 3.2), vis = l.muerto ? f.alpha : 1;
+      l.aura.setPosition(l.x, l.y - l.alto * 0.45).setDisplaySize(l.alto * 1.9, l.alto * 1.9).setAlpha((0.4 + 0.25 * late) * vis).setDepth(l.y - 0.6);
+      const w = l.sombra.width * (1.15 + 0.12 * late);
+      l.auraSuelo.setPosition(l.x, l.y - 1).setSize(w, w * 0.36).setDisplaySize(w, w * 0.36).setDepth(l.y - 0.9).setAlpha((0.5 + 0.5 * late) * vis);
+    }
   }
   // Barras de vida sobre los salvajes heridos o elegidos, y el anillo bajo el objetivo.
   private dibujarBarras(): void {
@@ -821,7 +983,8 @@ export class Aventura extends Phaser.Scene {
     for (const l of [...this.salvajes, this.jugador]) {
       const auras = l.muerto || l.enBall ? [] : this.auras(l);
       if (l.muerto || l.enBall || (l.ps >= l.stats.hp && l !== this.objetivo && !auras.length)) continue;
-      const w = 20, x = l.x - w / 2, y = l.y - l.alto - 6, f = l.ps / l.stats.hp;
+      const w = l.alfa ? 32 : 20, x = l.x - w / 2, y = l.y - l.alto - 6, f = l.ps / l.stats.hp;
+      if (l.alfa) g.fillStyle(0xffc04a, 1).fillRect(x - 1.5, y - 1.5, w + 3, 5);   // el alfa, con borde dorado
       if (l.rol === 'salvaje') {
         g.fillStyle(0x2a1a10, 0.75).fillRect(x - 0.5, y - 0.5, w + 1, 3);
         g.fillStyle(f > 0.5 ? 0x8fd36a : f > 0.2 ? 0xffd65a : 0xff6a5a, 1).fillRect(x, y, w * f, 2);
@@ -887,6 +1050,54 @@ export class Aventura extends Phaser.Scene {
     for (const l of [this.jugador, ...this.salvajes]) if (!l.muerto && !l.enBall && danaClima(c.tipo, l.tipos)) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 16)), null);
   }
 
+  // "?" sobre el tablón si hay misiones para entregar, "!" si hay nuevas; el panel se cierra al alejarte.
+  private pasoTablon(): void {
+    const t = this.mapa.tablon;
+    if (!t || !this.senal) return;
+    const est = this.partida.misiones.map(m => this.partida.estadoMision(m)), c = est.includes('lista') ? '?' : est.includes('nueva') ? '!' : '';
+    this.senal.setVisible(!!c && this.panel !== 'misiones');
+    if (c && this.senal.text !== c) this.senal.setText(c).setColor(c === '?' ? '#ffe680' : '#ffd84a');
+    this.senal.setY(t.y - 30 - Math.abs(Math.sin(this.ahora * 3)) * 4);
+    if (this.panel === 'misiones' && Math.hypot(t.x - this.jugador.x, t.y - this.jugador.y) > TABLON_CERCA + 30) this.panel = null;
+  }
+
+  // ---- Piedra de hogar (H) ----
+  // Lo que le falta para poder usarse (s reales); 0 = lista.
+  hogarFalta(): number { return Math.max(0, ((this.partida.estado.hogar ?? 0) - Date.now()) / 1000); }
+  hogarFrac(): number { const h = this.hogar; return h ? Math.max(0, Math.min(1, (this.ahora - h.t0) / (h.t1 - h.t0))) : 0; }
+  usarHogar(): void {
+    if (!this.listo || this.cambiando || this.jugador.muerto) return;
+    if (this.hogar) { this.cortarHogar(); return; }
+    const falta = this.hogarFalta();
+    if (falta > 0) { const n = Math.ceil(falta); this.aviso(`La piedra de hogar aún no está lista (${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')})`); return; }
+    const p = this.jugador;
+    if (p.estado === 'slp' || p.estado === 'frz') { this.aviso(`${p.nombre} está ${NOMBRE_ESTADO[p.estado].toLowerCase()}`); return; }
+    this.hogar = { t0: this.ahora, t1: this.ahora + HOGAR_CARGA };
+    this.hogarLuz = this.add.ellipse(p.x, p.y - 2, 30, 11, 0x8fd8ff, 0.4);
+    this.hogarLuz.resetPipeline();
+    this.reproducir(p, 'Charge');
+  }
+  cortarHogar(txt?: string): void {
+    if (!this.hogar) return;
+    this.hogar = null;
+    this.hogarLuz?.destroy(); this.hogarLuz = null;
+    if (txt) this.aviso(txt);
+  }
+  private pasoHogar(): void {
+    const h = this.hogar, p = this.jugador;
+    if (!h) return;
+    if (p.anda || p.muerto) { this.cortarHogar(p.muerto ? undefined : 'Piedra de hogar cancelada'); return; }
+    const f = (this.ahora - h.t0) / (h.t1 - h.t0);
+    if (p.anim !== 'Charge') this.reproducir(p, 'Charge');
+    const w = 26 + 10 * Math.sin(this.ahora * 6);
+    this.hogarLuz?.setPosition(p.x, p.y - 2).setDisplaySize(w, w * 0.38).setAlpha(0.25 + 0.35 * f).setDepth(p.y - 1.5);
+    if (f < 1) return;
+    this.cortarHogar();
+    this.partida.estado.hogar = Date.now() + HOGAR_CD * 1000;
+    this.stage.hitFlash(p.fx, 400);
+    this.irA('pueblo', 'inicio');
+  }
+
   // ---- Cambiar de mapa ----
   irA(mapa: MapaId, desde: MapaId | 'inicio'): void {
     this.cambiando = true; this.listo = false;
@@ -926,6 +1137,9 @@ export class Aventura extends Phaser.Scene {
     for (const v of this.vecinos) v.ps = v.stats.hp * v.miembro!.ps;
     for (const l of [p, ...this.salvajes, ...this.vecinos]) { this.paso(l, dt); if (l !== p) this.pensar(l, dt); this.dibujar(l); }
     if (this.objetivo && (this.objetivo.muerto || Math.hypot(this.objetivo.x - p.x, this.objetivo.y - p.y) > 400)) this.objetivo = null;
+    this.pasoMarca();
+    this.pasoTablon();
+    this.pasoHogar();
     this.dibujarBarras();
     this.stage.actualizar(t, dtMs);
   }

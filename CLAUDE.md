@@ -1,17 +1,38 @@
 # Pokémon Valley
 
-Fangame personal y no comercial: un Stardew Valley en el que juegas con Pokémon (sin humanos,
-sin diálogo, sin combate, muy tranquilo). Stack: Phaser 3 + TypeScript + Vite. El juego vive en
-`src/` (prototipo 0.1 de recolección, fase 0a del GDD); el arte se sigue probando en la maqueta HTML.
+Fangame personal y no comercial con Pokémon (sin humanos ni diálogo). Stack: Phaser 3 + TypeScript + Vite.
+**Desde el 2026-10-14 la dirección es el modo aventura**: un "WoW PvE" de Pokémon muy simplificado. Manejas a un
+Pokémon, combates en tiempo real con la barra de atajos, capturas salvajes y te conviertes en ellos. Los mapas son
+cerrados (pueblo + bosque procedural). El juego de antes, estilo Stardew (granja, aldeanos, construir), sigue en
+`?modo=granja`.
 
 ## Leer antes de trabajar
-- `docs/GDD.md`: diseño del juego (fuente de verdad).
+- `docs/GDD-combate.md`: diseño del modo aventura (fuente de verdad desde el pivote). Su código:
+  - `src/scenes/Aventura.ts` + `HudAventura.ts`;
+  - `src/combate/`: reglas, partida y sprites;
+  - `src/data/bosque.ts`: mapas;
+  - `src/data/movimientos.ts`: datos de `src/data/gen/combate.json`, que genera
+    `node tools/datos_combate.mjs` desde el Showdown de Pokémon Colleja;
+  - `src/fx/`: animaciones de movimientos copiadas de Pokémon Colleja
+    (`A:\PROYECTOS\OPENCODE\Pokemon Colleja Simulator\apps\web\src\features\battle\animation`) y adaptadas en
+    `fx/stage.ts`.
+- `docs/GDD-mundo.md`: las zonas del modo aventura (pueblo, Bosque Verde, Lago Celeste), cómo se conectan, lo que
+  viene (misiones sin diálogo, alfas, mundo continuo) y el arte que falta. Prueba directa de una zona:
+  `pv.scene.getScene('title').scene.start('aventura', {mapa: 'lago', desde: 'bosque'})`.
+- `docs/art/ARCANE.md`: el escenario en estilo Arcane (decidido el 2026-10-15), por fases. Se ve con `?set=arcane`
+  (catálogo `lab/assets/elementos_arcane/`, suelo `lab/assets/suelo_arcane/`; lo que falte sale del estilo dibujo).
+- `docs/GDD.md`: diseño del juego de granja (`?modo=granja`).
 - `docs/art/PIPELINE.md`: cómo se hace el arte, estado de cada elemento, herramientas con sus
   parámetros exactos y la receta para crear objetos nuevos. **Léelo entero antes de tocar arte.**
 
 ## Arrancar
 - Juego: servidor `juego` de `.claude/launch.json` (`npm run dev`, Vite en http://127.0.0.1:5174;
-  `npm install` la primera vez). **Mapa por defecto (2026-10-14): `dibujo`**, el pueblo del lab en estilo dibujo
+  `npm install` la primera vez).
+  - El título arranca el **modo aventura**. Su partida se guarda en localStorage `pokemon-valley/aventura`.
+  - En la consola, `pv.scene.getScene('aventura')` es la escena.
+  - Para probar sin pasar por el título:
+    `pv.scene.getScene('title').scene.start('aventura', {mapa: 'bosque', desde: 'pueblo'})`.
+  - Lo que sigue describe el modo granja. **Mapa por defecto (2026-10-14): `dibujo`**, el pueblo del lab en estilo dibujo
   (elementos Klein en SVG, `src/data/mapaDibujo.ts` + `src/render/Dibujo.ts`; casa = `casa_grande`, almacén = `almacen`,
   tienda = caja de Pelipper; 13 farolas y la hoguera se encienden al anochecer (19:15-20:15) y se apagan al amanecer (6:15-7:15) con Light2D, `WorldScene.luzDelDia`;
   los Pokémon se cargan con su `-Luz.png` + `-Normal.png` (`Preload.NORMALES`) y van con el pipeline Cel (`WorldScene.iluminar`);

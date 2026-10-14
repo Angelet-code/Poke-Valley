@@ -1,0 +1,1 @@
+{"id": "muelle", "tipo": "roca", "archivo": "muelle.png", "w": 1205, "h": 1339, "ancla": [602, 1338], "huella": [144, 775, 1060, 1284], "origen": "dibujo/muelle_s4_0.png", "sombra": {"archivo": "muelle_sombra.png", "w": 1045, "h": 186, "dx": 84, "dy": 1204}, "k": 0.3585}

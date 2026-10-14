@@ -66,20 +66,20 @@ interface Template {
 // ---------------------------------------------------------------------------------------------
 // Shared pieces
 
-function direction(from: Vec, to: Vec): Vec {
+export function direction(from: Vec, to: Vec): Vec {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const length = Math.hypot(dx, dy) || 1;
   return { x: dx / length, y: dy / length };
 }
 
-function towards(from: Vec, to: Vec, distance: number): Vec {
+export function towards(from: Vec, to: Vec, distance: number): Vec {
   const d = direction(from, to);
   return { x: d.x * distance, y: d.y * distance };
 }
 
 /** Main target: the first one on screen, or a point in front of the user. */
-function aim(ctx: MoveContext): SlotGeometry {
+export function aim(ctx: MoveContext): SlotGeometry {
   return (
     ctx.targets[0] ?? {
       ...ctx.user,
@@ -91,7 +91,7 @@ function aim(ctx: MoveContext): SlotGeometry {
   );
 }
 
-function outcome(ctx: MoveContext, slot: SlotId): 'hit' | 'miss' | 'blocked' | 'immune' {
+export function outcome(ctx: MoveContext, slot: SlotId): 'hit' | 'miss' | 'blocked' | 'immune' {
   if (ctx.cue.blocked.includes(slot)) return 'blocked';
   if (ctx.cue.missed.includes(slot)) return 'miss';
   const hit = ctx.cue.hits.find((entry) => entry.slot === slot);
@@ -100,7 +100,7 @@ function outcome(ctx: MoveContext, slot: SlotId): 'hit' | 'miss' | 'blocked' | '
 }
 
 /** Squash before acting: the user gathers itself. */
-function anticipate(ctx: MoveContext, toward: Vec, ms = 90): Promise<void> {
+export function anticipate(ctx: MoveContext, toward: Vec, ms = 90): Promise<void> {
   const back = towards(ctx.user.center, toward, -8);
   return ctx.stage.animate(
     ctx.user.sprite,
@@ -114,7 +114,7 @@ function anticipate(ctx: MoveContext, toward: Vec, ms = 90): Promise<void> {
 }
 
 /** Back to rest from wherever the user is. */
-function recover(ctx: MoveContext, from: Vec, ms = 200): Promise<void> {
+export function recover(ctx: MoveContext, from: Vec, ms = 200): Promise<void> {
   return ctx.stage.animate(
     ctx.user.sprite,
     [
@@ -127,7 +127,7 @@ function recover(ctx: MoveContext, from: Vec, ms = 200): Promise<void> {
 }
 
 /** Light gathering on the user before a special move. */
-async function chargeUp(ctx: MoveContext, ms = 140): Promise<void> {
+export async function chargeUp(ctx: MoveContext, ms = 140): Promise<void> {
   const { stage, palette, user } = ctx;
   stage.fx.add(charge({ at: user.center, palette, radius: user.size * 0.45, duration: ms + 80 }));
   stage.fx.burst(10, () => {
@@ -164,12 +164,21 @@ async function chargeUp(ctx: MoveContext, ms = 140): Promise<void> {
  * trembles, the big ones (Hyper Beam, Solar Beam, Earthquake…) shake, and a critical hit (or, a little, a super
  * effective one) adds to it.
  */
-function shakeFor(ctx: MoveContext, crit: boolean, superEffective: boolean, extra = 0): { strength: number; duration: number } {
+export function shakeFor(ctx: MoveContext, crit: boolean, superEffective: boolean, extra = 0): { strength: number; duration: number } {
   const i = Math.pow(ctx.animation.power, 1.4) + (ctx.animation.epic ? 0.15 : 0);
   return {
     strength: Math.min(14, 1.6 + 9 * i + (crit ? 3.5 : 0) + (superEffective ? 1.2 : 0) + extra),
     duration: Math.round(140 + 260 * Math.min(1, i) + (crit ? 90 : 0)),
   };
+}
+
+/**
+ * Pokémon Valley: the shared impact for a signature animation (firmas/): what happened to each target (hit, miss,
+ * protected, immune), the hit reaction, the labels, the commit (the damage lands here) and the camera shake.
+ * `onImpact` adds the signature's own touch on each target that was hit.
+ */
+export function impactoFirma(ctx: MoveContext, onImpact?: (target: SlotGeometry) => void): Promise<void> {
+  return impact(ctx, { deliver: async () => undefined, onImpact: onImpact ? (_c, t) => onImpact(t) : undefined });
 }
 
 /** The shared impact on every target: what happened to each, then the lines. */
@@ -209,7 +218,7 @@ async function impact(ctx: MoveContext, template: Template): Promise<void> {
 }
 
 /** Flash, flare, knock-back and labels on a target that took the hit. Returns the hit stop. */
-function hitReaction(
+export function hitReaction(
   ctx: MoveContext,
   target: SlotGeometry,
   hit: HitCue | undefined,
@@ -337,7 +346,7 @@ function dodge(ctx: MoveContext, target: SlotGeometry): void {
 }
 
 /** After the hit: drained HP flows back, recoil, stat changes and statuses. */
-async function aftermath(ctx: MoveContext): Promise<void> {
+export async function aftermath(ctx: MoveContext): Promise<void> {
   const { stage, cue, user } = ctx;
   let longest = 0;
   if (cue.drained || ctx.animation.drain) {
@@ -797,7 +806,7 @@ const strike: Template = {
 };
 
 /** Speed lines behind the user while it dashes. */
-function trail(ctx: MoveContext, offset: Vec, ms: number): void {
+export function trail(ctx: MoveContext, offset: Vec, ms: number): void {
   const { stage, user, palette } = ctx;
   const length = Math.hypot(offset.x, offset.y) || 1;
   stage.fx.burst(12, (i) => {
@@ -824,7 +833,7 @@ function trail(ctx: MoveContext, offset: Vec, ms: number): void {
   });
 }
 
-function fireBurst(stage: Stage, at: Vec, palette: FxPalette, size: number): void {
+export function fireBurst(stage: Stage, at: Vec, palette: FxPalette, size: number): void {
   stage.fx.burst(26, () => {
     const angle = rand(0, Math.PI * 2);
     const speed = rand(60, 260);
@@ -856,7 +865,7 @@ function fireBurst(stage: Stage, at: Vec, palette: FxPalette, size: number): voi
   }));
 }
 
-function dust(stage: Stage, at: Vec, size: number): void {
+export function dust(stage: Stage, at: Vec, size: number): void {
   stage.fx.burst(12, () => ({
     x: at.x + rand(-size * 0.45, size * 0.45),
     y: at.y + rand(-6, 6),
@@ -1432,7 +1441,7 @@ const wave: Template = {
 };
 
 /** Streaks spinning around a Pokémon and rising, like a small whirlwind. */
-function whirl(stage: Stage, at: SlotGeometry, color: string): void {
+export function whirl(stage: Stage, at: SlotGeometry, color: string): void {
   const r = at.size * 0.55;
   for (let i = 0; i < 26; i++) {
     const a = (i / 26) * Math.PI * 2;
@@ -1842,7 +1851,7 @@ const SOLAR: FxPalette = { core: '#b8f04a', glow: '#fff3a0', hot: '#ffffff', dar
  * A big move gathers power first: the stage darkens around the user, light streaks into it and
  * it trembles. Then the move comes out with a bigger impact (`hitReaction`).
  */
-async function bigCharge(ctx: MoveContext): Promise<void> {
+export async function bigCharge(ctx: MoveContext): Promise<void> {
   const { stage, user, palette } = ctx;
   const ms = 300;
   stage.fx.add(dim({ at: user.center, duration: ms + 160, strength: 0.4 }));

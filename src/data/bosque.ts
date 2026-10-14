@@ -17,6 +17,8 @@ export interface Punto { x: number; y: number }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
 export interface Ronda { linea: string; nivel: number; x: number; y: number }
+// El alfa (élite) de una zona: una forma concreta (Pidgeotto a nivel 9, aunque Pidgey evolucione a los 18) en un sitio fijo.
+export interface Alfa extends Ronda { forma: string }
 export interface MapaAventura {
   id: MapaId; nombre: string; datos: MapData; W: number; H: number;
   lema: string;                   // lo que dice el rótulo al entrar, bajo el nombre (nivel y tipos)
@@ -26,16 +28,22 @@ export interface MapaAventura {
   llegada: Partial<Record<MapaId | 'inicio', Llegada>>;  // dónde apareces según de dónde vienes
   salidas: Salida[];
   salvajes: Ronda[];
+  alfa?: Alfa;
+  tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
 }
+
+const TABLON: Punto = { x: 392, y: 436 };
 
 export function pueblo(): MapaAventura {
   const datos = terrenoDibujo(), [ix, iy] = datos.inicio ?? [469, 400];
   return {
-    id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: COLOCADOS, detalles: 70,
+    id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS, { id: 'valla', x: TABLON.x, y: TABLON.y }], detalles: 70,
     lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del sur lleva al bosque.',
     llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: H_PUEBLO - 46, dir: 4 } },
     salidas: [{ x0: 520, y0: H_PUEBLO - 14, x1: 600, y1: H_PUEBLO, a: 'bosque', texto: 'Al bosque' }],
     salvajes: [],
+    // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Arte provisional: un trozo de valla.
+    tablon: TABLON,
   };
 }
 
@@ -89,6 +97,12 @@ export function bosque(semilla: number): MapaAventura {
   const ocupado: (Punto & { r: number })[] = [];
   const libre = (x: number, y: number, rad: number) => ocupado.every(o => Math.hypot(o.x - x, (o.y - y) * 1.3) > o.r + rad);
   const poner = (c: Colocado, rad: number) => { col.push(c); ocupado.push({ x: c.x, y: c.y, r: rad }); };
+  // El árbol viejo: al fondo del claro más lejano de la entrada, detrás del alfa (su guarida). Y un poste junto a cada
+  // salida (a la izquierda de la boca de la entrada; arriba de la del este).
+  const lejos = claros.reduce((m, c) => Math.hypot(c.x - entrada.x, c.y - entrada.y) > Math.hypot(m.x - entrada.x, m.y - entrada.y) ? c : m);
+  poner({ id: 'arbol_viejo', x: Math.round(lejos.x), y: Math.round(lejos.y - lejos.rad * 0.55) }, 46);
+  poner({ id: 'poste', x: Math.round(entrada.x - 64), y: H - 34 }, 12);
+  poner({ id: 'poste', x: W - 70, y: este - 44, flip: true }, 12);
   // Estanque en un claro lejano (la mitad de las veces).
   if (r() < 0.5 && claros.length > 2) {
     const c = claros[2 + Math.floor(r() * (claros.length - 2))];
@@ -107,12 +121,14 @@ export function bosque(semilla: number): MapaAventura {
     if (enClaro(x, y, 25) || aSendero(x, y) < 46 || !libre(x, y, 26)) continue;
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.85, 1.2) }, 20);
   }
-  // Rocas, arbustos y tocones por el borde de los claros; flores dentro.
-  const extras: [string, number][] = [['arbusto', 14], ['roca_0', 4], ['roca_2', 3], ['roca_4', 3], ['roca_6', 3], ['roca_8', 2], ['tocon', 4], ['piedras_0', 3], ['flores', 8]];
+  // Rocas, arbustos, tocones, troncos caídos y panales por el borde de los claros; flores, piedras y setas dentro.
+  const extras: [string, number][] = [['arbusto', 14], ['roca_0', 4], ['roca_1', 2], ['roca_2', 3], ['roca_3', 2], ['roca_4', 3], ['roca_5', 2], ['roca_6', 3],
+    ['roca_7', 2], ['roca_8', 2], ['tocon', 4], ['tronco_caido', 4], ['panal', 2], ['piedras_0', 3], ['flores', 8], ['seta', 12]];
+  const PLANOS = new Set(['flores', 'piedras_0', 'seta']);
   for (const [id, n] of extras) for (let k = 0, i = 0; k < n && i < 400; i++) {
-    const c = claros[Math.floor(r() * claros.length)], a = r() * Math.PI * 2, d = id === 'flores' || id === 'piedras_0' ? entre(0, 0.7) : entre(0.75, 1.05);
+    const c = claros[Math.floor(r() * claros.length)], a = r() * Math.PI * 2, d = PLANOS.has(id) ? entre(0, 0.7) : entre(0.75, 1.05);
     const x = c.x + Math.cos(a) * c.rad * d, y = c.y + Math.sin(a) * c.rad * 0.8 * d;
-    const plano = id === 'flores' || id === 'piedras_0';
+    const plano = PLANOS.has(id);
     if (aSendero(x, y) < 30 || (!plano && !libre(x, y, 16))) continue;
     if (plano) col.push({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5 }); else poner({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: id.startsWith('roca') ? entre(0.6, 0.9) : 1 }, 16);
     k++;
@@ -131,8 +147,12 @@ export function bosque(semilla: number): MapaAventura {
     }
   });
 
+  // El alfa: un Pidgeotto de nivel 9 en el claro del fondo, delante del árbol viejo.
+  const fondo = orden[orden.length - 1];
+  const alfa: Alfa = { linea: 'pidgey', forma: 'pidgeotto', nivel: 9, x: Math.round(fondo.x), y: Math.round(fondo.y - fondo.rad * 0.3) };
+
   return {
-    id: 'bosque', nombre: 'Bosque Verde', datos: { mw: MW, mh: MH, vert, inicio: [entrada.x, entrada.y - 20] }, W, H, colocados: col, detalles: 90,
+    id: 'bosque', alfa, nombre: 'Bosque Verde', datos: { mw: MW, mh: MH, vert, inicio: [entrada.x, entrada.y - 20] }, W, H, colocados: col, detalles: 90,
     lema: 'Nivel 1-7 · Bicho, Planta, Volador y más',
     bienvenida: 'El bosque. Elige a un salvaje (clic o Tab) y atácalo con los números. Al fondo, un sendero sale al este, hacia el lago.',
     llegada: { pueblo: { x: entrada.x, y: H - 50, dir: 4 }, inicio: { x: entrada.x, y: H - 50, dir: 4 }, lago: { x: W - 40, y: este, dir: 6 } },
@@ -154,13 +174,13 @@ export function lago(semilla: number): MapaAventura {
   const r = rng(semilla ^ 0x5a17c3), W = LW * T, H = LH * T;
   const entre = (a: number, b: number) => a + r() * (b - a);
   const entrada = { x: 0, y: Math.round(H * 0.55) };
-  const cx = W * 0.6, cy = H * 0.48;
+  const cx = W * 0.58, cy = H * 0.5;
   const lobulos = [
-    { x: cx, y: cy, rx: entre(230, 270), ry: entre(150, 175) },
-    { x: cx + entre(-180, -120), y: cy + entre(60, 100), rx: entre(120, 160), ry: entre(80, 105) },
-    { x: cx + entre(100, 160), y: cy + entre(-120, -70), rx: entre(110, 145), ry: entre(80, 100) },
+    { x: cx, y: cy, rx: entre(280, 310), ry: entre(170, 195) },
+    { x: cx + entre(-200, -150), y: cy + entre(70, 110), rx: entre(130, 160), ry: entre(90, 110) },
+    { x: cx + entre(130, 180), y: cy + entre(-130, -90), rx: entre(120, 150), ry: entre(85, 105) },
   ];
-  const isla = { x: cx + entre(10, 60), y: cy - entre(0, 30), rx: 48, ry: 30 };
+  const isla = { x: cx + entre(20, 70), y: cy - entre(0, 30), rx: 54, ry: 34 };
   const enIsla = (x: number, y: number) => ((x - isla.x) / isla.rx) ** 2 + ((y - isla.y) / isla.ry) ** 2 < 1;
   // m > 0 agranda el lago (orilla); m < 0 lo encoge.
   const enAgua = (x: number, y: number, m = 0) => lobulos.some(e => ((x - e.x) / (e.rx + m)) ** 2 + ((y - e.y) / (e.ry + m)) ** 2 < 1) && !(m <= 0 && enIsla(x, y));
@@ -206,18 +226,37 @@ export function lago(semilla: number): MapaAventura {
   for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)]) poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
   // El islote: un árbol alto, inalcanzable (punto de referencia).
   poner({ id: 'arbol_alto', x: Math.round(isla.x), y: Math.round(isla.y + 10), s: 1.1 }, 20);
+  // El muelle (pintado de frente): en la orilla sur, bajando en línea recta desde el centro del lago; la tablazón
+  // se adentra en el agua. El alfa espera a su lado.
+  const muelle = { x: Math.round(cx), y: Math.round(Math.max(cy, isla.y + isla.ry + 12)) };   // por debajo del islote
+  while (muelle.y < H - 60 && enAgua(muelle.x, muelle.y)) muelle.y += 2;
+  poner({ id: 'muelle', x: muelle.x, y: muelle.y + 10 }, 40);
+  poner({ id: 'poste', x: 54, y: entrada.y - 50 }, 12);   // junto a la salida al bosque
+  // Sauces: por fuera del camino que rodea el lago, cerca del agua.
+  for (let k = 0, i = 0; k < 4 && i < 800; i++) {
+    const x = entre(90, W - 90), y = entre(120, H - 60);
+    if (!enAgua(x, y, 150) || enAgua(x, y, 100) || aSendero(x, y) < 40 || !libre(x, y, 40)) continue;
+    poner({ id: 'sauce', x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.1) }, 34); k++;
+  }
   // Árboles sueltos por tierra firme, lejos del agua y del camino (más claro que el bosque).
   for (let i = 0; i < 900; i++) {
     const x = entre(70, W - 70), y = entre(90, H - 30);
     if (enAgua(x, y, 60) || aSendero(x, y) < 44 || !libre(x, y, 34)) continue;
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.85, 1.15) }, 24);
   }
-  // Orilla: rocas y arbustos (los juncos, cuando haya arte). Flores y piedras por el césped.
-  const orilla: [string, number][] = [['roca_0', 4], ['roca_2', 3], ['roca_4', 3], ['roca_6', 3], ['arbusto', 12], ['tocon', 2]];
+  // Orilla: juncos pegados al agua (alguno con el pie dentro), rocas y algún arbusto. Flores y piedras por el césped.
+  const orilla: [string, number][] = [['juncos', 16], ['roca_0', 4], ['roca_2', 3], ['roca_4', 3], ['roca_6', 3], ['arbusto', 4], ['tocon', 2]];
   for (const [id, n] of orilla) for (let k = 0, i = 0; k < n && i < 600; i++) {
     const x = entre(80, W - 80), y = entre(100, H - 60);
-    if (!enAgua(x, y, 40) || enAgua(x, y, 12) || aSendero(x, y) < 26 || !libre(x, y, 16)) continue;
+    const [m0, m1] = id === 'juncos' ? [24, 2] : [40, 12];
+    if (!enAgua(x, y, m0) || enAgua(x, y, m1) || aSendero(x, y) < 26 || !libre(x, y, id === 'juncos' ? 10 : 16)) continue;
     poner({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: id.startsWith('roca') ? entre(0.6, 0.95) : 1 }, 16); k++;
+  }
+  // Nenúfares: sobre el agua, lejos de la orilla.
+  for (let k = 0, i = 0; k < 12 && i < 600; i++) {
+    const x = entre(80, W - 80), y = entre(100, H - 60);
+    if (!enAgua(x, y, -30) || col.some(c => c.id === 'nenufar' && Math.hypot(c.x - x, c.y - y) < 60)) continue;
+    col.push({ id: 'nenufar', x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.8, 1.15) }); k++;
   }
   for (const [id, n] of [['flores', 10], ['piedras_0', 4]] as [string, number][]) for (let k = 0, i = 0; k < n && i < 400; i++) {
     const x = entre(80, W - 80), y = entre(100, H - 60);
@@ -236,8 +275,11 @@ export function lago(semilla: number): MapaAventura {
     salvajes.push({ linea: especies[Math.floor(r() * especies.length)], nivel: nv, x: Math.round(x), y: Math.round(y) });
   }
 
+  // El alfa: un Golduck de nivel 12 junto al muelle, en la orilla.
+  const alfa: Alfa = { linea: 'psyduck', forma: 'golduck', nivel: 12, x: muelle.x + 46, y: muelle.y + 26 };
+
   return {
-    id: 'lago', nombre: 'Lago Celeste', datos: { mw: LW, mh: LH, vert, inicio: [40, entrada.y] }, W, H, colocados: col, detalles: 80,
+    id: 'lago', alfa, nombre: 'Lago Celeste', datos: { mw: LW, mh: LH, vert, inicio: [40, entrada.y] }, W, H, colocados: col, detalles: 80,
     lema: 'Nivel 5-10 · Agua y orilla',
     bienvenida: 'El lago. Un camino lo rodea; cuanto más lejos de la entrada, más fuertes son los salvajes.',
     llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 } },

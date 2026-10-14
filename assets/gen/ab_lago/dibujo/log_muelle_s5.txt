@@ -1,0 +1,2 @@
+assets\gen\ab_lago\dibujo\muelle_s5_0.png
+14.1s

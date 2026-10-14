@@ -3,7 +3,7 @@
 // navegador al tamaño exacto de pantalla, con su sombra proyectada aparte (multiply). Es lo mismo que hace
 // lab/src/scenes/LabScene.ts.colocar, sin el lab: aquí solo se dibuja; colisiones y usos los pone WorldScene.
 import Phaser from 'phaser';
-import { S } from '../config';
+import { ARCANE, S } from '../config';
 import { F, PNG_X, type Colocado } from '../data/mapaDibujo';
 import { screenTex } from './Terrain';
 
@@ -77,10 +77,17 @@ export function cargarCatalogos(scene: Phaser.Scene): void {
   scene.load.json('dib-original', `${L}elementos/elementos.json?v=${v}`);
   scene.load.json('dib-klein', `${L}elementos_klein/elementos.json?v=${v}`);
   scene.load.json('dib-vector', `${L}vector/elementos_klein/vector.json?v=${v}`);
+  if (ARCANE) scene.load.json('dib-arcane', `${L}elementos_arcane/elementos.json?v=${v}`);
 }
 // Boot.create: catálogo final (los del set Klein, con su carpeta, y los detalles del original).
 export function catalogo(scene: Phaser.Scene): { elementos: Elemento[]; vectores: string[] } {
-  const klein = (scene.cache.json.get('dib-klein')?.elementos ?? []).map((e: Elemento) => ({ ...e, dir: 'elementos_klein' }));
+  let klein = (scene.cache.json.get('dib-klein')?.elementos ?? []).map((e: Elemento) => ({ ...e, dir: 'elementos_klein' }));
+  // ?set=arcane: los del catálogo Arcane sustituyen a los Klein con el mismo id; los que aún no estén, siguen en dibujo.
+  if (ARCANE) {
+    const arc: Elemento[] = (scene.cache.json.get('dib-arcane')?.elementos ?? []).map((e: Elemento) => ({ ...e, dir: 'elementos_arcane' }));
+    const ids = new Set(arc.map(e => e.id));
+    klein = [...klein.filter((e: Elemento) => !ids.has(e.id)), ...arc];
+  }
   const detalles = (scene.cache.json.get('dib-original')?.elementos ?? []).filter((e: Elemento) => e.tipo === 'detalle');
   return { elementos: [...klein, ...detalles], vectores: scene.cache.json.get('dib-vector') ?? [] };
 }

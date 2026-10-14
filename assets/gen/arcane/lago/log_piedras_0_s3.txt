@@ -1,0 +1,2 @@
+assets\gen\arcane\lago\piedras_0_s3_0.png
+15.0s

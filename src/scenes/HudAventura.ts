@@ -5,6 +5,8 @@
 //   quedan; se oscurecen mientras se enfrían y el número se pone rojo si el objetivo está lejos. Al pasar el ratón,
 //   la ficha del movimiento. Clic = usar; clic derecho = quitar de la barra.
 // - K: panel de movimientos y objetos. Clic en uno y luego en una casilla (o su tecla) para colocarlo.
+// - F en el tablón del pueblo: las misiones de cada zona, solo con iconos (cara, número, Ball u objeto). Clic en una
+//   nueva = aceptarla; en una cumplida = entregarla. A la derecha, bajo la hora, el seguimiento (cara + "2/5").
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
@@ -12,12 +14,24 @@ import { COLOR_TEMPLE, NOMBRE_TEMPLE, type Aura, type Aventura, type Luchador } 
 import { COLOR_TIPO, TIPO_ES, getMove } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, enfriamiento, expDeNivel, necesitaObjetivo } from '../combate/reglas';
-import { CASILLAS, type Atajo } from '../combate/partida';
+import { CASILLAS, HOGAR_CARGA, HOGAR_CD, type Atajo } from '../combate/partida';
 import { clave } from '../combate/sprites';
+import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
 
 const CW = 32, CH = 22, HUECO = 2;                       // casilla de la barra (px de juego)
 const BW = 8 + CASILLAS * CW + (CASILLAS - 1) * HUECO, BX = Math.round((VW - BW) / 2), BY = VH - 5 - (CH + 8);
+// Piedra de hogar: casilla aparte a la izquierda de la barra (tecla H) y barra de lanzamiento encima de la barra.
+const HW = CH + 8, HX = BX - 4 - HW, CAST_W = 120, CAST_Y = BY - 16;
 const CATEGORIA: Record<string, string> = { Physical: 'Físico', Special: 'Especial', Status: 'Estado' };
+// Iconos de misión (pixel art 1:1, '.' = transparente): espadas = derrotar, corona = alfa, visto = entregada.
+const PIX_COL: Record<string, number> = { c: 0x7d8a99, k: 0x8b5a33, y: 0xf2c94c, r: 0xd0402a, g: 0x4f9a3a };
+const PIX: Record<string, string[]> = {
+  espadas: ['c.....c', '.c...c.', '..c.c..', '...c...', '..c.c..', 'kk...kk', 'k.....k'],
+  corona: ['y..y..y', 'yy.y.yy', 'yyyyyyy', 'yryyyry', 'yyyyyyy'],
+  visto: ['.....g', '....gg', 'g..gg.', 'gggg..', '.gg...'],
+};
+const pix = (g: G, x: number, y: number, id: string) => PIX[id].forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') rect(g, PIX_COL[ch], 1, x + i, y + j, 1, 1); }));
+const MW = 84, MH = 46;                                    // carta de misión (px de juego)
 const oscurecer = (c: number, k: number) => (Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k);
 
 interface Marco {
@@ -46,7 +60,12 @@ export class HudAventura extends Phaser.Scene {
   private climaTxt!: Phaser.GameObjects.Text;
   private barraG!: G;
   private casillas: { txt: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; num: Phaser.GameObjects.Text; tecla: Phaser.GameObjects.Text; clave: string }[] = [];
+  private hogarG!: G;
+  private hogarCd!: Phaser.GameObjects.Text;
+  private castG!: G;
+  private castTxt!: Phaser.GameObjects.Text;
   private fichaG!: G;
+  private fichaTapada = false;           // la ficha la está usando la piedra de hogar
   private ficha!: Phaser.GameObjects.Text;
   private panelObjs: Phaser.GameObjects.GameObject[] = [];
   private panelClave = '';
@@ -57,6 +76,13 @@ export class HudAventura extends Phaser.Scene {
   private avisoTimer?: Phaser.Time.TimerEvent;
   private zonaTit!: Phaser.GameObjects.Text;
   private zonaLema!: Phaser.GameObjects.Text;
+  // Tablón de misiones y seguimiento (se rehacen cuando cambia algo).
+  private misObjs: Phaser.GameObjects.GameObject[] = [];
+  private misClave = '';
+  private misZonas: { x: number; y: number; w: number; h: number; m: Mision }[] = [];
+  private misCaja: { x: number; y: number; w: number; h: number } | null = null;
+  private segObjs: Phaser.GameObjects.GameObject[] = [];
+  private segClave = '';
 
   constructor() { super('hud'); }
 
@@ -70,6 +96,7 @@ export class HudAventura extends Phaser.Scene {
   create(): void {
     this.av = this.scene.get('aventura') as Aventura;
     this.casillas = []; this.panelObjs = []; this.panelClave = ''; this.panelZonas = [];
+    this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
 
@@ -93,11 +120,23 @@ export class HudAventura extends Phaser.Scene {
         clave: '',
       });
     }
+    // Piedra de hogar: su casilla (icono de piedra teñido de azul) y la barra de lanzamiento.
+    marco(this.add.graphics().setDepth(1), HX, BY, HW, HW, { borde: C.madera, fondo: C.bandeja, luz: C.bandejaLuz, osc: C.bandejaSombra, sombra: true });
+    this.add.graphics().setDepth(2).fillStyle(0x2c5a7a, 1).fillRect((HX + 4) * S, (BY + 4) * S, (HW - 8) * S, (HW - 8) * S);
+    if (this.textures.exists('obj_piedra')) {
+      const im = this.add.image((HX + HW / 2) * S, (BY + HW / 2) * S, 'obj_piedra').setDepth(2).setTint(0xa8e4ff);
+      im.setScale(S * Math.min(2, 16 / Math.max(im.frame.width, im.frame.height)));
+    }
+    this.hogarG = this.add.graphics().setDepth(2);
+    this.sombreado(HX + 5.5, BY + 4.5, 'H', 4.5).setOrigin(0, 0);
+    this.hogarCd = this.sombreado(HX + HW / 2, BY + HW / 2, '', 5.5).setOrigin(0.5).setDepth(4);
+    this.castG = this.add.graphics().setDepth(4);
+    this.castTxt = this.sombreado(VW / 2, CAST_Y + 4.5, 'Piedra de hogar', 5).setOrigin(0.5).setDepth(5).setVisible(false);
     // Ficha del movimiento bajo el ratón.
     this.fichaG = this.add.graphics().setDepth(5);
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(6).setVisible(false);
     // Teclas de ayuda.
-    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar'];
+    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar'];
     ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
 
     // Avisos.
@@ -117,6 +156,13 @@ export class HudAventura extends Phaser.Scene {
       const x = p.x / S, y = p.y / S;
       const z = this.panelZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (z) { this.av.asignando = z.a; return; }
+      const mz = this.misZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
+      if (mz) {
+        const st = this.av.partida.estadoMision(mz.m);
+        if (st === 'nueva') this.av.aceptarMision(mz.m); else if (st === 'lista') this.av.entregarMision(mz.m);
+        return;
+      }
+      if (x >= HX && x < HX + HW && y >= BY && y < BY + HW) { this.av.usarHogar(); return; }
       const i = this.casillaEn(x, y);
       if (i < 0) return;
       if (p.rightButtonDown()) { const m = this.av.partida.activo; m.barra[i] = null; this.av.guardar(); return; }
@@ -126,7 +172,9 @@ export class HudAventura extends Phaser.Scene {
   // Para la escena del mundo: ¿este clic (px de pantalla) es del HUD?
   tapaClic(px: number, py: number): boolean {
     const x = px / S, y = py / S;
-    return (x >= BX && x < BX + BW && y >= BY && y < BY + CH + 8) || (!!this.av.panel && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4);
+    const c = this.misCaja;
+    return (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
+      || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h);
   }
   private casillaEn(x: number, y: number): number {
     if (y < BY + 4 || y > BY + 4 + CH) return -1;
@@ -255,10 +303,108 @@ export class HudAventura extends Phaser.Scene {
       if (av.asignando) rect(g, C.elegido, 0.35 + 0.2 * Math.sin(this.time.now / 150), x, y, CW, CH);
       if (i === sobre) { rect(g, C.elegido, 1, x - 1, y - 1, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y + CH, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y, 1, CH); rect(g, C.elegido, 1, x + CW, y, 1, CH); }
     }
+    this.pintarHogar(ptr.x / S, ptr.y / S);
     const px = ptr.x / S, py = ptr.y / S, chip = [...this.yo.zonas, ...this.obj.zonas].find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h);
     if (chip) this.fichaAura(chip);
-    else this.pintarFicha(sobre >= 0 ? m.barra[sobre] : null, sobre);
+    else if (!this.fichaTapada) this.pintarFicha(sobre >= 0 ? m.barra[sobre] : null, sobre);
     this.pintarPanel();
+    this.pintarMisiones();
+    this.pintarSeguimiento(cl ? 44 : 30);
+  }
+
+  // Cara de un Pokémon (primer fotograma de su Idle) que cabe en `tam` px, centrada en (x, y).
+  private cara(x: number, y: number, dex: string, tam: number, objs: Phaser.GameObjects.GameObject[], depth: number): void {
+    const tex = `${clave(dex)}-Idle`;
+    if (!this.textures.exists(tex)) return;
+    const im = this.add.image(x * S, y * S, tex, 0).setDepth(depth);
+    im.setScale(S * Math.min(1, tam / Math.max(im.frame.width, im.frame.height)));
+    objs.push(im);
+  }
+  private iconoItem(x: number, y: number, id: string, tam: number, objs: Phaser.GameObjects.GameObject[], depth: number): void {
+    const ic = ITEMS[id]?.icono;
+    if (!ic || !this.textures.exists(ic)) return;
+    const im = this.add.image(x * S, y * S, ic).setDepth(depth);
+    im.setScale(S * Math.min(1, tam / Math.max(im.frame.width, im.frame.height)));
+    objs.push(im);
+  }
+
+  // Tablón (F junto a él en el pueblo): una fila por zona, una carta por misión, solo con iconos.
+  private pintarMisiones(): void {
+    const av = this.av, pa = av.partida, lista = pa.misiones;
+    const k = av.panel === 'misiones' ? lista.map(m => `${m.id}:${pa.estadoMision(m)}:${pa.progresoMision(m)}`).join('|') : '';
+    if (k === this.misClave) return;
+    this.misClave = k;
+    this.misObjs.forEach(o => o.destroy()); this.misObjs = []; this.misZonas = []; this.misCaja = null;
+    if (av.panel !== 'misiones') return;
+    const zonas = ZONAS_MISION.filter(z => lista.some(m => m.zona === z));
+    const cols = Math.max(...zonas.map(z => lista.filter(m => m.zona === z).length));
+    const w = 12 + cols * (MW + 4) - 4, h = 18 + zonas.length * (MH + 14) + 4, x = Math.round(VW / 2 - w / 2), y = 38;
+    this.misCaja = { x, y, w, h };
+    const g = this.add.graphics().setDepth(6);
+    this.misObjs.push(g);
+    marco(g, x, y, w, h, PANEL);
+    const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.misObjs.push(q); return q; };
+    t(x + 6, y + 5, 'MISIONES', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    t(x + w - 6, y + 5, 'Clic: aceptar · entregar', 5, C.maderaClara).setOrigin(1, 0);
+    zonas.forEach((z, fila) => {
+      const yz = y + 16 + fila * (MH + 14);
+      t(x + 6, yz, NOMBRE_ZONA[z], 5.5, C.tinta, { fontStyle: 'bold' });
+      lista.filter(m => m.zona === z).forEach((m, i) => this.cartaMision(g, x + 6 + i * (MW + 4), yz + 10, m, t));
+    });
+  }
+  private cartaMision(g: G, x: number, y: number, m: Mision, t: (x: number, y: number, s: string, px: number, c: number, o?: Phaser.Types.GameObjects.Text.TextStyle) => Phaser.GameObjects.Text): void {
+    const pa = this.av.partida, st = pa.estadoMision(m), hecha = st === 'hecha';
+    rect(g, st === 'lista' ? C.elegido : st === 'nueva' ? C.madera : C.huecoSombra, 1, x - 1, y - 1, MW + 2, MH + 2);
+    rect(g, st === 'lista' ? C.elegidoFondo : C.hueco, 1, x, y, MW, MH);
+    // Cara (con anillo rojo y corona si es el alfa) y el icono del tipo.
+    if (m.tipo === 'alfa') { rect(g, 0xd0402a, 1, x + 2, y + 2, 28, 28); }
+    rect(g, C.bandeja, 1, x + 3, y + 3, 26, 26);
+    this.cara(x + 16, y + 16, m.dex, 24, this.misObjs, 7);
+    if (m.tipo === 'derrotar') pix(g, x + 33, y + 5, 'espadas');
+    else if (m.tipo === 'alfa') pix(g, x + 33, y + 6, 'corona');
+    else this.iconoItem(x + 37, y + 9, 'pokeball', 9, this.misObjs, 7);
+    // Número: ×N si no la has aceptado; si no, lo que llevas.
+    const num = st === 'nueva' ? `×${m.n}` : hecha ? '' : `${pa.progresoMision(m)}/${m.n}`;
+    t(x + 43, y + 4, num, 8, st === 'lista' ? 0x4f9a3a : C.tinta, { fontStyle: 'bold' });
+    // Señal: "!" nueva, "?" para entregar, visto si ya está.
+    if (st === 'nueva') t(x + MW - 4, y + 1, '!', 9, 0xe8a33a, { fontStyle: 'bold', stroke: HEX(C.tintaOsc), strokeThickness: 1.5 * S }).setOrigin(1, 0);
+    else if (st === 'lista') t(x + MW - 4, y + 1, '?', 9, 0xffd65a, { fontStyle: 'bold', stroke: HEX(C.tintaOsc), strokeThickness: 1.5 * S }).setOrigin(1, 0);
+    else if (hecha) pix(g, x + MW - 9, y + 4, 'visto');
+    // Recompensa: experiencia y objetos (icono ×N).
+    rect(g, C.huecoSombra, 1, x + 2, y + 31, MW - 4, 1);
+    t(x + 4, y + 33.5, `+${m.premio.exp}`, 5.5, 0x3f6ea8, { fontStyle: 'bold' });
+    let ix = x + 30;
+    for (const [id, n] of m.premio.items) {
+      this.iconoItem(ix + 5, y + 38.5, id, 10, this.misObjs, 7);
+      t(ix + 11, y + 34, `×${n}`, 5, C.tinta);
+      ix += 26;
+    }
+    if (hecha) rect(g, C.hueco, 0.55, x, y, MW, MH);   // entregada: apagada
+    this.misZonas.push({ x, y, w: MW, h: MH, m });
+  }
+
+  // Seguimiento (derecha, bajo la hora): las misiones aceptadas con su cara y "2/5"; "?" en dorado si está cumplida.
+  private pintarSeguimiento(y0: number): void {
+    const pa = this.av.partida, act = pa.misiones.filter(m => { const s = pa.estadoMision(m); return s === 'activa' || s === 'lista'; });
+    const k = `${y0}|` + act.map(m => `${m.id}:${pa.progresoMision(m)}`).join('|');
+    if (k === this.segClave) return;
+    this.segClave = k;
+    this.segObjs.forEach(o => o.destroy()); this.segObjs = [];
+    if (!act.length) return;
+    const g = this.add.graphics().setDepth(1), x = VW - 4 - 74;
+    this.segObjs.push(g);
+    act.forEach((m, i) => {
+      const y = y0 + i * 18, lista = pa.estadoMision(m) === 'lista';
+      marco(g, x, y, 74, 16, lista ? { ...PANEL, borde: 0xc8962a, fondo: C.elegidoFondo } : PANEL);
+      rect(g, C.bandeja, 1, x + 2, y + 2, 14, 12);
+      this.cara(x + 9, y + 8, m.dex, 13, this.segObjs, 2);
+      if (m.tipo === 'derrotar') pix(g, x + 19, y + 4.5, 'espadas');
+      else if (m.tipo === 'alfa') pix(g, x + 19, y + 5.5, 'corona');
+      else this.iconoItem(x + 22.5, y + 8, 'pokeball', 8, this.segObjs, 2);
+      const q = this.texto(x + 30, y + 3.5, `${pa.progresoMision(m)}/${m.n}`, 6.5, lista ? 0x4f9a3a : C.tinta, { fontStyle: 'bold' }).setDepth(3);
+      this.segObjs.push(q);
+      if (lista) this.segObjs.push(this.texto(x + 70, y + 1.5, '?', 9, 0xffd65a, { fontStyle: 'bold', stroke: HEX(C.tintaOsc), strokeThickness: 1.5 * S }).setOrigin(1, 0).setDepth(3));
+    });
   }
 
   // Ficha del atajo bajo el ratón (encima de la barra).
@@ -281,6 +427,41 @@ export class HudAventura extends Phaser.Scene {
     this.ficha.setPosition((x + 4) * S, (y + 3) * S);
   }
 
+  // Casilla de la piedra de hogar (persiana mientras se recarga, con los minutos que faltan), su ficha al pasar el
+  // ratón y la barra de lanzamiento mientras se canaliza.
+  private pintarHogar(px: number, py: number): void {
+    const av = this.av, g = this.hogarG, falta = av.hogarFalta(), x = HX + 4, y = BY + 4, w = HW - 8;
+    g.clear();
+    if (falta > 0) {
+      const fr = Math.min(1, falta / HOGAR_CD);
+      rect(g, 0x1a1008, 0.6, x, y + w * (1 - fr), w, w * fr);
+      this.hogarCd.setText(falta >= 60 ? `${Math.ceil(falta / 60)}m` : `${Math.ceil(falta)}`);
+    } else this.hogarCd.setText('');
+    if (av.hogar) rect(g, C.elegido, 0.25 + 0.2 * Math.sin(this.time.now / 120), x, y, w, w);
+    if (px >= HX && px < HX + HW && py >= BY && py < BY + HW) {
+      rect(g, C.elegido, 1, x - 1, y - 1, w + 2, 1); rect(g, C.elegido, 1, x - 1, y + w, w + 2, 1); rect(g, C.elegido, 1, x - 1, y, 1, w); rect(g, C.elegido, 1, x + w, y, 1, w);
+      const fg = this.fichaG;
+      this.ficha.setText(`Piedra de hogar
+Te lleva al pueblo. Quieto ${HOGAR_CARGA} s: si te mueves o te golpean, se corta
+Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60)} min)` : ''}`).setVisible(true);
+      fg.clear();
+      const fw = this.ficha.width / S + 8, fh = this.ficha.height / S + 6, fx = Math.max(4, HX), fy = BY - fh - 3;
+      marco(fg, fx, fy, fw, fh, PANEL);
+      this.ficha.setPosition((fx + 4) * S, (fy + 3) * S);
+      this.fichaTapada = true;
+    } else this.fichaTapada = false;
+    // Barra de lanzamiento.
+    const cg = this.castG, h = av.hogar;
+    cg.clear();
+    this.castTxt.setVisible(!!h);
+    if (!h) return;
+    const f = av.hogarFrac(), cx = Math.round(VW / 2 - CAST_W / 2);
+    marco(cg, cx - 2, CAST_Y - 2, CAST_W + 4, 13, PANEL);
+    rect(cg, 0x2a1a10, 1, cx, CAST_Y, CAST_W, 9);
+    rect(cg, 0x6ec4f0, 1, cx, CAST_Y, Math.round(CAST_W * f), 9);
+    rect(cg, 0xffffff, 0.35, cx, CAST_Y, Math.round(CAST_W * f), 1);
+  }
+
   // Ficha de un bufo o debufo (bajo su icono).
   private fichaAura(z: { x: number; y: number; w: number; h: number; a: Aura }): void {
     const g = this.fichaG;
@@ -295,11 +476,11 @@ export class HudAventura extends Phaser.Scene {
   // Panel de movimientos (K): los que sabe tu Pokémon y los objetos de la mochila.
   private pintarPanel(): void {
     const av = this.av, m = av.partida.activo;
-    const k = av.panel ? `${m.uid}|${m.movs.join()}|${JSON.stringify(av.partida.estado.items)}|${JSON.stringify(av.asignando)}` : '';
+    const k = av.panel === 'movs' ? `${m.uid}|${m.movs.join()}|${JSON.stringify(av.partida.estado.items)}|${JSON.stringify(av.asignando)}` : '';
     if (k === this.panelClave) return;
     this.panelClave = k;
     this.panelObjs.forEach(o => o.destroy()); this.panelObjs = []; this.panelZonas = [];
-    if (!av.panel) return;
+    if (av.panel !== 'movs') return;
     const items = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id]);
     const filasM = Math.ceil(m.movs.length / 3), filasI = Math.ceil(items.length / 3);
     const w = 250, h = 30 + filasM * 18 + (items.length ? 14 + filasI * 18 : 0) + 12, x = Math.round(VW / 2 - w / 2), y = Math.max(32, BY - h - 6);

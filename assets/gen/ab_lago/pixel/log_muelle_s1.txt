@@ -1,0 +1,2 @@
+assets\gen\ab_lago\pixel\muelle_s1_0.png
+74.2s

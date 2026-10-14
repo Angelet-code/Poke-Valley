@@ -1,0 +1,2 @@
+assets\gen\arcane\lago\juncos_s2_0.png
+14.1s

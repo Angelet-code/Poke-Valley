@@ -27,3 +27,7 @@ game.events.once(Phaser.Core.Events.READY, () => game.events.removeAllListeners(
 
 // Para depurar desde la consola del navegador.
 (window as unknown as { pv: Phaser.Game }).pv = game;
+
+// La vista se calcula con el tamaño de la ventana al arrancar (config.ts): si cambia, se recarga.
+let tRedim = 0;
+addEventListener('resize', () => { clearTimeout(tRedim); tRedim = window.setTimeout(() => location.reload(), 400); });

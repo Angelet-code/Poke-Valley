@@ -8,7 +8,8 @@ import { ancla, cargar, clave, info, poner } from '../combate/sprites';
 import { getMove, TIPO_ES } from '../data/movimientos';
 import datos from '../data/gen/combate.json';
 import { animationFor } from '../fx/catalog';
-import { playMove } from '../fx/templates';
+import { animarMovimiento } from '../fx/firmas';
+import { NOMBRES_FORMA, forma, mandibula } from '../fx/firmas/formas';
 import { TYPE_FX } from '../fx/fx/palette';
 import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { BoostId, MoveCue } from '../fx/tipos';
@@ -56,9 +57,32 @@ export class Galeria extends Phaser.Scene {
     kb.on('keydown-SPACE', () => void this.tocar());
     kb.on('keydown-A', () => { this.todos = !this.todos; if (this.todos) void this.tocar(); });
     kb.on('keydown', (e: KeyboardEvent) => { if (/^[1-9]$/.test(e.key)) { this.distancia = 30 + +e.key * 14; this.colocar(); } });
+    kb.on('keydown-F', () => this.verFormas());
     (window as unknown as { galeria: Galeria }).galeria = this;
+    if (new URLSearchParams(location.search).has('formas')) this.verFormas();
     this.colocar();
     void this.tocar();
+  }
+
+  // Hoja con todas las formas de firmas/formas.ts (F o ?formas): cada una en dos estilos, normal y de fuego.
+  private verFormas(): void {
+    const viejo = document.querySelector('canvas[data-formas]');
+    if (viejo) { viejo.remove(); return; }
+    const juego = this.game.canvas, cv = document.createElement('canvas');
+    cv.dataset.formas = '1'; cv.width = juego.width; cv.height = juego.height;
+    cv.style.cssText = `grid-area: 1 / 1; z-index: 5; width: ${juego.width}px; height: ${juego.height}px; background: #a4ba7a;`;
+    juego.parentElement!.appendChild(cv);
+    const g = cv.getContext('2d')!, cols = 8, cw = cv.width / cols, ch = cv.height / Math.ceil((NOMBRES_FORMA.length + 1) / cols * 2) ;
+    const fuego = (c: CanvasRenderingContext2D) => { const gr = c.createLinearGradient(-1, 0, 1, 0); gr.addColorStop(0, '#ff3a10'); gr.addColorStop(0.5, '#ffa020'); gr.addColorStop(1, '#fff2a0'); return gr; };
+    [...NOMBRES_FORMA, 'colmillos' as const].forEach((n, i) => {
+      for (const est of [0, 1]) {
+        const k = i * 2 + est, x = (k % cols + 0.5) * cw, y = (Math.floor(k / cols) + 0.45) * ch, tam = Math.min(cw, ch) * 0.32;
+        const e = est ? { base: fuego, borde: '#7a1c08', brillo: '#ff8a20', brilloTam: 18, claro: '#ffd070' } : { base: '#f2e2c4', claro: '#fff6e6', oscuro: '#c9a77c' };
+        if (n === 'colmillos') mandibula(g, x, y, tam, est ? 0.15 : 0.7, est ? { ...e, base: '#a0201c' } : { base: '#b8434a' });
+        else forma(g, n, x, y, tam, est ? -0.4 : 0, e);
+        g.fillStyle = '#2a1a10'; g.font = `${Math.round(ch * 0.12)}px sans-serif`; g.textAlign = 'center'; g.fillText(n, x, y + ch * 0.45);
+      }
+    });
   }
 
   private muñeco(dex: string, x: number, y: number): Muñeco {
@@ -100,7 +124,7 @@ export class Galeria extends Phaser.Scene {
     const a = m?.category === 'Status' ? 'Charge' : m?.flags.includes('contact') ? 'Attack' : 'Shoot';
     poner(this.yo.spr, this.yo.dex, a, this.yo.dir);
     try {
-      await playMove({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user: this.geo(this.yo, 'p1'),
+      await animarMovimiento({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user: this.geo(this.yo, 'p1'),
         targets: anim.template === 'aura' || anim.template === 'shield' ? [] : [this.geo(this.el, 'p2')], losses: new Map([['p2', 0.3]]),
         commit: () => undefined, text: { boost: (s, n) => `${n > 0 ? '+' : ''}${n} ${s}`, status: s => s } });
     } catch (e) { console.warn(id, e); }

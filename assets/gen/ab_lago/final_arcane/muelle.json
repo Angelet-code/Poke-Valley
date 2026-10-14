@@ -1,0 +1,1 @@
+{"id": "muelle", "tipo": "roca", "archivo": "muelle.png", "w": 1297, "h": 1434, "ancla": [648, 1433], "huella": [155, 830, 1141, 1375], "origen": "arcane/muelle_s3_0.png", "sombra": {"archivo": "muelle_sombra.png", "w": 1247, "h": 1022, "dx": -2, "dy": 464}, "k": 0.3331}

@@ -60,6 +60,11 @@ TABLA = [
     # Mapa de noche (tanda 5, gen_klein5.sh): farola de hierro sobre base de piedra y farola de madera con farolillo colgado.
     ("farola", "roca", "klein_farola_s1_0.png", 12),
     ("farola_madera", "roca", "klein_farola_b_s1_0.png", 10),
+    # Lago Celeste (2026-10-15): las piezas en estilo dibujo de la prueba A/B (assets/gen/ab_lago/), para que el lago
+    # tenga sauces, juncos y muelle también sin ?set=arcane.
+    ("sauce", "arbol", "../../../assets/gen/ab_lago/dibujo/sauce_s1_0.png", 84),
+    ("juncos", "roca", "../../../assets/gen/ab_lago/dibujo/juncos_s2_0.png", 22),
+    ("muelle", "roca", "../../../assets/gen/ab_lago/dibujo/muelle_s4_0.png", 72),
 ]
 
 

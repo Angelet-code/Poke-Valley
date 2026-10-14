@@ -706,6 +706,84 @@
     "dy": 1490
    },
    "k": 0.1754
+  },
+  {
+   "id": "sauce",
+   "tipo": "arbol",
+   "archivo": "sauce.png",
+   "w": 1152,
+   "h": 1348,
+   "ancla": [
+    576,
+    1347
+   ],
+   "huella": [
+    437,
+    1158,
+    714,
+    1347
+   ],
+   "origen": "sauce_s1_0_x2.png",
+   "sombra": {
+    "archivo": "sauce_sombra.png",
+    "w": 1406,
+    "h": 629,
+    "dx": 179,
+    "dy": 735
+   },
+   "k": 0.4375
+  },
+  {
+   "id": "juncos",
+   "tipo": "roca",
+   "archivo": "juncos.png",
+   "w": 750,
+   "h": 1236,
+   "ancla": [
+    375,
+    1235
+   ],
+   "huella": [
+    90,
+    715,
+    660,
+    1185
+   ],
+   "origen": "juncos_s2_0_x2.png",
+   "sombra": {
+    "archivo": "juncos_sombra.png",
+    "w": 700,
+    "h": 377,
+    "dx": 178,
+    "dy": 861
+   },
+   "k": 0.176
+  },
+  {
+   "id": "muelle",
+   "tipo": "roca",
+   "archivo": "muelle.png",
+   "w": 1205,
+   "h": 1339,
+   "ancla": [
+    602,
+    1338
+   ],
+   "huella": [
+    144,
+    775,
+    1060,
+    1284
+   ],
+   "origen": "muelle_s4_0_x2.png",
+   "sombra": {
+    "archivo": "muelle_sombra.png",
+    "w": 1045,
+    "h": 186,
+    "dx": 84,
+    "dy": 1204
+   },
+   "k": 0.3585
   }
  ]
 }

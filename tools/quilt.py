@@ -14,6 +14,8 @@ Image quilting (Efros y Freeman) sobre un lienzo que enlaza en los bordes:
    corte 1-2 px.
 3. Reduce por --scale (la escala a la que se vio la referencia en la maqueta).
 Los colores no se tocan: es la pintura original de la referencia.
+--kind color --color R,G,B --tol T [--ok 0.9]: la clase son los píxeles a menos de T del color dado (para
+referencias oscuras, como la del estilo Arcane, docs/art/ref/arcane_lago.png, donde no sirven las de arena/césped).
 """
 import argparse
 import random
@@ -22,8 +24,17 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 
+COLOR = None   # (r, g, b, tol) para --kind color
+OK = None
+
+
 def class_mask(a, kind):
     r, g, b = (a[..., i].astype(int) for i in range(3))
+    if kind == "color":
+        cr, cg, cb, tol = COLOR
+        # además, el mismo matiz (orden de canales respecto al azul): el agua oscura no cuela como césped
+        return (((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2 < tol * tol)
+                & (np.sign(g - b) == np.sign(cg - cb)) & (np.sign(r - b) == np.sign(cr - cb)) & (g - b > (cg - cb) * 0.4))
     if kind in ("sand", "flag"):
         return (r > g + 4) & (r > 165) & (b < r - 45)
     return (g > r + 8) & (g > b + 40) & (g > 140)
@@ -34,7 +45,7 @@ def candidates(a, kind, block, step=6):
     # camino de losas (más claras): solo la tierra lisa. Césped: muy estricto
     # para no arrastrar las piedrecitas sueltas.
     # Losas: lo contrario que la arena, solo las ventanas claras del camino.
-    ok = 0.998 if kind == "grass" else 0.95
+    ok = OK if OK is not None else 0.998 if kind == "grass" else 0.95
     m = class_mask(a, kind)
     S = np.pad(m.cumsum(0).cumsum(1), ((1, 0), (1, 0)))
     out = []
@@ -73,13 +84,20 @@ def main():
     a = argparse.ArgumentParser()
     a.add_argument("ref")
     a.add_argument("dst")
-    a.add_argument("--kind", choices=["sand", "grass", "flag"], required=True)
+    a.add_argument("--kind", choices=["sand", "grass", "flag", "color"], required=True)
+    a.add_argument("--color", help="R,G,B para --kind color")
+    a.add_argument("--tol", type=float, default=40)
+    a.add_argument("--ok", type=float, help="fracción mínima de la clase en cada bloque candidato")
     a.add_argument("--size", type=int, default=512)
     a.add_argument("--block", type=int, default=96)
     a.add_argument("--scale", type=float, default=0.5625)
     a.add_argument("--seed", type=int, default=1)
     a.add_argument("--mask-out")
     o = a.parse_args()
+    global COLOR, OK
+    if o.color:
+        COLOR = (*map(int, o.color.split(",")), o.tol)
+    OK = o.ok
     rng = random.Random(o.seed)
     ref = np.asarray(Image.open(o.ref).convert("RGB"))
     B = o.block

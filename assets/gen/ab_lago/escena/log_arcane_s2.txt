@@ -1,0 +1,2 @@
+assets\gen\ab_lago\escena\arcane_s2_0.png
+12.0s

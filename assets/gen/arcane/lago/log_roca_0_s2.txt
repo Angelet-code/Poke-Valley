@@ -1,0 +1,2 @@
+assets\gen\arcane\lago\roca_0_s2_0.png
+15.1s

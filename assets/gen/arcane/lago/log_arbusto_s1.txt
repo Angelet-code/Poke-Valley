@@ -1,0 +1,2 @@
+assets\gen\arcane\lago\arbusto_s1_0.png
+35.1s

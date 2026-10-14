@@ -229,6 +229,14 @@ export class Stage {
   settle(): void {
     for (const a of this.anims.splice(0)) { Object.assign(a.spr, { ...NEUTRO, obj: a.spr.obj }); a.fin(); }
   }
+  /**
+   * Al terminar un movimiento, sus sprites vuelven a reposo si ya no los mueve nada (en Colleja, `settle` al final de
+   * cada turno): una animación que acaba fuera de sitio, con `fill: both`, dejaba el sprite desplazado de su sombra.
+   */
+  reposar(sprite: FxSprite | null | undefined): void {
+    if (!sprite || this.anims.some(a => a.spr === sprite)) return;
+    Object.assign(sprite, { ...NEUTRO, obj: sprite.obj });
+  }
 
   dispose(): void {
     this.settle();

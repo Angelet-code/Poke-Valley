@@ -1,0 +1,2 @@
+assets\gen\arcane\lago\tocon_s3_0.png
+15.2s
