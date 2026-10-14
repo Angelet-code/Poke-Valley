@@ -6,7 +6,7 @@ import Phaser from 'phaser';
 import { DIBUJO, S, VH, VW } from '../config';
 import { ITEMS, PRECIO_RECURSO } from '../data/items';
 import { BAYAS_PLATO, CONSTRUIBLES, ENERGIA_PLATO, MEJORAS_CASA } from '../data/edificios';
-import { MIN_DESMAYO, MIN_DIA, RECURSOS, capacidad, jornada, oscuridad, type Recurso } from '../sim/World';
+import { MIN_DESMAYO, MIN_DIA, RECURSOS, capacidad, jornada, luzAmbiente, type Recurso } from '../sim/World';
 import { LINEAS, NIVEL_MAX, NOMBRE_GRUPO, NOMBRE_PERFIL, NOMBRE_STAT, NOMBRE_TIPO, STATS, expNivel, factorNivel, forma, perfil, stats, type Stat } from '../data/pokedex';
 import { ICONO_RECURSO, NOMBRE_RECURSO, type WorldScene } from './WorldScene';
 
@@ -178,7 +178,7 @@ export class UIScene extends Phaser.Scene {
     }
 
     // Tinte de atardecer/noche sobre el valle (bajo el HUD).
-    this.noche = this.add.rectangle(0, 0, VW * S, VH * S, 0x101c30, 1).setOrigin(0).setDepth(0).setAlpha(0); // la opacidad la da setAlpha en update()
+    this.noche = this.add.rectangle(0, 0, VW * S, VH * S, 0xffffff, 1).setOrigin(0).setDepth(0).setBlendMode(Phaser.BlendModes.MULTIPLY); // el color lo da update()
 
     // Energía (arriba izquierda).
     const ge = this.add.graphics().setDepth(1);
@@ -694,8 +694,9 @@ export class UIScene extends Phaser.Scene {
       this.precioMoneda.setVisible(ver);
     }
 
-    // Atardecer a partir de las 18:00, noche desde las 21:00.
-    // En el mapa dibujo la noche la pone la luz del valle (WorldScene.luzDelDia), con las farolas.
-    this.noche.setAlpha(DIBUJO ? 0 : oscuridad(e.minuto) * 0.45);
+    // Mapa pixel: velo en multiply con el color de la hora (alba, día, atardecer, noche: World.luzAmbiente), algo aclarado
+    // porque aquí no hay farolas. En el mapa dibujo la luz la pone el valle (WorldScene.luzDelDia).
+    if (DIBUJO) this.noche.setVisible(false);
+    else this.noche.setVisible(true).setFillStyle(Phaser.Display.Color.GetColor(...luzAmbiente(sim.minutoExacto).map(v => Math.round(v + (255 - v) * 0.3)) as [number, number, number]), 1);
   }
 }

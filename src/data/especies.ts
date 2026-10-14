@@ -6,6 +6,8 @@
 // La clave es también la de su línea evolutiva en data/pokedex.ts (stats, niveles y evoluciones).
 // Sprites PMD de SpriteCollab en assets/sprites/pokemon/<dex>/.
 // Ladrillos: los cuece el horno con piedra; platos: guiso de bayas que se cocina en la casa (GDD-pueblo §11).
+import { LINEAS, type Tipo } from './pokedex';
+
 export type Recurso = 'madera' | 'piedra' | 'bayas' | 'ladrillos' | 'platos';
 export type TipoTarea = 'arbol' | 'roca' | 'planta';
 
@@ -22,7 +24,8 @@ export interface Especie {
 export const TRABAJOS = ['Attack', 'Punch', 'Strike', 'Swing', 'Eat'];
 
 export const ESPECIES: Record<string, Especie> = {
-  marill: { dex: '0183', nombre: 'Marill', pide: { r: 'bayas', n: 5 }, afinidad: 'planta', riega: true, trabajo: 'Eat' },
+  // Nivel 10: llega ya como Marill (su línea empieza en Azurill, data/pokedex.ts).
+  marill: { dex: '0183', nombre: 'Marill', pide: { r: 'bayas', n: 5 }, afinidad: 'planta', riega: true, trabajo: 'Eat', nivel: 10 },
   bidoof: { dex: '0399', nombre: 'Bidoof', pide: { r: 'piedra', n: 4 }, afinidad: 'arbol', trabajo: 'Eat' },
   geodude: { dex: '0074', nombre: 'Geodude', pide: { r: 'madera', n: 6 }, afinidad: 'roca', trabajo: 'Punch' },
   oddish: { dex: '0043', nombre: 'Oddish', pide: { r: 'bayas', n: 8 }, afinidad: 'planta', trabajo: 'Attack' },
@@ -35,8 +38,24 @@ export const ESPECIES: Record<string, Especie> = {
   machop: { dex: '0066', nombre: 'Machop', afinidad: 'roca', trabajo: 'Attack', atrapa: 0.25 },
 };
 
-// Salvajes: cuanto más fácil de atrapar, más a menudo aparece.
-export const SALVAJES = ['pidgey', 'psyduck', 'pikachu', 'machop'];
-
 // Orden de llegada: uno cada vez, al amanecer siguiente a que se una el anterior.
 export const ORDEN_VISITAS = ['marill', 'bidoof', 'geodude', 'oddish', 'growlithe'];
+
+// El resto de líneas de la Pokédex (data/pokedex.ts) también rondan por el valle como salvajes. Sus datos salen
+// de la línea: afinidad por su tipo, riega si es de Agua, y cuanto más fuerte su última forma, más difícil de atrapar.
+const AFINIDAD: Record<Tipo, TipoTarea> = {
+  planta: 'planta', agua: 'planta', bicho: 'planta', hada: 'planta', electrico: 'planta', psiquico: 'planta',
+  roca: 'roca', tierra: 'roca', acero: 'roca', lucha: 'roca', fuego: 'roca', hielo: 'roca', dragon: 'roca',
+  normal: 'arbol', volador: 'arbol', veneno: 'arbol', fantasma: 'arbol', siniestro: 'arbol',
+};
+for (const l of Object.values(LINEAS)) {
+  if (ESPECIES[l.id]) continue;
+  const f0 = l.formas[0], bst = l.formas[l.formas.length - 1].base.reduce((t, v) => t + v, 0);
+  ESPECIES[l.id] = { dex: f0.dex, nombre: f0.nombre, afinidad: AFINIDAD[l.tipo], riega: l.tipos.includes('agua') || undefined,
+    trabajo: 'Attack', atrapa: Math.round(Math.min(0.6, Math.max(0.1, 1.05 - bst / 600)) * 100) / 100 };
+}
+
+// Salvajes: todas las especies salvo los visitantes. Cuanto más fácil de atrapar, más a menudo aparece.
+export const SALVAJES = Object.keys(ESPECIES).filter(id => !ORDEN_VISITAS.includes(id));
+// Probabilidad de que un salvaje aparezca ya evolucionado (a partir del nivel de una de sus evoluciones).
+export const PROB_EVOLUCIONADO = 0.3;

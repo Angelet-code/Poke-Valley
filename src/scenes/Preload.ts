@@ -1,4 +1,5 @@
 // Preload: todas las imágenes (terreno, árboles, rocas, objetos pixel art, bayas, Bulbasaur).
+/// <reference types="vite/client" />
 import Phaser from 'phaser';
 import { A, DIBUJO, ESPECIES, PELIPPER_DEX, REG, S, VH, VW, type AnimSet } from '../config';
 import { L, precargar } from '../render/Dibujo';
@@ -8,6 +9,9 @@ import { TRABAJOS } from '../data/especies';
 import { FORMAS } from '../data/pokedex';
 
 export const TREE_N = 4, ROCK_N = 4;
+// Hojas PMD con mapa de normales (tools/normales_pokemon.py: <Anim>-Normal.png y <Anim>-Luz.png, contorno teñido).
+// En el mapa dibujo se cargan esas en lugar de -Anim.png, para que las farolas den volumen a los Pokémon (pipeline Cel).
+const NORMALES = new Set(Object.keys(import.meta.glob('/assets/sprites/pokemon/*/*-Normal.png')).map(r => r.replace(/^.*pokemon\//, '').replace('-Normal.png', '')));
 
 export class Preload extends Phaser.Scene {
   constructor() { super('preload'); }
@@ -40,15 +44,18 @@ export class Preload extends Phaser.Scene {
       this.load.image('icono_' + id, B + b.icono);
     }
 
+    const hoja = (key: string, dex: string, name: string, a: AnimSet) => {
+      const ruta = `${A}sprites/pokemon/${dex}/${name}`, frameConfig = { frameWidth: a[name].fw, frameHeight: a[name].fh };
+      if (DIBUJO && NORMALES.has(`${dex}/${name}`)) this.load.spritesheet({ key, url: `${ruta}-Luz.png`, normalMap: `${ruta}-Normal.png`, frameConfig });
+      else this.load.spritesheet(key, `${ruta}-Anim.png`, frameConfig);
+    };
     const anims = this.registry.get(REG.anims) as AnimSet;
-    for (const name in anims) this.load.spritesheet('b-' + name, `${A}sprites/pokemon/0001/${name}-Anim.png`, { frameWidth: anims[name].fw, frameHeight: anims[name].fh });
+    for (const name in anims) hoja('b-' + name, '0001', name, anims);
     const pel = this.registry.get(REG.pelipper) as AnimSet;
-    for (const name of ['Walk', 'Idle']) if (pel[name]) this.load.spritesheet('pelipper-' + name, `${A}sprites/pokemon/${PELIPPER_DEX}/${name}-Anim.png`, { frameWidth: pel[name].fw, frameHeight: pel[name].fh });
+    for (const name of ['Walk', 'Idle']) if (pel[name]) hoja('pelipper-' + name, PELIPPER_DEX, name, pel);
     const aldeanos = this.registry.get(REG.animsAldeanos) as Record<string, AnimSet>;
     // Una entrada por forma (bidoof, bibarel…), con la carpeta de su número de Pokédex.
-    for (const id in aldeanos) for (const name in aldeanos[id]) {
-      this.load.spritesheet(`${id}-${name}`, `${A}sprites/pokemon/${FORMAS[id]?.dex ?? ESPECIES[id].dex}/${name}-Anim.png`, { frameWidth: aldeanos[id][name].fw, frameHeight: aldeanos[id][name].fh });
-    }
+    for (const id in aldeanos) for (const name in aldeanos[id]) hoja(`${id}-${name}`, FORMAS[id]?.dex ?? ESPECIES[id]?.dex ?? id.slice(1), name, aldeanos[id]); // m<dex>: modo muestra
   }
 
   create(): void {
@@ -76,6 +83,7 @@ export class Preload extends Phaser.Scene {
         const tr = [ESPECIES[FORMAS[id]?.linea ?? id]?.trabajo, ...TRABAJOS].find(n => n && an[n]) ?? '';
         if (an[tr]) this.anims.create({ key: `${id}-Trabajo-${r}`, repeat: -1, frames: fr(tr, r) });
         if (an.Idle) this.anims.create({ key: `${id}-Idle-${r}`, frames: [fr('Idle', r)[0]] });
+        if (an.Idle) this.anims.create({ key: `${id}-Reposo-${r}`, repeat: -1, frames: fr('Idle', r) }); // Idle entero (humo de Gastly, respirar…)
         if (an.Eat) this.anims.create({ key: `${id}-Comer-${r}`, repeat: -1, frames: fr('Eat', r) }); // desayuno en el comedero
       }
       if (an.Sleep) this.anims.create({ key: `${id}-Sleep`, repeat: -1, frames: fr('Sleep', 0) });

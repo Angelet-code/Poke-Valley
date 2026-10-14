@@ -13,7 +13,10 @@ sin diálogo, sin combate, muy tranquilo). Stack: Phaser 3 + TypeScript + Vite. 
 - Juego: servidor `juego` de `.claude/launch.json` (`npm run dev`, Vite en http://127.0.0.1:5174;
   `npm install` la primera vez). **Mapa por defecto (2026-10-14): `dibujo`**, el pueblo del lab en estilo dibujo
   (elementos Klein en SVG, `src/data/mapaDibujo.ts` + `src/render/Dibujo.ts`; casa = `casa_grande`, almacén = `almacen`,
-  tienda = caja de Pelipper; 13 farolas y la hoguera se encienden al anochecer con Light2D, `WorldScene.luzDelDia`;
+  tienda = caja de Pelipper; 13 farolas y la hoguera se encienden al anochecer (19:15-20:15) y se apagan al amanecer (6:15-7:15) con Light2D, `WorldScene.luzDelDia`;
+  los Pokémon se cargan con su `-Luz.png` + `-Normal.png` (`Preload.NORMALES`) y van con el pipeline Cel (`WorldScene.iluminar`);
+  `?muestra`: 48 Pokémon de adorno paseando por el pueblo, para ver cómo quedan (`src/data/muestra.ts`; no se guardan);
+  la luz ambiente sigue la curva `World.luzAmbiente` (alba, amanecer, día, tarde dorada, atardecer, anochecer, hora azul, noche; también el velo del mapa pixel);
   partida guardada aparte). El día (6:00 → 2:00) dura 10 minutos (`SEG_POR_MINUTO = 0.5`).
   `?mapa=aldea_d` vuelve al pueblo pixel art; `?mapa=aldea_b` elige otro mapa de `docs/art/mapas/` (`aldea_d` es el pueblo pixel: `tools/map_village.py` variante `pueblo`, con nidos y solares para construir; un edificio nunca tapa el dibujo de otro, `WorldScene.dibujoDe`), `?nueva`
   empieza partida nueva. `npm run check` = comprobación de tipos. Código: `src/sim/World.ts`
@@ -28,7 +31,8 @@ sin diálogo, sin combate, muy tranquilo). Stack: Phaser 3 + TypeScript + Vite. 
   aldeanos con trabajo + construir nidos y comedero; el estado de cada paso está al final de ese archivo).
   B = modo construcción (`src/data/edificios.ts`: costes; clic coloca, B/Esc/clic der. sale).
   Utilidad de cada edificio (horno → ladrillos, guardería, cocina y ampliación de la casa): `docs/GDD-pueblo.md` §11.
-  Poké Balls: invitar a Pokémon salvajes que rondan por el valle (puede fallar) y Honor Ball con visitantes: `docs/GDD-pueblo.md` §12.
+  Poké Balls: invitar a Pokémon salvajes que rondan por el valle (puede fallar; todas las líneas de la Pokédex, a veces ya evolucionados) y Honor Ball con visitantes: `docs/GDD-pueblo.md` §12.
+  Quietos, los Pokémon reproducen su Idle entero en bucle (anim `<id>-Reposo-<dir>`); Bulbasaur, solo su primer fotograma.
   Controles: F, espacio y clic (izq. o der.) son la misma acción (`WorldScene.accion`), por orden:
   aldeano bajo el cursor (elegirlo y luego clic en un árbol/roca/planta = darle trabajo; al visitante, darle
   lo que pide), recoger, Látigo Cepa (cosechar bayas, rama de un árbol, piedra de una roca), en la mesa

@@ -8,6 +8,7 @@ import type { BayasData, ObjCatalog } from '../data/types';
 import { registrarBayas } from '../data/items';
 import { TRABAJOS } from '../data/especies';
 import { LINEAS } from '../data/pokedex';
+import { DEX_MUESTRA, MUESTRA, claveMuestra } from '../data/muestra';
 
 // Animaciones PMD que usamos, leídas del AnimData.xml de cada Pokémon.
 function leerAnims(xml: XMLDocument, extras: string[] = []): AnimSet {
@@ -41,6 +42,7 @@ export class Boot extends Phaser.Scene {
     this.load.xml('pelipper-xml', `${A}sprites/pokemon/${PELIPPER_DEX}/AnimData.xml`);
     // Aldeanos: cada forma de su línea evolutiva (data/pokedex.ts), para poder evolucionar.
     for (const id in ESPECIES) for (const f of formasAldeano(id)) this.load.xml(`${f.id}-xml`, `${A}sprites/pokemon/${f.dex}/AnimData.xml`);
+    if (MUESTRA) for (const dex of DEX_MUESTRA) this.load.xml(`${claveMuestra(dex)}-xml`, `${A}sprites/pokemon/${dex}/AnimData.xml`);
     this.load.on('loaderror', (f: Phaser.Loader.File) => console.warn('No se pudo cargar', f.key, f.url));
   }
 
@@ -52,6 +54,10 @@ export class Boot extends Phaser.Scene {
     for (const id in ESPECIES) for (const f of formasAldeano(id)) {
       const xml = this.cache.xml.get(`${f.id}-xml`) as XMLDocument | undefined;
       if (xml) aldeanos[f.id] = leerAnims(xml, [ESPECIES[id].trabajo, ...TRABAJOS]);
+    }
+    if (MUESTRA) for (const dex of DEX_MUESTRA) {
+      const xml = this.cache.xml.get(`${claveMuestra(dex)}-xml`) as XMLDocument | undefined;
+      if (xml) aldeanos[claveMuestra(dex)] = leerAnims(xml);
     }
     this.registry.set(REG.mapa, DIBUJO ? terrenoDibujo() : this.cache.json.get('mapa'));
     if (DIBUJO) this.registry.set(REG.dibujo, catalogo(this));

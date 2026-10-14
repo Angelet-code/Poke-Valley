@@ -271,7 +271,7 @@ hoy de su jornada y su próxima evolución.
 mediana de todas las líneas (±5 % = en la media). Bueno = bien siempre · Precoz = bien al principio, flojo
 al final · Tardío = flojo al principio, bien al final · Flojo = flojo siempre · Normal = en la media.
 
-**54 líneas, 3 por tipo** (`src/data/pokedex.ts`; consulta con gráfica: `pokedex.html` en el servidor del juego):
+**61 líneas, 3 por tipo y 7 de Pokémon grandes** (2026-10-14: Munchlax→Snorlax, Lapras, Wailmer, Bergmite, Rhyhorn, Larvitar, Dratini). Marill, Pikachu y Clefairy empiezan en su bebé (Azurill, Pichu, Cleffa), que evoluciona a nivel 10; el visitante Marill llega a nivel 10 (ya como Marill) (`src/data/pokedex.ts`; consulta con gráfica: `pokedex.html` en el servidor del juego):
 
 | Tipo | Líneas (perfil) |
 |---|---|
@@ -345,9 +345,14 @@ ampliación. Código: `src/data/edificios.ts` (`puestos`, `produce`, `tipo`, `ex
 Segunda forma de conseguir aldeanos, además de los visitantes: Pokémon **salvajes** que rondan por el
 valle sin pedir nada. Se les lanza una Poké Ball y **puede fallar**. No hay combate.
 
-- **Salvajes** (`src/data/especies.ts`, `SALVAJES`): Pidgey (árbol), Psyduck (prado, riega), Pikachu (prado)
-  y Machop (roca). Cada uno tiene `atrapa`, que es la probabilidad de que se quede con una Poké Ball:
-  0,6 / 0,45 / 0,35 / 0,25. Los fáciles salen más a menudo, y primero las especies que aún no viven en el pueblo.
+- **Salvajes** (`src/data/especies.ts`, `SALVAJES`): **todas las líneas de la Pokédex salvo los visitantes**
+  (2026-10-14). Pidgey (árbol), Psyduck (prado, riega), Pikachu (prado) y Machop (roca) tienen `atrapa` a mano
+  (0,6 / 0,45 / 0,35 / 0,25); el resto lo saca de su línea: afinidad por tipo (Planta, Agua, Bicho, Hada, Eléctrico y
+  Psíquico → prado; Roca, Tierra, Acero, Lucha, Fuego, Hielo y Dragón → roca; el resto → árbol), riega si es de Agua,
+  y `atrapa` = 1,05 − (stats totales de su última forma)/600, entre 0,1 y 0,6. `atrapa` es la probabilidad de que se
+  quede con una Poké Ball. Los fáciles salen más a menudo, y primero las especies que aún no viven en el pueblo.
+- **Evolucionados** (`PROB_EVOLUCIONADO` = 30 %): el salvaje puede salir ya en una de sus evoluciones, con el nivel
+  de esa forma (+0-4). Cuesta más atraparlo (`atrapa` × 0,6).
 - **Cuándo aparecen** (`World.aparecerSalvaje`): al amanecer con un 50 % y en cada hora de día (7-18) con un
   15 %, si no hay ya uno. Solo hay uno cada vez. Sale a 10 casillas o más del almacén y pasea despacio a
   3 casillas o menos de ese sitio. Por la noche se va.

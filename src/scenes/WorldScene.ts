@@ -7,11 +7,13 @@ import { DIBUJO, DIR_VEC, ESPECIES, NUEVA, REG, ROW_FROM_ANGLE, S, VH, VW } from
 import { COLOCADOS, PALETA_DIBUJO, detalles } from '../data/mapaDibujo';
 import { dentroDe, dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
+import { pipelineCel } from '../render/CelPipeline';
+import { DEX_MUESTRA, MUESTRA, claveMuestra } from '../data/muestra';
 import { ITEMS } from '../data/items';
 import { CONSTRUIBLES, EDIFICIO, MEJORAS_CASA, NIDOS_INICIALES } from '../data/edificios';
 import type { MapData, ObjCatalog } from '../data/types';
 import { Terrain, T, screenTex } from '../render/Terrain';
-import { RECURSOS, World, afin, oscuridad, formaDe, sitioPlanta, type Aldeano, type Casilla, type Coste, type Evento, type Planta, type Punto, type Recurso, type Tarea } from '../sim/World';
+import { RECURSOS, World, afin, farolas, luzAmbiente, formaDe, sitioPlanta, type Aldeano, type Casilla, type Coste, type Evento, type Planta, type Punto, type Recurso, type Tarea } from '../sim/World';
 import { TREE_N, ROCK_N } from './Preload';
 import { hash } from '../util';
 
@@ -26,8 +28,8 @@ interface Circulo { x: number; y: number; r: number }
 // rombo: superelipse dentro del rectángulo (el estanque); poli: planta en perspectiva de un edificio (el rectángulo es su caja)
 interface Bloque { x: number; y: number; w: number; h: number; rombo?: boolean; poli?: [number, number][] }
 interface Luz { luz: Phaser.GameObjects.Light; halo: Phaser.GameObjects.Image; tipo: TipoLuz; fase: number }
-// Luz del día del mapa dibujo (Light2D): ambiente de día (blanco = sin cambio), al atardecer y de noche.
-const AMB_DIA = [255, 255, 255], AMB_TARDE = [255, 206, 170], AMB_NOCHE = [64, 78, 126];
+// Pokémon de adorno del modo muestra (data/muestra.ts): pasean entre puntos libres cercanos.
+interface Paseante { spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; clave: string; x: number; y: number; meta: Punto | null; espera: number; dir: number; a: number }
 interface Interactivo { x: number; y: number; r: number; tipo: 'almacen' | 'caja' | 'cama' }
 // Árboles y rocas: se talan/pican con Látigo Cepa y son sitios de trabajo para los aldeanos.
 interface Diana { tipo: 'arbol' | 'roca'; x: number; y: number; img: Phaser.GameObjects.Image; sitio: Punto }
@@ -80,6 +82,7 @@ export class WorldScene extends Phaser.Scene {
   private listo = false;          // el suelo se calcula en otros hilos: hasta tenerlo, update no hace nada
   private montaje = 0;
   private piezas: Pieza[] = [];                // elementos del mapa dibujo (se aclaran si tapan a Bulbasaur)
+  private paseantes: Paseante[] = [];             // modo muestra
   private luces: Luz[] = [];                    // farolas y hoguera del mapa dibujo: se encienden al anochecer
   private lugaresDibujo: { almacen: Punto; casa: Punto; entrada: Punto } | null = null;
 
@@ -101,6 +104,7 @@ export class WorldScene extends Phaser.Scene {
     this.luces = []; this.lugaresDibujo = null; this.piezas = [];
     // Mapa dibujo: todo lo que se dibuja (imágenes y sprites) recibe la luz del día y de las farolas (Light2D).
     this.events.off(Phaser.Scenes.Events.ADDED_TO_SCENE, this.iluminar, this);
+    if (DIBUJO) { const cel = pipelineCel(this); cel.altura = 0.5; cel.bandas = 3; cel.suave = 0.5; cel.ganancia = 0.55; } // como el lab de noche
     if (DIBUJO) { this.lights.enable().setAmbientColor(0xffffff); this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, this.iluminar, this); }
     const map = this.registry.get(REG.mapa) as MapData;
     this.objs = this.registry.get(REG.objs) as ObjCatalog;
@@ -193,6 +197,7 @@ export class WorldScene extends Phaser.Scene {
       : sinNadie ? 'Junta madera y piedra (F o clic en un árbol o una roca) y construye un nido (B): alguien vendrá a vivir al valle.'
       : `Hay ${this.sim.plazas()} camas libres: vendrán visitantes. Junta bayas, madera y piedra (F o clic) para lo que pidan.`);
     if (visita.length) this.time.delayedCall(3200, () => this.procesar(visita));
+    if (MUESTRA) this.crearMuestra();
     this.listo = true;
   }
 
@@ -237,14 +242,15 @@ export class WorldScene extends Phaser.Scene {
       grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.35, 'rgba(255,255,255,0.35)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = grad; g.fillRect(0, 0, n, n); c.refresh(); c.setFilter(Phaser.Textures.FilterMode.LINEAR);
     }
-    const luz = this.lights.addLight(x, y, tipo.radio, tipo.color, 0);
+    const luz = Object.assign(this.lights.addLight(x, y, tipo.radio, tipo.color, 0), { cel: tipo }); // `cel`: lo lee CelPipeline.onRender
     const halo = this.add.image(x, y, 'halo').setDisplaySize(tipo.radio * 0.5, tipo.radio * 0.5).setTint(tipo.color).setAlpha(0)
       .setBlendMode(Phaser.BlendModes.ADD).setDepth(depth);
     halo.resetPipeline();
     this.luces.push({ luz, halo, tipo, fase: Math.random() * 100 });
   }
+  // Los Pokémon (hojas con mapa de normales, Preload) van con el pipeline cel: la farola les da por su lado, en bandas.
   private iluminar(go: Phaser.GameObjects.GameObject): void {
-    if (go instanceof Phaser.GameObjects.Image || go instanceof Phaser.GameObjects.Sprite) go.setPipeline('Light2D');
+    if (go instanceof Phaser.GameObjects.Image || go instanceof Phaser.GameObjects.Sprite) go.setPipeline(go.texture.dataSource.length ? 'Cel' : 'Light2D');
   }
   // Lo que tapa a Bulbasaur (tejado, copa, roca) se vuelve translúcido mientras está detrás, como en Stardew: se mira si
   // algún punto de su cuerpo cae en lo pintado del elemento y este va por delante.
@@ -259,13 +265,13 @@ export class WorldScene extends Phaser.Scene {
       for (const im of q.partes) im.setAlpha(al);
     }
   }
-  // Luz ambiente según la hora (blanca de día, cálida al atardecer, azul de noche) y farolas encendidas al anochecer.
+  // Luz ambiente según la hora (alba, amanecer, día, tarde dorada, atardecer, anochecer, noche: World.luzAmbiente)
+  // y farolas que se encienden al anochecer y se apagan al amanecer, poco a poco.
   private luzDelDia(tMs: number): void {
     if (!DIBUJO) return;
-    const n = oscuridad(this.sim.estado.minuto), [a, b, u] = n < 0.45 ? [AMB_DIA, AMB_TARDE, n / 0.45] as const : [AMB_TARDE, AMB_NOCHE, (n - 0.45) / 0.55] as const;
-    const [r, g, bl] = a.map((v, i) => Math.round(v + (b[i] - v) * u));
+    const m = this.sim.minutoExacto, [r, g, bl] = luzAmbiente(m);
     this.lights.setAmbientColor((r << 16) | (g << 8) | bl);
-    const on = Phaser.Math.Clamp((n - 0.3) / 0.3, 0, 1), t = tMs / 1000;
+    const on = farolas(m), t = tMs / 1000;
     for (const l of this.luces) { const f = animarLuz(l.tipo, t, l.fase) * on; l.luz.setIntensity(l.tipo.intensidad * f); l.halo.setAlpha(l.tipo.halo * f); }
   }
 
@@ -587,6 +593,8 @@ export class WorldScene extends Phaser.Scene {
 
   // Prefijo de sus animaciones: el de la forma que le toca por nivel (bidoof → bibarel al evolucionar);
   // si esa forma no tiene sprites cargados, el de su especie.
+  // Nombre de la forma del salvaje que ronda (puede haber aparecido ya evolucionado).
+  private nombreSalvaje(especie: string): string { const a = this.sim.estado.salvajes.find(q => q.especie === especie); return a ? formaDe(a).nombre : ESPECIES[especie]?.nombre ?? especie; }
   claveSpr(a: Aldeano): string { const f = formaDe(a).id; return this.anims.exists(`${f}-Idle-0`) ? f : a.especie; }
   nombreDe(a: Aldeano): string { return formaDe(a).nombre; }
   // El aldeano cuya ficha enseña la UI (GDD-pueblo §10): el elegido o, si no, el que está bajo el cursor.
@@ -629,7 +637,7 @@ export class WorldScene extends Phaser.Scene {
     return this.add.container(0, 0, [...partes, ic, num]);
   }
 
-  // Pinta a cada aldeano donde lo ha dejado la simulación, con la animación de lo que hace.
+  // Pinta a cada aldeano donde lo ha dejado la simulación, con la animación de lo que hace (quieto: su Idle en bucle, Reposo).
   private dibujarAldeanos(): void {
     const todos = [...this.sim.estado.aldeanos, ...this.sim.estado.salvajes];
     for (const a of todos) {
@@ -642,15 +650,15 @@ export class WorldScene extends Phaser.Scene {
       const k = this.claveSpr(a);
       if (a.hacer === 'dormir') key = `${k}-Sleep`;
       else if (anda) key = `${k}-Walk-${s.dir}`;
-      else if (a.hacer === 'comer') key = this.anims.exists(`${k}-Comer-0`) ? `${k}-Comer-0` : `${k}-Idle-0`; // detrás del cajón, de frente
+      else if (a.hacer === 'comer') key = this.anims.exists(`${k}-Comer-0`) ? `${k}-Comer-0` : `${k}-Reposo-0`; // detrás del cajón, de frente
       else if (a.hacer === 'trabajar' && a.tarea?.tipo === 'edificio') {
         // En el horno trabaja de espaldas a cámara (si hay piedra); en la guardería juega o descansa, de frente.
-        key = a.tarea.edif === 'horno' && !this.sim.esperaMaterial(a) ? `${k}-Trabajo-4` : `${k}-Idle-${a.tarea.edif === 'horno' ? 4 : 0}`;
+        key = a.tarea.edif === 'horno' && !this.sim.esperaMaterial(a) ? `${k}-Trabajo-4` : `${k}-Reposo-${a.tarea.edif === 'horno' ? 4 : 0}`;
       } else if (a.hacer === 'trabajar' && a.tarea) {
         // Mira a lo que trabaja: el árbol o la roca quedan encima; la planta, a su izquierda.
         const t = a.tarea, p = t.tipo === 'planta' ? this.sim.estado.plantas.find(q => q.uid === (a.objetivo ?? t.uid)) : undefined;
-        key = p && p.fase < 5 && !a.regando ? `${k}-Idle-6` : `${k}-Trabajo-${t.tipo === 'planta' ? 6 : 4}`;
-      } else key = `${k}-Idle-${a.hacer === 'esperar' ? 4 : s.dir}`;
+        key = p && p.fase < 5 && !a.regando ? `${k}-Reposo-6` : `${k}-Trabajo-${t.tipo === 'planta' ? 6 : 4}`;
+      } else key = `${k}-Reposo-${a.hacer === 'esperar' ? 4 : s.dir}`;
       if (s.spr.anims.currentAnim?.key !== key && this.anims.exists(key)) s.spr.play(key, true);
       s.spr.setPosition(a.x, a.y).setDepth(a.hacer === 'dormir' ? a.y + 6 : a.y); // dormido, dentro del nido
       s.sombra.setPosition(a.x, a.y - 3).setDepth(a.y - 1).setVisible(a.hacer !== 'dormir');
@@ -704,6 +712,54 @@ export class WorldScene extends Phaser.Scene {
       return Math.pow(u, 1.5) + Math.pow(v, 1.5) <= 1;
     });
   }
+  // ---- Modo muestra: Pokémon de adorno repartidos por el pueblo ----
+  // `a`: medio ancho del cuerpo (como Bulbasaur, bloqueado): si solo chocan los pies, medio cuerpo de los grandes
+  // se mete en la pared y el orden por columnas de la casa los corta.
+  private libreMuestra(x: number, y: number, a = 0): boolean {
+    const tr = this.terrain;
+    return x > 20 && y > 30 && x < tr.W - 20 && y < tr.H - 10 && !tr.esAgua(x, y)
+      && !this.enBloque(x - a, y) && !this.enBloque(x, y) && !this.enBloque(x + a, y)
+      && !this.trees.some(t => Math.hypot(x - t.x, (y - t.y) * 1.6) < t.r + 6);
+  }
+  private crearMuestra(): void {
+    this.paseantes.forEach(p => { p.spr.destroy(); p.sombra.destroy(); }); this.paseantes = [];
+    const tr = this.terrain;
+    for (const dex of DEX_MUESTRA) {
+      const clave = claveMuestra(dex);
+      if (!this.anims.exists(`${clave}-Idle-0`)) continue;
+      const spr = this.add.sprite(0, 0, `${clave}-Idle`).setOrigin(0.5, 0.72);
+      const ancho = Math.max(14, spr.frame.width * 0.45), a = ancho * 0.6; // los grandes, sombra más grande
+      let x = 0, y = 0;
+      for (let i = 0; i < 80; i++) { // por todo el pueblo, en un sitio libre
+        x = 40 + Math.random() * (tr.W - 80); y = 60 + Math.random() * (tr.H - 100);
+        if (this.libreMuestra(x, y, a)) break;
+      }
+      const sombra = this.add.ellipse(x, y - 3, ancho, ancho * 0.36, 0x2c4422, 0.3);
+      this.paseantes.push({ spr, sombra, clave, x, y, meta: null, espera: Math.random() * 3, dir: Math.floor(Math.random() * 8), a });
+    }
+  }
+  private pasearMuestra(dt: number): void {
+    for (const p of this.paseantes) {
+      if (!p.meta) {
+        p.espera -= dt;
+        if (p.espera <= 0) {
+          const ang = Math.random() * Math.PI * 2, r = 30 + Math.random() * 70, x = p.x + Math.cos(ang) * r, y = p.y + Math.sin(ang) * r * 0.7;
+          if (this.libreMuestra(x, y, p.a)) p.meta = { x, y }; else p.espera = 0.3;
+        }
+      } else {
+        const dx = p.meta.x - p.x, dy = p.meta.y - p.y, d = Math.hypot(dx, dy), paso = Math.min(d, 28 * dt);
+        const nx = p.x + dx / d * paso, ny = p.y + dy / d * paso;
+        p.dir = ROW_FROM_ANGLE[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8];
+        if (d < 1 || !this.libreMuestra(nx, ny, p.a)) { p.meta = null; p.espera = 1 + Math.random() * 4; }
+        else { p.x = nx; p.y = ny; }
+      }
+      const key = `${p.clave}-${p.meta ? 'Walk' : 'Reposo'}-${p.dir}`; // quieto: su Idle en bucle
+      if (p.spr.anims.currentAnim?.key !== key && this.anims.exists(key)) p.spr.play(key, true);
+      p.spr.setPosition(p.x, p.y).setDepth(p.y);
+      p.sombra.setPosition(p.x, p.y - 3).setDepth(p.y - 1);
+    }
+  }
+
   // Bulbasaur choca con su ancho, no solo con los pies: en el mapa dibujo, si no, medio cuerpo se metía en la pared
   // de la casa que tenía al lado (y la pared, que va delante, lo tapaba).
   private bloqueado(x: number, y: number): boolean {
@@ -891,7 +947,7 @@ export class WorldScene extends Phaser.Scene {
         case 'sinNido': this.aviso(`${ESPECIES[ev.especie]?.nombre ?? ev.especie} necesita un nido libre para quedarse: construye uno (B)`); break;
         case 'faltan': this.aviso(`${ESPECIES[ev.especie]?.nombre ?? ev.especie}: faltan ${ev.n} de ${NOMBRE_RECURSO[ev.r]}`); break;
         case 'unido': this.aviso(`¡${ESPECIES[ev.especie]?.nombre ?? ev.especie} acepta ${ev.honor ? 'la Honor Ball' : 'el regalo'}!`); break;
-        case 'salvaje': this.aviso(`Un ${ESPECIES[ev.especie]?.nombre ?? ev.especie} salvaje ronda por el valle: acércate y lánzale una Poké Ball (F). Puede fallar.`); break;
+        case 'salvaje': this.aviso(`Un ${this.nombreSalvaje(ev.especie)} salvaje ronda por el valle: acércate y lánzale una Poké Ball (F). Puede fallar.`); break;
         case 'atrapado': this.aviso(`¡${ESPECIES[ev.especie]?.nombre ?? ev.especie} se queda en el valle! (${ITEMS[ev.ball]?.nombre ?? ev.ball})`); break;
         case 'escapa': this.aviso(ev.huye ? `¡Oh! ${ESPECIES[ev.especie]?.nombre ?? ev.especie} salió de la ${ITEMS[ev.ball]?.nombre ?? ev.ball} y se ha escapado`
           : `${ESPECIES[ev.especie]?.nombre ?? ev.especie} salió de la ${ITEMS[ev.ball]?.nombre ?? ev.ball}. ¡Casi! Prueba otra vez`); break;
@@ -989,6 +1045,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.listo) return;
     this.luzDelDia(_t);
     this.aclarar(dtMs);
+    if (MUESTRA) this.pasearMuestra(dtMs / 1000);
     const p = this.player, k = this.keys, dt = dtMs / 1000;
     if (!this.durmiendo) {
       const evs = this.sim.tick(dt);

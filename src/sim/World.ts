@@ -3,7 +3,7 @@
 // comandos (GDD §16). Todo lo que cambia el estado pasa por aquí.
 
 import { APARICIONES, BALL, BAYAS_SALVAJES, ITEMS, PRECIO_RECURSO } from '../data/items';
-import { ESPECIES, ORDEN_VISITAS, SALVAJES, type Recurso } from '../data/especies';
+import { ESPECIES, ORDEN_VISITAS, PROB_EVOLUCIONADO, SALVAJES, type Recurso } from '../data/especies';
 import { LINEAS, NIVEL_MAX, expNivel, forma, stats, type Stats } from '../data/pokedex';
 import { BAYAS_PLATO, CONSTRUIBLES, EDIFICIO, ENERGIA_PLATO, MEJORAS_CASA } from '../data/edificios';
 import { rng } from '../util';
@@ -14,6 +14,23 @@ export const MIN_DESMAYO = 26 * 60;     // a las 2:00 el Pokémon se desmaya
 export const SEG_POR_MINUTO = 0.5;      // 1 minuto de juego = 0,5 s reales: de las 6:00 a las 2:00 (20 h) son 10 minutos
 // Cuánto ha caído la noche (0-1): atardecer desde las 18:00, noche cerrada a las 21:00.
 export const oscuridad = (minuto: number) => Math.min(1, Math.max(0, (minuto - 18 * 60) / 180));
+// Color de la luz ambiente a lo largo del día (minuto de juego → RGB), interpolado entre estas horas:
+// alba lila, amanecer rosado, mañana cálida, mediodía blanco, tarde dorada, atardecer naranja, anochecer, hora azul, noche.
+const CIELO: [number, [number, number, number]][] = [
+  [5 * 60, [60, 72, 122]], [6 * 60, [118, 108, 158]], [6 * 60 + 40, [236, 168, 162]], [7 * 60 + 30, [255, 214, 178]],
+  [9 * 60, [255, 244, 228]], [10 * 60 + 30, [255, 255, 255]], [16 * 60, [255, 255, 255]], [17 * 60 + 30, [255, 236, 196]],
+  [18 * 60 + 45, [255, 190, 140]], [19 * 60 + 30, [226, 140, 128]], [20 * 60 + 15, [140, 118, 164]], [21 * 60, [92, 98, 150]],
+  [22 * 60, [64, 78, 126]], [26 * 60, [56, 68, 116]],
+];
+export function luzAmbiente(minuto: number): [number, number, number] {
+  const k = CIELO.findIndex(([m]) => m > minuto);
+  if (k <= 0) return [...CIELO[k < 0 ? CIELO.length - 1 : 0][1]];
+  const [m0, a] = CIELO[k - 1], [m1, b] = CIELO[k], u = (minuto - m0) / (m1 - m0), s = u * u * (3 - 2 * u); // suave en cada tramo
+  return [0, 1, 2].map(i => Math.round(a[i] + (b[i] - a[i]) * s)) as [number, number, number];
+}
+// Farolas (0-1): se encienden de 19:15 a 20:15 y se apagan de 6:15 a 7:15, ya con el sol fuera.
+export const farolas = (minuto: number) =>
+  minuto < 12 * 60 ? Math.min(1, Math.max(0, (7 * 60 + 15 - minuto) / 60)) : Math.min(1, Math.max(0, (minuto - (19 * 60 + 15)) / 60));
 export const ENERGIA_MAX = 100;
 export const COSTE_LATIGO = 2, COSTE_ARAR = 3;
 export const MAX_SUELO = 14, APARICIONES_DIA = 6, SLOTS = 12, APILA = 99;
@@ -115,6 +132,7 @@ export function recursoDe(id: string): [Recurso, number] | null {
 
 export interface Estado {
   version: 1;
+  bebes?: true;               // partida con las formas bebé (Azurill, Pichu, Cleffa) en las líneas
   semilla: number;
   dia: number;
   minuto: number;             // minutos desde las 0:00 del día (360..1560)
@@ -204,7 +222,7 @@ export class World {
   // silvestre sale a unos pasos de él).
   static nueva(candidatos: Casilla[], objetosMapa: { id: string; tx: number; ty: number }[], nidos: Punto[] = [], cerca?: Punto, semilla = Date.now() % 1e9): World {
     const e: Estado = {
-      version: 1, semilla, dia: 1, minuto: MIN_DIA, energia: ENERGIA_MAX, dinero: 0, casa: 1,
+      version: 1, bebes: true, semilla, dia: 1, minuto: MIN_DIA, energia: ENERGIA_MAX, dinero: 0, casa: 1,
       inventario: Array.from({ length: SLOTS }, () => null), caja: [], suelo: [], plantas: [], aradas: [], regadas: [], lluvia: false, uid: 1, ultimoEnvio: 0,
       almacen: cero(), aldeanos: [], construcciones: [], ayuno: 0, pendientes: [], cajaR: cero(), salvajes: [],
     };
@@ -231,6 +249,14 @@ export class World {
       e.salvajes ??= [];                                                // de antes de los salvajes
       for (const a of e.aldeanos) { a.nivel ??= nivelLlegada(a.especie); a.exp ??= expNivel(LINEAS[a.especie].exp, a.nivel); } // de antes de los niveles
       e.cajaR ??= cero();                                               // partidas de antes de vender del almacén
+      // De antes de los bebés: Marill, Pikachu y Clefairy suben al nivel de esa forma para no volverse Azurill, Pichu o Cleffa.
+      if (!e.bebes) {
+        for (const a of [...e.aldeanos, ...e.salvajes]) if (['marill', 'pikachu', 'clefairy'].includes(a.especie)) {
+          const nv = LINEAS[a.especie].formas[1].nv;
+          if (a.nivel < nv) { a.nivel = nv; a.exp = expNivel(LINEAS[a.especie].exp, nv); }
+        }
+        e.bebes = true;
+      }
       e.almacen = { ...cero(), ...e.almacen }; e.cajaR = { ...cero(), ...e.cajaR }; e.casa ??= 1; // de antes de ladrillos, platos y mejoras
       return new World(e, candidatos);
     } catch { return null; }
@@ -263,6 +289,9 @@ export class World {
     if (h !== h0 && h >= HORAS_VISITA[0] && h <= HORAS_VISITA[1] && this.rnd() < PROB_SALVAJE_HORA) evs.push(...this.aparecerSalvaje());
     return evs;
   }
+
+  // Minuto con fracción (el reloj avanza a saltos de un minuto; la luz, sin saltos).
+  get minutoExacto(): number { return this.estado.minuto + this.acumulado / SEG_POR_MINUTO; }
 
   get hora(): string {
     const m = this.estado.minuto % (24 * 60);
@@ -520,7 +549,9 @@ export class World {
       if (!c) break;
       const x = c.tx * T + T / 2, y = c.ty * T + T / 2;
       if (Math.hypot(x - almacen.x, y - almacen.y) < LEJOS_SALVAJE || !this.libre(c.tx, c.ty) || !this.pasable(x, y)) continue;
-      const nivel = nivelLlegada(especie);
+      // A veces ya evolucionado (Steelix, Tyranitar…): con el nivel de una de sus evoluciones, al azar.
+      const evos = LINEAS[especie].formas.slice(1), evo = evos.length && this.rnd() < PROB_EVOLUCIONADO ? evos[Math.floor(this.rnd() * evos.length)] : null;
+      const nivel = evo ? Math.min(NIVEL_MAX, evo.nv + Math.floor(this.rnd() * 5)) : nivelLlegada(especie);
       e.salvajes.push({ uid: e.uid++, especie, x, y, tarea: null, hacer: 'salvaje', prog: 0, carga: null, comido: true,
         nivel, exp: expNivel(LINEAS[especie].exp, nivel), salvaje: { casa: { x, y }, destino: null, pausa: 1 } });
       return [{ tipo: 'salvaje', especie }];
@@ -565,7 +596,8 @@ export class World {
     const nido = this.nidoLibre();
     if (!nido) return [{ tipo: 'sinNido', especie: a.especie }];
     this.quitar(slot);
-    if (this.rnd() < Math.min(1, (ESPECIES[a.especie]?.atrapa ?? 0.5) * BALL[ball])) {
+    const evolucionado = formaDe(a) !== LINEAS[a.especie].formas[0]; // los evolucionados cuestan más
+    if (this.rnd() < Math.min(1, (ESPECIES[a.especie]?.atrapa ?? 0.5) * BALL[ball] * (evolucionado ? 0.6 : 1))) {
       e.salvajes.splice(e.salvajes.indexOf(a), 1);
       a.salvaje = undefined; a.nido = nido.uid; a.hacer = 'llegar';
       e.aldeanos.push(a);

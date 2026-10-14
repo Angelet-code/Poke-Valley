@@ -39,12 +39,14 @@ const L = (tipo: Tipo, tipos: Tipo[], exp: GrupoExp, ...formas: F[]): Omit<Linea
   ({ tipo, tipos, exp, formas: formas.map(([dex, nombre, nv, base, como]) => ({ id: idDe(nombre), dex, nombre, nv, base, como })) });
 
 // Tres líneas por tipo. La clave es el id de la forma básica. Todas las formas tienen sprites PMD en
-// assets/sprites/pokemon/<dex>/ (Rolycoly y Dragonair no los tienen: por eso no están).
+// assets/sprites/pokemon/<dex>/ (Rolycoly no los tiene: por eso no está). Algunos tipos tienen ya más de tres:
+// líneas de Pokémon grandes (Snorlax, Lapras, Wailord, Avalugg, Rhydon, Tyranitar, Dragonite).
 const DATOS: Record<string, Omit<Linea, 'id'>> = {
   // Normal
   bidoof: L('normal', ['normal'], 'medio', ['0399', 'Bidoof', 1, [59, 45, 40, 35, 40, 31]], ['0400', 'Bibarel', 15, [79, 85, 60, 55, 60, 71]]),
   wooloo: L('normal', ['normal'], 'medio', ['0831', 'Wooloo', 1, [42, 40, 55, 40, 45, 48]], ['0832', 'Dubwool', 24, [72, 80, 100, 60, 90, 88]]),
   miltank: L('normal', ['normal'], 'lento', ['0241', 'Miltank', 1, [95, 80, 105, 40, 70, 100]]),
+  munchlax: L('normal', ['normal'], 'lento', ['0446', 'Munchlax', 1, [135, 85, 40, 40, 85, 5]], ['0143', 'Snorlax', 25, [160, 110, 65, 65, 110, 30], 'amistad']),
   // Planta
   oddish: L('planta', ['planta', 'veneno'], 'parabolico', ['0043', 'Oddish', 1, [45, 50, 55, 75, 65, 30]], ['0044', 'Gloom', 21, [60, 65, 70, 85, 75, 40]],
     ['0045', 'Vileplume', 36, [75, 80, 85, 110, 90, 50], 'piedra hoja']),
@@ -56,11 +58,15 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   slugma: L('fuego', ['fuego'], 'medio', ['0218', 'Slugma', 1, [40, 40, 40, 70, 40, 20]], ['0219', 'Magcargo', 38, [60, 50, 120, 90, 80, 30]]),
   torkoal: L('fuego', ['fuego'], 'medio', ['0324', 'Torkoal', 1, [70, 85, 140, 85, 70, 20]]),
   // Agua
-  marill: L('agua', ['agua', 'hada'], 'rapido', ['0183', 'Marill', 1, [70, 20, 50, 20, 50, 40]], ['0184', 'Azumarill', 18, [100, 50, 80, 60, 80, 50]]),
+  // Las líneas con bebé (Azurill, Pichu, Cleffa) lo tienen de primera forma; la clave sigue siendo la de siempre.
+  marill: L('agua', ['agua', 'hada'], 'rapido', ['0298', 'Azurill', 1, [50, 20, 40, 20, 40, 20]], ['0183', 'Marill', 10, [70, 20, 50, 20, 50, 40], 'amistad'],
+    ['0184', 'Azumarill', 18, [100, 50, 80, 60, 80, 50]]),
   psyduck: L('agua', ['agua'], 'medio', ['0054', 'Psyduck', 1, [50, 52, 48, 65, 50, 55]], ['0055', 'Golduck', 33, [80, 82, 78, 95, 80, 85]]),
   magikarp: L('agua', ['agua'], 'lento', ['0129', 'Magikarp', 1, [20, 10, 55, 15, 20, 80]], ['0130', 'Gyarados', 20, [95, 125, 79, 60, 100, 81]]),
+  wailmer: L('agua', ['agua'], 'fluctuante', ['0320', 'Wailmer', 1, [130, 70, 35, 70, 35, 60]], ['0321', 'Wailord', 40, [170, 90, 45, 90, 45, 60]]),
+  lapras: L('agua', ['agua', 'hielo'], 'lento', ['0131', 'Lapras', 1, [130, 85, 80, 85, 95, 60]]),
   // Eléctrico
-  pikachu: L('electrico', ['electrico'], 'medio', ['0025', 'Pikachu', 1, [35, 55, 40, 50, 50, 90]], ['0026', 'Raichu', 30, [60, 90, 55, 90, 80, 110], 'piedra trueno']),
+  pikachu: L('electrico', ['electrico'], 'medio', ['0172', 'Pichu', 1, [20, 40, 15, 35, 35, 60]], ['0025', 'Pikachu', 10, [35, 55, 40, 50, 50, 90], 'amistad'], ['0026', 'Raichu', 30, [60, 90, 55, 90, 80, 110], 'piedra trueno']),
   magnemite: L('electrico', ['electrico', 'acero'], 'medio', ['0081', 'Magnemite', 1, [25, 35, 70, 95, 55, 45]], ['0082', 'Magneton', 30, [50, 60, 95, 120, 70, 70]],
     ['0462', 'Magnezone', 45, [70, 70, 115, 130, 90, 60], 'campo magnético']),
   pachirisu: L('electrico', ['electrico'], 'medio', ['0417', 'Pachirisu', 1, [60, 45, 70, 45, 90, 95]]),
@@ -70,6 +76,7 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   snorunt: L('hielo', ['hielo'], 'medio', ['0361', 'Snorunt', 1, [50, 50, 50, 50, 50, 50]], ['0362', 'Glalie', 42, [80, 80, 80, 80, 80, 80]]),
   swinub: L('hielo', ['hielo', 'tierra'], 'lento', ['0220', 'Swinub', 1, [50, 50, 40, 30, 30, 50]], ['0221', 'Piloswine', 33, [100, 100, 80, 60, 60, 50]],
     ['0473', 'Mamoswine', 45, [110, 130, 80, 70, 60, 80], 'sabiendo Poder Pasado']),
+  bergmite: L('hielo', ['hielo'], 'medio', ['0712', 'Bergmite', 1, [55, 69, 85, 32, 35, 28]], ['0713', 'Avalugg', 37, [95, 117, 184, 44, 46, 28]]),
   // Lucha
   machop: L('lucha', ['lucha'], 'parabolico', ['0066', 'Machop', 1, [70, 80, 50, 35, 35, 35]], ['0067', 'Machoke', 28, [80, 100, 70, 50, 60, 45]],
     ['0068', 'Machamp', 40, [90, 130, 80, 65, 85, 55], 'intercambio']),
@@ -85,6 +92,8 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   diglett: L('tierra', ['tierra'], 'medio', ['0050', 'Diglett', 1, [10, 55, 25, 35, 45, 95]], ['0051', 'Dugtrio', 26, [35, 100, 50, 50, 70, 120]]),
   drilbur: L('tierra', ['tierra'], 'medio', ['0529', 'Drilbur', 1, [60, 85, 40, 30, 45, 68]], ['0530', 'Excadrill', 31, [110, 135, 60, 50, 65, 88]]),
   mudbray: L('tierra', ['tierra'], 'medio', ['0749', 'Mudbray', 1, [70, 100, 70, 45, 55, 45]], ['0750', 'Mudsdale', 30, [100, 125, 100, 55, 85, 35]]),
+  rhyhorn: L('tierra', ['tierra', 'roca'], 'lento', ['0111', 'Rhyhorn', 1, [80, 85, 95, 30, 30, 25]], ['0112', 'Rhydon', 42, [105, 130, 120, 45, 45, 40]],
+    ['0464', 'Rhyperior', 55, [115, 140, 130, 55, 55, 40], 'intercambio con Protector']),
   // Volador
   pidgey: L('volador', ['normal', 'volador'], 'parabolico', ['0016', 'Pidgey', 1, [40, 45, 40, 35, 35, 56]], ['0017', 'Pidgeotto', 18, [63, 60, 55, 50, 50, 71]],
     ['0018', 'Pidgeot', 36, [83, 80, 75, 70, 70, 101]]),
@@ -106,6 +115,8 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   geodude: L('roca', ['roca', 'tierra'], 'parabolico', ['0074', 'Geodude', 1, [40, 80, 100, 30, 30, 20]], ['0075', 'Graveler', 25, [55, 95, 115, 45, 45, 35]],
     ['0076', 'Golem', 40, [80, 120, 130, 55, 65, 45], 'intercambio']),
   sudowoodo: L('roca', ['roca'], 'medio', ['0185', 'Sudowoodo', 1, [70, 100, 115, 30, 65, 30]]),
+  larvitar: L('roca', ['roca', 'tierra'], 'lento', ['0246', 'Larvitar', 1, [50, 64, 50, 45, 50, 41]], ['0247', 'Pupitar', 30, [70, 84, 70, 65, 70, 51]],
+    ['0248', 'Tyranitar', 55, [100, 134, 110, 95, 100, 61]]),
   onix: L('roca', ['roca', 'tierra'], 'medio', ['0095', 'Onix', 1, [35, 45, 160, 30, 45, 70]], ['0208', 'Steelix', 40, [75, 85, 200, 55, 65, 30], 'intercambio con Revestimiento Metálico']),
   // Fantasma
   gastly: L('fantasma', ['fantasma', 'veneno'], 'parabolico', ['0092', 'Gastly', 1, [30, 35, 30, 100, 35, 80]], ['0093', 'Haunter', 25, [45, 50, 45, 115, 55, 95]],
@@ -118,6 +129,8 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
     ['0445', 'Garchomp', 48, [108, 130, 95, 80, 85, 102]]),
   axew: L('dragon', ['dragon'], 'lento', ['0610', 'Axew', 1, [46, 87, 60, 30, 40, 57]], ['0611', 'Fraxure', 38, [66, 117, 70, 40, 50, 67]],
     ['0612', 'Haxorus', 48, [76, 147, 90, 60, 70, 97]]),
+  dratini: L('dragon', ['dragon'], 'lento', ['0147', 'Dratini', 1, [41, 64, 45, 50, 50, 50]], ['0148', 'Dragonair', 30, [61, 84, 65, 70, 70, 70]],
+    ['0149', 'Dragonite', 55, [91, 134, 95, 100, 100, 80]]),
   druddigon: L('dragon', ['dragon'], 'medio', ['0621', 'Druddigon', 1, [77, 120, 90, 60, 90, 48]]),
   // Siniestro
   poochyena: L('siniestro', ['siniestro'], 'medio', ['0261', 'Poochyena', 1, [35, 55, 35, 30, 30, 35]], ['0262', 'Mightyena', 18, [70, 90, 70, 60, 60, 70]]),
@@ -130,7 +143,7 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
     ['0376', 'Metagross', 45, [80, 135, 130, 95, 90, 70]]),
   mawile: L('acero', ['acero', 'hada'], 'rapido', ['0303', 'Mawile', 1, [50, 85, 85, 55, 55, 50]]),
   // Hada
-  clefairy: L('hada', ['hada'], 'rapido', ['0035', 'Clefairy', 1, [70, 45, 48, 60, 65, 35]], ['0036', 'Clefable', 32, [95, 70, 73, 95, 90, 60], 'piedra lunar']),
+  clefairy: L('hada', ['hada'], 'rapido', ['0173', 'Cleffa', 1, [50, 25, 28, 45, 55, 15]], ['0035', 'Clefairy', 10, [70, 45, 48, 60, 65, 35], 'amistad'], ['0036', 'Clefable', 32, [95, 70, 73, 95, 90, 60], 'piedra lunar']),
   togepi: L('hada', ['hada'], 'rapido', ['0175', 'Togepi', 1, [35, 20, 65, 40, 65, 20]], ['0176', 'Togetic', 20, [55, 40, 85, 80, 105, 40], 'amistad'],
     ['0468', 'Togekiss', 36, [85, 50, 95, 120, 115, 80], 'piedra día']),
   flabebe: L('hada', ['hada'], 'parabolico', ['0669', 'Flabébé', 1, [44, 38, 39, 61, 79, 42]], ['0670', 'Floette', 19, [54, 45, 47, 75, 98, 52]],
