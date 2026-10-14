@@ -1,0 +1,1422 @@
+{
+ "escala": 2,
+ "elementos": [
+  {
+   "id": "roca_0",
+   "tipo": "roca",
+   "archivo": "roca_0.png",
+   "w": 239,
+   "h": 148,
+   "ancla": [
+    119,
+    147
+   ],
+   "huella": [
+    28,
+    84,
+    210,
+    141
+   ],
+   "origen": [
+    380,
+    17,
+    497,
+    89
+   ],
+   "area": 4598,
+   "medio": [
+    148,
+    136,
+    120
+   ]
+  },
+  {
+   "id": "roca_1",
+   "tipo": "roca",
+   "archivo": "roca_1.png",
+   "w": 124,
+   "h": 89,
+   "ancla": [
+    62,
+    88
+   ],
+   "huella": [
+    14,
+    50,
+    109,
+    84
+   ],
+   "origen": [
+    540,
+    56,
+    600,
+    99
+   ],
+   "area": 1561,
+   "medio": [
+    141,
+    134,
+    117
+   ]
+  },
+  {
+   "id": "casa_cabana",
+   "tipo": "casa",
+   "archivo": "casa_cabana.png",
+   "w": 732,
+   "h": 592,
+   "ancla": [
+    366,
+    590
+   ],
+   "huella": [
+    25,
+    388,
+    701,
+    522
+   ],
+   "origen": [
+    48,
+    65,
+    412,
+    359
+   ],
+   "area": 61818,
+   "medio": [
+    130,
+    109,
+    94
+   ]
+  },
+  {
+   "id": "roca_2",
+   "tipo": "roca",
+   "archivo": "roca_2.png",
+   "w": 168,
+   "h": 89,
+   "ancla": [
+    84,
+    88
+   ],
+   "huella": [
+    20,
+    50,
+    147,
+    84
+   ],
+   "origen": [
+    798,
+    74,
+    880,
+    116
+   ],
+   "area": 1972,
+   "medio": [
+    147,
+    135,
+    118
+   ]
+  },
+  {
+   "id": "casa_larga",
+   "tipo": "casa",
+   "archivo": "casa_larga.png",
+   "w": 844,
+   "h": 672,
+   "ancla": [
+    422,
+    671
+   ],
+   "huella": [
+    3,
+    418,
+    808,
+    576
+   ],
+   "origen": [
+    554,
+    80,
+    974,
+    414
+   ],
+   "area": 83842,
+   "medio": [
+    135,
+    120,
+    95
+   ]
+  },
+  {
+   "id": "roca_3",
+   "tipo": "roca",
+   "archivo": "roca_3.png",
+   "w": 162,
+   "h": 96,
+   "ancla": [
+    81,
+    95
+   ],
+   "huella": [
+    19,
+    54,
+    142,
+    91
+   ],
+   "origen": [
+    898,
+    85,
+    977,
+    131
+   ],
+   "area": 2250,
+   "medio": [
+    146,
+    126,
+    115
+   ]
+  },
+  {
+   "id": "detalle_0",
+   "tipo": "detalle",
+   "archivo": "detalle_0.png",
+   "w": 73,
+   "h": 38,
+   "ancla": [
+    36,
+    37
+   ],
+   "huella": null,
+   "origen": [
+    929,
+    131,
+    963,
+    148
+   ],
+   "area": 305,
+   "medio": [
+    136,
+    120,
+    103
+   ]
+  },
+  {
+   "id": "arbol_alto",
+   "tipo": "arbol",
+   "archivo": "arbol_alto.png",
+   "w": 182,
+   "h": 240,
+   "ancla": [
+    91,
+    240
+   ],
+   "huella": [
+    69,
+    206,
+    112,
+    240
+   ],
+   "origen": [
+    463,
+    162,
+    553,
+    329
+   ],
+   "area": 9328,
+   "medio": [
+    79,
+    118,
+    93
+   ]
+  },
+  {
+   "id": "detalle_1",
+   "tipo": "detalle",
+   "archivo": "detalle_1.png",
+   "w": 80,
+   "h": 52,
+   "ancla": [
+    40,
+    51
+   ],
+   "huella": null,
+   "origen": [
+    967,
+    193,
+    1005,
+    217
+   ],
+   "area": 436,
+   "medio": [
+    125,
+    109,
+    90
+   ]
+  },
+  {
+   "id": "detalle_2",
+   "tipo": "detalle",
+   "archivo": "detalle_2.png",
+   "w": 20,
+   "h": 20,
+   "ancla": [
+    10,
+    19
+   ],
+   "huella": null,
+   "origen": [
+    411,
+    196,
+    419,
+    204
+   ],
+   "area": 44,
+   "medio": [
+    129,
+    163,
+    102
+   ]
+  },
+  {
+   "id": "detalle_3",
+   "tipo": "detalle",
+   "archivo": "detalle_3.png",
+   "w": 66,
+   "h": 42,
+   "ancla": [
+    33,
+    40
+   ],
+   "huella": null,
+   "origen": [
+    893,
+    263,
+    924,
+    282
+   ],
+   "area": 362,
+   "medio": [
+    131,
+    175,
+    110
+   ]
+  },
+  {
+   "id": "detalle_4",
+   "tipo": "detalle",
+   "archivo": "detalle_4.png",
+   "w": 26,
+   "h": 22,
+   "ancla": [
+    13,
+    20
+   ],
+   "huella": null,
+   "origen": [
+    481,
+    306,
+    492,
+    315
+   ],
+   "area": 65,
+   "medio": [
+    128,
+    167,
+    104
+   ]
+  },
+  {
+   "id": "losa_0",
+   "tipo": "losa",
+   "archivo": "losa_0.png",
+   "w": 58,
+   "h": 32,
+   "ancla": [
+    29,
+    31
+   ],
+   "huella": null,
+   "origen": [
+    635,
+    337,
+    662,
+    351
+   ],
+   "area": 165,
+   "medio": [
+    208,
+    198,
+    167
+   ]
+  },
+  {
+   "id": "detalle_5",
+   "tipo": "detalle",
+   "archivo": "detalle_5.png",
+   "w": 33,
+   "h": 33,
+   "ancla": [
+    16,
+    32
+   ],
+   "huella": null,
+   "origen": [
+    995,
+    343,
+    1011,
+    357
+   ],
+   "area": 81,
+   "medio": [
+    137,
+    159,
+    100
+   ]
+  },
+  {
+   "id": "losa_1",
+   "tipo": "losa",
+   "archivo": "losa_1.png",
+   "w": 55,
+   "h": 33,
+   "ancla": [
+    27,
+    32
+   ],
+   "huella": null,
+   "origen": [
+    658,
+    347,
+    684,
+    362
+   ],
+   "area": 249,
+   "medio": [
+    209,
+    203,
+    169
+   ]
+  },
+  {
+   "id": "detalle_6",
+   "tipo": "detalle",
+   "archivo": "detalle_6.png",
+   "w": 40,
+   "h": 22,
+   "ancla": [
+    20,
+    20
+   ],
+   "huella": null,
+   "origen": [
+    277,
+    348,
+    295,
+    357
+   ],
+   "area": 114,
+   "medio": [
+    124,
+    170,
+    104
+   ]
+  },
+  {
+   "id": "casa_grande",
+   "tipo": "casa",
+   "archivo": "casa_grande.png",
+   "w": 937,
+   "h": 779,
+   "ancla": [
+    468,
+    778
+   ],
+   "huella": [
+    96,
+    512,
+    858,
+    679
+   ],
+   "origen": [
+    187,
+    349,
+    653,
+    737
+   ],
+   "area": 100671,
+   "medio": [
+    137,
+    117,
+    97
+   ]
+  },
+  {
+   "id": "losa_2",
+   "tipo": "losa",
+   "archivo": "losa_2.png",
+   "w": 59,
+   "h": 31,
+   "ancla": [
+    29,
+    30
+   ],
+   "huella": null,
+   "origen": [
+    626,
+    359,
+    654,
+    373
+   ],
+   "area": 242,
+   "medio": [
+    208,
+    204,
+    168
+   ]
+  },
+  {
+   "id": "losa_3",
+   "tipo": "losa",
+   "archivo": "losa_3.png",
+   "w": 58,
+   "h": 40,
+   "ancla": [
+    29,
+    39
+   ],
+   "huella": null,
+   "origen": [
+    600,
+    363,
+    627,
+    381
+   ],
+   "area": 307,
+   "medio": [
+    208,
+    203,
+    170
+   ]
+  },
+  {
+   "id": "roca_4",
+   "tipo": "roca",
+   "archivo": "roca_4.png",
+   "w": 191,
+   "h": 141,
+   "ancla": [
+    95,
+    140
+   ],
+   "huella": [
+    22,
+    80,
+    168,
+    134
+   ],
+   "origen": [
+    878,
+    366,
+    972,
+    435
+   ],
+   "area": 4515,
+   "medio": [
+    149,
+    130,
+    119
+   ]
+  },
+  {
+   "id": "losa_4",
+   "tipo": "losa",
+   "archivo": "losa_4.png",
+   "w": 54,
+   "h": 29,
+   "ancla": [
+    27,
+    28
+   ],
+   "huella": null,
+   "origen": [
+    653,
+    371,
+    678,
+    384
+   ],
+   "area": 225,
+   "medio": [
+    208,
+    203,
+    169
+   ]
+  },
+  {
+   "id": "losa_5",
+   "tipo": "losa",
+   "archivo": "losa_5.png",
+   "w": 49,
+   "h": 36,
+   "ancla": [
+    24,
+    35
+   ],
+   "huella": null,
+   "origen": [
+    575,
+    375,
+    597,
+    391
+   ],
+   "area": 266,
+   "medio": [
+    207,
+    205,
+    171
+   ]
+  },
+  {
+   "id": "losa_6",
+   "tipo": "losa",
+   "archivo": "losa_6.png",
+   "w": 47,
+   "h": 30,
+   "ancla": [
+    23,
+    28
+   ],
+   "huella": null,
+   "origen": [
+    632,
+    380,
+    653,
+    393
+   ],
+   "area": 197,
+   "medio": [
+    209,
+    204,
+    171
+   ]
+  },
+  {
+   "id": "roca_5",
+   "tipo": "roca",
+   "archivo": "roca_5.png",
+   "w": 196,
+   "h": 120,
+   "ancla": [
+    98,
+    119
+   ],
+   "huella": [
+    23,
+    68,
+    172,
+    114
+   ],
+   "origen": [
+    14,
+    387,
+    110,
+    445
+   ],
+   "area": 3111,
+   "medio": [
+    150,
+    135,
+    115
+   ]
+  },
+  {
+   "id": "losa_7",
+   "tipo": "losa",
+   "archivo": "losa_7.png",
+   "w": 40,
+   "h": 24,
+   "ancla": [
+    20,
+    22
+   ],
+   "huella": null,
+   "origen": [
+    611,
+    389,
+    629,
+    399
+   ],
+   "area": 126,
+   "medio": [
+    207,
+    202,
+    169
+   ]
+  },
+  {
+   "id": "losa_8",
+   "tipo": "losa",
+   "archivo": "losa_8.png",
+   "w": 25,
+   "h": 29,
+   "ancla": [
+    12,
+    28
+   ],
+   "huella": null,
+   "origen": [
+    659,
+    391,
+    669,
+    404
+   ],
+   "area": 92,
+   "medio": [
+    214,
+    205,
+    166
+   ]
+  },
+  {
+   "id": "losa_9",
+   "tipo": "losa",
+   "archivo": "losa_9.png",
+   "w": 59,
+   "h": 40,
+   "ancla": [
+    29,
+    39
+   ],
+   "huella": null,
+   "origen": [
+    582,
+    393,
+    610,
+    411
+   ],
+   "area": 316,
+   "medio": [
+    207,
+    206,
+    168
+   ]
+  },
+  {
+   "id": "losa_10",
+   "tipo": "losa",
+   "archivo": "losa_10.png",
+   "w": 46,
+   "h": 24,
+   "ancla": [
+    23,
+    22
+   ],
+   "huella": null,
+   "origen": [
+    641,
+    397,
+    662,
+    407
+   ],
+   "area": 119,
+   "medio": [
+    210,
+    205,
+    165
+   ]
+  },
+  {
+   "id": "losa_11",
+   "tipo": "losa",
+   "archivo": "losa_11.png",
+   "w": 62,
+   "h": 39,
+   "ancla": [
+    31,
+    38
+   ],
+   "huella": null,
+   "origen": [
+    615,
+    401,
+    644,
+    419
+   ],
+   "area": 346,
+   "medio": [
+    207,
+    206,
+    166
+   ]
+  },
+  {
+   "id": "losa_12",
+   "tipo": "losa",
+   "archivo": "losa_12.png",
+   "w": 50,
+   "h": 27,
+   "ancla": [
+    25,
+    26
+   ],
+   "huella": null,
+   "origen": [
+    607,
+    438,
+    630,
+    450
+   ],
+   "area": 194,
+   "medio": [
+    209,
+    206,
+    170
+   ]
+  },
+  {
+   "id": "losa_13",
+   "tipo": "losa",
+   "archivo": "losa_13.png",
+   "w": 41,
+   "h": 27,
+   "ancla": [
+    20,
+    26
+   ],
+   "huella": null,
+   "origen": [
+    589,
+    450,
+    607,
+    461
+   ],
+   "area": 145,
+   "medio": [
+    206,
+    202,
+    168
+   ]
+  },
+  {
+   "id": "losa_14",
+   "tipo": "losa",
+   "archivo": "losa_14.png",
+   "w": 45,
+   "h": 24,
+   "ancla": [
+    22,
+    23
+   ],
+   "huella": null,
+   "origen": [
+    619,
+    460,
+    640,
+    470
+   ],
+   "area": 120,
+   "medio": [
+    207,
+    201,
+    165
+   ]
+  },
+  {
+   "id": "losa_15",
+   "tipo": "losa",
+   "archivo": "losa_15.png",
+   "w": 43,
+   "h": 29,
+   "ancla": [
+    21,
+    28
+   ],
+   "huella": null,
+   "origen": [
+    592,
+    470,
+    612,
+    482
+   ],
+   "area": 142,
+   "medio": [
+    207,
+    203,
+    170
+   ]
+  },
+  {
+   "id": "roca_6",
+   "tipo": "roca",
+   "archivo": "roca_6.png",
+   "w": 199,
+   "h": 150,
+   "ancla": [
+    99,
+    148
+   ],
+   "huella": [
+    23,
+    85,
+    175,
+    142
+   ],
+   "origen": [
+    822,
+    488,
+    920,
+    561
+   ],
+   "area": 4929,
+   "medio": [
+    149,
+    127,
+    118
+   ]
+  },
+  {
+   "id": "roca_7",
+   "tipo": "roca",
+   "archivo": "roca_7.png",
+   "w": 237,
+   "h": 155,
+   "ancla": [
+    118,
+    153
+   ],
+   "huella": [
+    28,
+    87,
+    208,
+    146
+   ],
+   "origen": [
+    714,
+    501,
+    830,
+    577
+   ],
+   "area": 5876,
+   "medio": [
+    139,
+    139,
+    113
+   ]
+  },
+  {
+   "id": "detalle_7",
+   "tipo": "detalle",
+   "archivo": "detalle_7.png",
+   "w": 33,
+   "h": 21,
+   "ancla": [
+    16,
+    20
+   ],
+   "huella": null,
+   "origen": [
+    568,
+    525,
+    583,
+    534
+   ],
+   "area": 64,
+   "medio": [
+    126,
+    165,
+    103
+   ]
+  },
+  {
+   "id": "detalle_8",
+   "tipo": "detalle",
+   "archivo": "detalle_8.png",
+   "w": 26,
+   "h": 18,
+   "ancla": [
+    13,
+    16
+   ],
+   "huella": null,
+   "origen": [
+    187,
+    542,
+    198,
+    549
+   ],
+   "area": 49,
+   "medio": [
+    124,
+    164,
+    99
+   ]
+  },
+  {
+   "id": "detalle_9",
+   "tipo": "detalle",
+   "archivo": "detalle_9.png",
+   "w": 37,
+   "h": 26,
+   "ancla": [
+    18,
+    24
+   ],
+   "huella": null,
+   "origen": [
+    166,
+    546,
+    183,
+    557
+   ],
+   "area": 127,
+   "medio": [
+    120,
+    121,
+    91
+   ]
+  },
+  {
+   "id": "detalle_10",
+   "tipo": "detalle",
+   "archivo": "detalle_10.png",
+   "w": 56,
+   "h": 24,
+   "ancla": [
+    28,
+    23
+   ],
+   "huella": null,
+   "origen": [
+    119,
+    560,
+    146,
+    571
+   ],
+   "area": 131,
+   "medio": [
+    124,
+    162,
+    103
+   ]
+  },
+  {
+   "id": "detalle_11",
+   "tipo": "detalle",
+   "archivo": "detalle_11.png",
+   "w": 36,
+   "h": 16,
+   "ancla": [
+    18,
+    15
+   ],
+   "huella": null,
+   "origen": [
+    208,
+    569,
+    224,
+    575
+   ],
+   "area": 67,
+   "medio": [
+    131,
+    168,
+    104
+   ]
+  },
+  {
+   "id": "casa_chimenea",
+   "tipo": "casa",
+   "archivo": "casa_chimenea.png",
+   "w": 833,
+   "h": 827,
+   "ancla": [
+    416,
+    825
+   ],
+   "huella": [
+    26,
+    547,
+    762,
+    739
+   ],
+   "origen": [
+    586,
+    585,
+    1001,
+    997
+   ],
+   "area": 97654,
+   "medio": [
+    133,
+    117,
+    99
+   ]
+  },
+  {
+   "id": "arbol_bajo",
+   "tipo": "arbol",
+   "archivo": "arbol_bajo.png",
+   "w": 238,
+   "h": 285,
+   "ancla": [
+    119,
+    283
+   ],
+   "huella": [
+    90,
+    243,
+    147,
+    283
+   ],
+   "origen": [
+    893,
+    589,
+    1011,
+    729
+   ],
+   "area": 12768,
+   "medio": [
+    76,
+    122,
+    99
+   ]
+  },
+  {
+   "id": "losa_16",
+   "tipo": "losa",
+   "archivo": "losa_16.png",
+   "w": 63,
+   "h": 27,
+   "ancla": [
+    31,
+    26
+   ],
+   "huella": null,
+   "origen": [
+    244,
+    669,
+    273,
+    681
+   ],
+   "area": 212,
+   "medio": [
+    208,
+    203,
+    168
+   ]
+  },
+  {
+   "id": "losa_17",
+   "tipo": "losa",
+   "archivo": "losa_17.png",
+   "w": 36,
+   "h": 20,
+   "ancla": [
+    18,
+    19
+   ],
+   "huella": null,
+   "origen": [
+    225,
+    677,
+    241,
+    685
+   ],
+   "area": 82,
+   "medio": [
+    210,
+    205,
+    166
+   ]
+  },
+  {
+   "id": "losa_18",
+   "tipo": "losa",
+   "archivo": "losa_18.png",
+   "w": 82,
+   "h": 47,
+   "ancla": [
+    41,
+    46
+   ],
+   "huella": null,
+   "origen": [
+    261,
+    680,
+    300,
+    702
+   ],
+   "area": 452,
+   "medio": [
+    208,
+    202,
+    168
+   ]
+  },
+  {
+   "id": "roca_8",
+   "tipo": "roca",
+   "archivo": "roca_8.png",
+   "w": 305,
+   "h": 202,
+   "ancla": [
+    152,
+    200
+   ],
+   "huella": [
+    36,
+    115,
+    268,
+    191
+   ],
+   "origen": [
+    32,
+    683,
+    182,
+    782
+   ],
+   "area": 8799,
+   "medio": [
+    123,
+    141,
+    102
+   ]
+  },
+  {
+   "id": "losa_19",
+   "tipo": "losa",
+   "archivo": "losa_19.png",
+   "w": 82,
+   "h": 35,
+   "ancla": [
+    41,
+    34
+   ],
+   "huella": null,
+   "origen": [
+    221,
+    690,
+    260,
+    705
+   ],
+   "area": 352,
+   "medio": [
+    209,
+    204,
+    168
+   ]
+  },
+  {
+   "id": "detalle_12",
+   "tipo": "detalle",
+   "archivo": "detalle_12.png",
+   "w": 42,
+   "h": 18,
+   "ancla": [
+    21,
+    17
+   ],
+   "huella": null,
+   "origen": [
+    485,
+    743,
+    504,
+    751
+   ],
+   "area": 75,
+   "medio": [
+    129,
+    160,
+    100
+   ]
+  },
+  {
+   "id": "estanque",
+   "tipo": "estanque",
+   "archivo": "estanque.png",
+   "w": 613,
+   "h": 314,
+   "ancla": [
+    306,
+    313
+   ],
+   "huella": [
+    24,
+    30,
+    588,
+    303
+   ],
+   "origen": [
+    156,
+    770,
+    461,
+    925
+   ],
+   "area": 20280,
+   "medio": [
+    104,
+    122,
+    129
+   ]
+  },
+  {
+   "id": "detalle_13",
+   "tipo": "detalle",
+   "archivo": "detalle_13.png",
+   "w": 36,
+   "h": 23,
+   "ancla": [
+    18,
+    22
+   ],
+   "huella": null,
+   "origen": [
+    954,
+    778,
+    970,
+    788
+   ],
+   "area": 108,
+   "medio": [
+    123,
+    158,
+    98
+   ]
+  },
+  {
+   "id": "detalle_14",
+   "tipo": "detalle",
+   "archivo": "detalle_14.png",
+   "w": 41,
+   "h": 30,
+   "ancla": [
+    20,
+    29
+   ],
+   "huella": null,
+   "origen": [
+    979,
+    819,
+    997,
+    832
+   ],
+   "area": 168,
+   "medio": [
+    125,
+    164,
+    103
+   ]
+  },
+  {
+   "id": "detalle_15",
+   "tipo": "detalle",
+   "archivo": "detalle_15.png",
+   "w": 39,
+   "h": 21,
+   "ancla": [
+    19,
+    20
+   ],
+   "huella": null,
+   "origen": [
+    59,
+    849,
+    77,
+    859
+   ],
+   "area": 102,
+   "medio": [
+    115,
+    155,
+    98
+   ]
+  },
+  {
+   "id": "detalle_16",
+   "tipo": "detalle",
+   "archivo": "detalle_16.png",
+   "w": 31,
+   "h": 23,
+   "ancla": [
+    15,
+    21
+   ],
+   "huella": null,
+   "origen": [
+    553,
+    922,
+    567,
+    932
+   ],
+   "area": 66,
+   "medio": [
+    120,
+    156,
+    97
+   ]
+  },
+  {
+   "id": "detalle_17",
+   "tipo": "detalle",
+   "archivo": "detalle_17.png",
+   "w": 60,
+   "h": 35,
+   "ancla": [
+    30,
+    34
+   ],
+   "huella": null,
+   "origen": [
+    156,
+    937,
+    184,
+    952
+   ],
+   "area": 250,
+   "medio": [
+    133,
+    174,
+    109
+   ]
+  },
+  {
+   "id": "detalle_18",
+   "tipo": "detalle",
+   "archivo": "detalle_18.png",
+   "w": 58,
+   "h": 28,
+   "ancla": [
+    29,
+    27
+   ],
+   "huella": null,
+   "origen": [
+    678,
+    966,
+    705,
+    978
+   ],
+   "area": 206,
+   "medio": [
+    128,
+    170,
+    101
+   ]
+  },
+  {
+   "id": "piedras_0",
+   "tipo": "piedras",
+   "archivo": "piedras_0.png",
+   "w": 241,
+   "h": 201,
+   "ancla": [
+    120,
+    200
+   ],
+   "origen": [
+    563,
+    328,
+    703,
+    498
+   ]
+  }
+ ]
+}

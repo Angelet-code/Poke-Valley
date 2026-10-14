@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pokédex PMD</title>
+<style>
+:root{--bg:#f3efe6;--fg:#2a2622;--card:#fffdf8;--muted:#776e62;--line:#e0d9cb}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--fg:#ece6da;--card:#24221f;--muted:#a59b8c;--line:#3a3631}}
+:root[data-theme="dark"]{--bg:#1a1917;--fg:#ece6da;--card:#24221f;--muted:#a59b8c;--line:#3a3631}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,"Segoe UI",sans-serif}
+main{max-width:1200px;margin:0 auto;padding:28px 16px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 14px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+input,select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.mon{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center;font-size:12px;color:var(--muted)}
+.mon canvas{image-rendering:pixelated;width:80px;height:80px;display:block;margin:0 auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Pokédex PMD (SpriteCollab)</h1>
+<p class="sub" id="sub">Cargando indice.json…</p>
+<div class="bar">
+  <input id="q" placeholder="Nº de Pokédex (p. ej. 25)" inputmode="numeric">
+  <select id="anim"></select>
+</div>
+<div id="grid"></div>
+</main>
+<script>
+// Catálogo de todo lo descargado en assets/sprites/pokemon/ (índice: indice.json, dex → {anim: [ancho, alto]}).
+// Muestra la animación elegida mirando al sur (fila 0), con los tiempos de su AnimData.xml.
+const BASE='../../assets/sprites/pokemon/';
+const grid=document.getElementById('grid'), q=document.getElementById('q'), sel=document.getElementById('anim');
+const cache=new Map(), visibles=new Set();
+async function durs(dex,name){
+  const k=dex+'/'+name; if(cache.has(k))return cache.get(k);
+  const p=fetch(BASE+dex+'/AnimData.xml').then(r=>r.text()).then(t=>{
+    const x=new DOMParser().parseFromString(t,'text/xml');
+    const a=[...x.querySelectorAll('Anim')].find(a=>a.querySelector('Name').textContent===name);
+    return [...a.querySelectorAll('Duration')].map(d=>+d.textContent);
+  });
+  cache.set(k,p); return p;
+}
+const io=new IntersectionObserver(es=>{for(const e of es){
+  const m=e.target._m; if(e.isIntersecting){visibles.add(m); if(!m.img)cargar(m);} else visibles.delete(m);
+}},{rootMargin:'200px'});
+async function cargar(m){
+  const img=new Image(); img.src=BASE+m.dex+'/'+m.name+'-Anim.png';
+  m.img=img; await img.decode(); m.dur=await durs(m.dex,m.name);
+}
+let tick=0;
+function loop(){
+  tick++;
+  for(const m of visibles){
+    if(!m.dur)continue;
+    const tot=m.dur.reduce((a,b)=>a+b,0); let t=tick%tot,i=0; while(t>=m.dur[i]){t-=m.dur[i];i++;}
+    const g=m.ctx, s=Math.min(80/m.fw,80/m.fh,3), w=m.fw*s, h=m.fh*s;
+    g.clearRect(0,0,80,80); g.imageSmoothingEnabled=false;
+    g.drawImage(m.img,i*m.fw,0,m.fw,m.fh,(80-w)/2,(80-h)/2,w,h);
+  }
+  requestAnimationFrame(loop);
+}
+(async()=>{
+  const ind=await (await fetch(BASE+'indice.json')).json();
+  const cuenta={}; for(const v of Object.values(ind))for(const n in v)cuenta[n]=(cuenta[n]||0)+1;
+  const nombres=Object.keys(cuenta).sort((a,b)=>cuenta[b]-cuenta[a]);
+  sel.innerHTML=nombres.map(n=>`<option value="${n}">${n} (${cuenta[n]})</option>`).join('');
+  sel.value='Idle';
+  document.getElementById('sub').textContent=`${Object.keys(ind).length} especies (forma normal), ${nombres.length} tipos de animación. Licencia CC BY-NC 4.0, créditos en credits.txt de cada carpeta.`;
+  function pintar(){
+    for(const el of grid.children)io.unobserve(el);
+    grid.innerHTML=''; visibles.clear();
+    const name=sel.value, f=q.value.trim().replace(/^0+/,'');
+    for(const [dex,anims] of Object.entries(ind).sort((a,b)=>a[0].localeCompare(b[0]))){
+      if(f&&!String(+dex).startsWith(f))continue;
+      const a=anims[name]||anims.Idle||anims.Walk; if(!a)continue;
+      const usa=anims[name]?name:(anims.Idle?'Idle':'Walk');
+      const el=document.createElement('div'); el.className='mon';
+      el.title=Object.keys(anims).join(', ');
+      const c=document.createElement('canvas'); c.width=80; c.height=80;
+      el.append(c,`${dex}${usa===name?'':' · '+usa}`);
+      el._m={dex,name:usa,fw:a[0],fh:a[1],ctx:c.getContext('2d')};
+      grid.appendChild(el); io.observe(el);
+    }
+  }
+  q.oninput=pintar; sel.onchange=pintar; pintar(); loop();
+})();
+</script>
+</body>
+</html>

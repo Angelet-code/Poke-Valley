@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\barril_s1_0.png
+16.1s

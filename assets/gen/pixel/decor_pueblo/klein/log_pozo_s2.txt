@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\pozo_s2_0.png
+25.1s

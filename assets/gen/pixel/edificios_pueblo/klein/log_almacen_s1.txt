@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein\almacen_s1_0.png
+33.3s

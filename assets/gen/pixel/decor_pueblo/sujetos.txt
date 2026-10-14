@@ -1,0 +1,14 @@
+farol|a wooden lamp post with a small glowing warm yellow lantern hanging on top, thin tall pole
+pozo|a small round stone water well with a little wooden roof and a bucket on a rope
+valla|a short straight section of rustic wooden fence with two posts and two horizontal rails
+barril|a single wooden barrel with dark iron hoops, standing upright
+cajas|two stacked small wooden crates, light brown planks
+banco|a simple wooden park bench with a backrest, seen from the front
+maceta|a round terracotta flower pot with colorful little flowers
+carretilla|a small wooden wheelbarrow with one wheel, empty
+lena|a neat stack of chopped firewood logs, cut ends visible
+saco|a plump burlap sack of grain tied at the top, beige cloth
+cartel|a small wooden signpost with one blank wooden board, no letters
+fuente|a small round stone fountain with blue water in the basin
+tocon|a tree stump with an axe stuck in the top
+cubo|a wooden bucket filled with blue water

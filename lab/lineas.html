@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Lab · capa de lineas</title>
+<style>body{margin:0;background:#bbb;font:13px system-ui;color:#222}.fila{display:flex;gap:10px;padding:8px}img{display:block;background:#ddd}</style></head>
+<body><div class="fila" id="f"></div>
+<script>
+const p=new URLSearchParams(location.search); const v=(p.get('v')||'a_spline,b_polygon,c_spline_fino').split(','); const k=+(p.get('k')||0.5);
+const W=+(p.get('w')||927), H=+(p.get('h')||779);
+for (const src of [`/lab/assets/vector/_prueba_lineas.png`, ...v.map(x=>`/lab/assets/vector/_prueba_lineas_${x}.svg`)]) {
+  const d=document.createElement('div'); d.innerHTML=`<div>${src.split('/').pop()}</div><img src="${src}" width="${Math.round(W*k)}" height="${Math.round(H*k)}">`; document.getElementById('f').appendChild(d);
+}
+</script></body></html>

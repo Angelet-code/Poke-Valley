@@ -44,4 +44,17 @@ export function registrarBayas(ids: string[]): void {
 }
 
 // Recolectables que aparecen cada mañana y su peso relativo.
-export const APARICIONES: [string, number][] = [['palo', 30], ['palo_1', 20], ['piedra', 20], ['piedra_1', 15], ['tronco', 15]];
+// Las Balls son raras: las más fuertes, más.
+export const APARICIONES: [string, number][] = [['palo', 30], ['palo_1', 20], ['piedra', 20], ['piedra_1', 15], ['tronco', 15],
+  ['pokeball', 10], ['superball', 4], ['ultraball', 2], ['honorball', 2]];
+
+// Poké Balls (GDD-pueblo §12): multiplican la probabilidad de que un salvaje se quede. La Master Ball
+// no falla nunca; la Honor Ball, además, convence a un visitante sin darle lo que pide.
+// Orden = el que se gasta primero si en la mano no llevas una Ball (la Master Ball solo si la eliges).
+export const BALL: Record<string, number> = { pokeball: 1, superball: 1.5, ultraball: 2, honorball: 1, masterball: Infinity };
+
+// Pokécoins por unidad de cada recurso del almacén en la caja de Pelipper (GDD-pueblo §2: lo que no
+// se gasta en construir se vende). Madera y piedra valen lo mismo que sus objetos sueltos (rama 2,
+// piedra 3); las bayas del almacén son comida genérica y valen menos que una baya concreta.
+// Un ladrillo (2 piedras cocidas) vale más que sus piedras; un plato (3 bayas) más que sus bayas.
+export const PRECIO_RECURSO: Record<'madera' | 'piedra' | 'bayas' | 'ladrillos' | 'platos', number> = { madera: 2, piedra: 3, bayas: 5, ladrillos: 10, platos: 25 };

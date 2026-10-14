@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\fuente_s1_0.png
+47.6s

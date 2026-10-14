@@ -4,14 +4,84 @@
     {
       "name": "bocetos",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5180", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5180",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 5180
     },
     {
       "name": "juego",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5174
+    },
+    {
+      "name": "juego-b",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "port": 5175
+    },
+    {
+      "name": "juego-c",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        ".claude/vite-sin-hmr.config.mjs",
+        "--port",
+        "5176",
+        "--strictPort"
+      ],
+      "port": 5176
+    },
+    {
+      "name": "juego-d",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        ".claude/vite-sin-hmr.config.mjs",
+        "--port",
+        "5177",
+        "--strictPort"
+      ],
+      "port": 5177
+    },
+    {
+      "name": "juego-e",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        ".claude/vite-sin-hmr.config.mjs",
+        "--port",
+        "5178",
+        "--strictPort"
+      ],
+      "port": 5178
+    },
+    {
+      "name": "lab",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        "lab/vite.config.ts"
+      ],
+      "port": 5179,
+      "url": "http://127.0.0.1:5179"
     }
   ]
 }

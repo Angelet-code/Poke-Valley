@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\saco_s1_0.png
+39.4s

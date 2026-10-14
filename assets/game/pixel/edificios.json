@@ -1,4 +1,10 @@
 {
-  "casa": {"archivo": "edificios/casa.png", "ancla": [77, 170], "colision": [144, 72], "tipo": "edificio"},
-  "tienda": {"archivo": "edificios/tienda.png", "ancla": [75, 126], "colision": [144, 72], "tipo": "edificio"}
+  "casa": {"archivo": "edificios/casa.png", "ancla": [65, 134], "colision": [122, 60], "tipo": "edificio"},
+  "tienda": {"archivo": "edificios/tienda.png", "ancla": [75, 126], "colision": [144, 72], "tipo": "edificio"},
+  "almacen": {"archivo": "edificios/almacen.png", "ancla": [70, 144], "colision": [134, 60], "tipo": "edificio"},
+  "nidogrande": {"archivo": "edificios/nidogrande.png", "ancla": [42, 77], "colision": [76, 30], "tipo": "edificio"},
+  "cobertizo": {"archivo": "edificios/cobertizo.png", "ancla": [46, 87], "colision": [84, 36], "tipo": "edificio"},
+  "santuario": {"archivo": "edificios/santuario.png", "ancla": [56, 151], "colision": [96, 50], "tipo": "edificio"},
+  "horno": {"archivo": "edificios/horno.png", "ancla": [43, 84], "colision": [78, 28], "tipo": "edificio"},
+  "guarderia": {"archivo": "edificios/guarderia.png", "ancla": [48, 112], "colision": [88, 36], "tipo": "edificio"}
 }

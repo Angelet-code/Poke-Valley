@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\maceta_s2_0.png
+2.0s

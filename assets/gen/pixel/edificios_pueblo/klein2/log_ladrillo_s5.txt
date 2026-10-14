@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein2\ladrillo_s5_0.png
+10.0s

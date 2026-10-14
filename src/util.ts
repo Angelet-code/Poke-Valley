@@ -13,7 +13,20 @@ export const vnoise = (x: number, y: number): number => {
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 };
 
-export const smooth = (e0: number, e1: number, v: number): number => {
+// vnoise que recuerda los 4 hash de la última celda: al recorrer una fila de píxeles casi todos caen
+// en la misma celda que el anterior y se ahorran los senos. Mismas operaciones, mismo resultado.
+// Uno por cada sitio que lo usa (cada escala tiene sus celdas).
+export function vnoiseMemo(): (x: number, y: number) => number {
+  let cx = NaN, cy = NaN, a = 0, b = 0, c = 0, d = 0;
+  return (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    if (xi !== cx || yi !== cy) { cx = xi; cy = yi; a = hash(xi, yi); b = hash(xi + 1, yi); c = hash(xi, yi + 1); d = hash(xi + 1, yi + 1); }
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  };
+}
+
+export const smooth =(e0: number, e1: number, v: number): number => {
   const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0)));
   return t * t * (3 - 2 * t);
 };

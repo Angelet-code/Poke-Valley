@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein2\guarderia_s5_0.png
+6.0s

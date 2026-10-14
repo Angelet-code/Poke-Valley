@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein2\plato_s1_0.png
+29.5s

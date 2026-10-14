@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\tocon_s1_0.png
+174.0s

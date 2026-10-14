@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\cajas_s1_0.png
+55.2s

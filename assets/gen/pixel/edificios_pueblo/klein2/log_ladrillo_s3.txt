@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein2\ladrillo_s3_0.png
+8.0s

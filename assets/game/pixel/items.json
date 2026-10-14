@@ -1,7 +1,7 @@
 {
   "palo":         { "archivo": "items/palo.png",         "ancla": [10, 14], "colision": [0, 0],   "tipo": "item" },
   "palo_1":       { "archivo": "items/palo_1.png",       "ancla": [10, 12], "colision": [0, 0],   "tipo": "item" },
-  "tronco":       { "archivo": "items/tronco.png",       "ancla": [10, 15], "colision": [0, 0],   "tipo": "item" },
+  "tronco":       { "archivo": "items/tronco.png",       "ancla": [13, 19], "colision": [0, 0],   "tipo": "item" },
   "piedra":       { "archivo": "items/piedra.png",       "ancla": [9, 15],  "colision": [0, 0],   "tipo": "item" },
   "piedra_1":     { "archivo": "items/piedra_1.png",     "ancla": [10, 15], "colision": [0, 0],   "tipo": "item" },
   "pokeball":     { "archivo": "items/pokeball.png",      "ancla": [5, 9],   "colision": [0, 0],   "tipo": "item", "icono": "items/iconos/pokeball.png" },
@@ -9,5 +9,10 @@
   "ultraball":    { "archivo": "items/ultraball.png",     "ancla": [5, 9],   "colision": [0, 0],   "tipo": "item", "icono": "items/iconos/ultraball.png" },
   "masterball":   { "archivo": "items/masterball.png",    "ancla": [5, 9],   "colision": [0, 0],   "tipo": "item", "icono": "items/iconos/masterball.png" },
   "honorball":    { "archivo": "items/honorball.png",     "ancla": [5, 9],   "colision": [0, 0],   "tipo": "item", "icono": "items/iconos/honorball.png" },
-  "mesa_trabajo": { "archivo": "estaciones/mesa_trabajo.png", "ancla": [24, 34], "colision": [48, 20], "tipo": "estacion" }
+  "mesa_trabajo": { "archivo": "estaciones/mesa_trabajo.png", "ancla": [24, 34], "colision": [48, 20], "tipo": "estacion" },
+  "nido":         { "archivo": "estaciones/nido.png",     "ancla": [17, 28], "colision": [0, 0],   "tipo": "estacion", "suelo": true },
+  "comedero":     { "archivo": "estaciones/comedero.png", "ancla": [19, 20], "colision": [36, 8],  "tipo": "estacion" },
+  "caja_pelipper": { "archivo": "estaciones/caja_pelipper.png", "ancla": [14, 26], "colision": [26, 8], "tipo": "estacion" },
+  "ladrillo":     { "archivo": "items/ladrillo.png",     "ancla": [10, 11], "colision": [0, 0],   "tipo": "item" },
+  "plato":        { "archivo": "items/plato.png",        "ancla": [10, 18], "colision": [0, 0],   "tipo": "item" }
 }

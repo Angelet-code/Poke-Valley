@@ -110,6 +110,15 @@ def build(a, ref_names):
     g["pos"] = {"class_type": "CLIPTextEncode", "inputs": {"text": a.prompt, "clip": clip}}
     g["neg"] = {"class_type": "CLIPTextEncode", "inputs": {"text": "" if flux else a.neg, "clip": clip}}
     positive = ["pos", 0]
+    for i, name in enumerate(getattr(a, "edit_names", [])):
+        # Flux.2 Klein como editor: cada imagen de --edit va como latente de referencia (ReferenceLatent),
+        # el resultado conserva su diseño y aplica el prompt ("the same building, now ...").
+        g[f"edimg{i}"] = {"class_type": "LoadImage", "inputs": {"image": name}}
+        g[f"edscale{i}"] = {"class_type": "ImageScaleToTotalPixels", "inputs": {
+            "image": [f"edimg{i}", 0], "upscale_method": "lanczos", "megapixels": 1.0, "resolution_steps": 16}}
+        g[f"edenc{i}"] = {"class_type": "VAEEncode", "inputs": {"pixels": [f"edscale{i}", 0], "vae": vae}}
+        g[f"edref{i}"] = {"class_type": "ReferenceLatent", "inputs": {"conditioning": positive, "latent": [f"edenc{i}", 0]}}
+        positive = [f"edref{i}", 0]
     if a.model == "flux":
         g["guide"] = {"class_type": "FluxGuidance", "inputs": {"conditioning": positive, "guidance": a.guidance}}
         positive = ["guide", 0]
@@ -148,6 +157,7 @@ def main():
     p.add_argument("--ref-mode", default="style transfer")
     p.add_argument("--init")
     p.add_argument("--denoise", type=float, default=0.4)
+    p.add_argument("--edit", nargs="*", default=[], help="solo klein: imágenes de referencia para editar (ReferenceLatent)")
     a = p.parse_args()
     a.steps = a.steps or {"flux": 20, "klein": 4}.get(a.model, 28)
     if a.ref and a.model != "sdxl":
@@ -158,6 +168,12 @@ def main():
             raise SystemExit("--init solo funciona con --model sdxl")
         shutil.copy(a.init, COMFY_DIR / "input" / Path(a.init).name)
         a.init_name = Path(a.init).name
+    if a.edit and a.model != "klein":
+        raise SystemExit("--edit solo funciona con --model klein")
+    a.edit_names = []
+    for r in a.edit:
+        shutil.copy(r, COMFY_DIR / "input" / Path(r).name)
+        a.edit_names.append(Path(r).name)
     ref_names = []
     for r in a.ref:
         dst = COMFY_DIR / "input" / Path(r).name

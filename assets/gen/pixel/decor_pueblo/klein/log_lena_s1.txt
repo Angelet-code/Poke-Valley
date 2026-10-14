@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\lena_s1_0.png
+41.1s

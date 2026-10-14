@@ -7,7 +7,9 @@
     "dev": "vite --port 5174 --strictPort",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "check:lab": "tsc -p lab",
+    "lab": "vite --config lab/vite.config.ts"
   },
   "devDependencies": {
     "typescript": "^5.6.0",

@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein3\cm_mesa_s2_0.png
+58.1s

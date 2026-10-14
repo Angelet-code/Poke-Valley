@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\farol_s4_0.png
+14.5s

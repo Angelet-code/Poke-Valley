@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Lab · PNG vs SVG</title>
+<style>
+  body { margin: 0; background: #aebe7c; font: 13px system-ui, sans-serif; color: #222; }
+  .fila { display: flex; gap: 12px; padding: 10px; align-items: flex-start; }
+  .celda { background: #aebe7c; }
+  .celda h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+  .marco { overflow: hidden; border: 1px solid #0003; }
+  img { display: block; image-rendering: auto; }
+</style>
+</head>
+<body>
+<!-- Mismo elemento al tamano que tendra en pantalla: zoom 3 (0,75 px por px del PNG) y detalle x3 (ampliado 2,25). -->
+<div class="fila" id="z3"></div>
+<div class="fila" id="z3d"></div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get('el') || 'casa_grande';
+  const variantes = (params.get('v') || 'p6,p7,p8').split(',');
+  // ?d=elementos_klein_edit_casa_s1_0 : otra carpeta de elementos (y vector/<d>/).
+  const d = params.get('d'), dirPng = d ? `/lab/assets/${d}` : '/lab/assets/elementos', dirSvg = d ? `/lab/assets/vector/${d}` : '/lab/assets/vector';
+  const fuentes = [['PNG (RealESRGAN x2)', `${dirPng}/${id}.png`], ...variantes.map(v => [`SVG ${v}`, `${dirSvg}/${id}_${v}.svg`])];
+  const W = +(params.get('w') || 925), H = +(params.get('h') || 778);
+  const k = +(params.get('k') || 0.75);  // zoom 3 con escala 0,5: 0,75 px de pantalla por px del PNG (x2); ?k= para otros
+  for (const [nombre, src] of fuentes) {
+    const c = document.createElement('div'); c.className = 'celda';
+    c.innerHTML = `<h3>${nombre}</h3><img src="${src}" width="${Math.round(W * k)}" height="${Math.round(H * k)}">`;
+    document.getElementById('z3').appendChild(c);
+    // Detalle: recorte de la puerta a 3x el tamano de pantalla (lo que se ve con zoom 9).
+    const d = document.createElement('div'); d.className = 'celda';
+    const kk = k * 3, cx = +(params.get('cx') || 300), cy = +(params.get('cy') || 520), cw = 260, ch = 220;
+    d.innerHTML = `<h3>${nombre} · detalle x3</h3><div class="marco" style="width:${cw}px;height:${ch}px"><img src="${src}" width="${Math.round(W * kk)}" height="${Math.round(H * kk)}" style="margin:${-Math.round(cy * kk)}px 0 0 ${-Math.round(cx * kk)}px"></div>`;
+    document.getElementById('z3d').appendChild(d);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\cartel_s3_0.png
+2.1s

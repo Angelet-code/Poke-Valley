@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein3\cm_piedra_s1_0.png
+233.8s

@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\banco_s1_0.png
+43.2s

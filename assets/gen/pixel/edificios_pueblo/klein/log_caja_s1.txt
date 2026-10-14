@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein\caja_s1_0.png
+17.3s

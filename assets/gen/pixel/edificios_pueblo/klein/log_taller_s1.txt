@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein\taller_s1_0.png
+27.1s

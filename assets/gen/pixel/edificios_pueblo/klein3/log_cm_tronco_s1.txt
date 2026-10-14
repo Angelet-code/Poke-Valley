@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein3\cm_tronco_s1_0.png
+81.2s

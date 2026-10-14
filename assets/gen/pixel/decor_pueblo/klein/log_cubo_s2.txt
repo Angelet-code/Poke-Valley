@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\cubo_s2_0.png
+156.4s

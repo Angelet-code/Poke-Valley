@@ -6,3 +6,14 @@ dist/
 assets/gen/recursos/
 assets/gen/bakeoff*/
 
+# Biblioteca completa de SpriteCollab (solo en local). Las especies que usa el juego
+# (src/data/especies.ts) van en git: al añadir una, añadir aquí su línea `!`.
+assets/sprites/pokemon/*
+!assets/sprites/pokemon/0001/
+!assets/sprites/pokemon/0043/
+!assets/sprites/pokemon/0074/
+!assets/sprites/pokemon/0183/
+!assets/sprites/pokemon/0399/
+!assets/sprites/pokemon/LICENSE.md
+
+__pycache__/

@@ -1,0 +1,711 @@
+{
+ "escala": 2,
+ "elementos": [
+  {
+   "id": "casa_grande",
+   "tipo": "casa",
+   "archivo": "casa_grande.png",
+   "w": 1349,
+   "h": 1271,
+   "ancla": [
+    674,
+    1270
+   ],
+   "huella": [
+    132,
+    938,
+    1199,
+    1185
+   ],
+   "origen": "klein_edit_casa_s1_0_x2.png",
+   "sombra": {
+    "archivo": "casa_grande_sombra.png",
+    "w": 1394,
+    "h": 620,
+    "dx": 214,
+    "dy": 698
+   },
+   "k": 0.6872
+  },
+  {
+   "id": "casa_cabana",
+   "tipo": "casa",
+   "archivo": "casa_cabana.png",
+   "w": 1277,
+   "h": 1293,
+   "ancla": [
+    638,
+    1291
+   ],
+   "huella": [
+    115,
+    814,
+    1151,
+    1133
+   ],
+   "origen": "klein_cabana_s1_0_x2.png",
+   "sombra": {
+    "archivo": "casa_cabana_sombra.png",
+    "w": 1313,
+    "h": 576,
+    "dx": 195,
+    "dy": 755
+   },
+   "k": 0.574
+  },
+  {
+   "id": "casa_larga",
+   "tipo": "casa",
+   "archivo": "casa_larga.png",
+   "w": 1519,
+   "h": 1340,
+   "ancla": [
+    759,
+    1339
+   ],
+   "huella": [
+    61,
+    832,
+    1472,
+    1160
+   ],
+   "origen": "klein_edit_larga_s1_0_x2.png",
+   "sombra": {
+    "archivo": "casa_larga_sombra.png",
+    "w": 1710,
+    "h": 527,
+    "dx": 2,
+    "dy": 735
+   },
+   "k": 0.5569
+  },
+  {
+   "id": "casa_chimenea",
+   "tipo": "casa",
+   "archivo": "casa_chimenea.png",
+   "w": 1447,
+   "h": 1669,
+   "ancla": [
+    723,
+    1668
+   ],
+   "huella": [
+    51,
+    1096,
+    1376,
+    1505
+   ],
+   "origen": "klein_edit_chimenea_s1_0_x2.png",
+   "sombra": {
+    "archivo": "casa_chimenea_sombra.png",
+    "w": 1691,
+    "h": 1183,
+    "dx": 18,
+    "dy": 517
+   },
+   "k": 0.5771
+  },
+  {
+   "id": "arbol_alto",
+   "tipo": "arbol",
+   "archivo": "arbol_alto.png",
+   "w": 1118,
+   "h": 1193,
+   "ancla": [
+    559,
+    1192
+   ],
+   "huella": [
+    424,
+    1024,
+    693,
+    1192
+   ],
+   "origen": "klein_arbol_s1_0_x2.png",
+   "sombra": {
+    "archivo": "arbol_alto_sombra.png",
+    "w": 540,
+    "h": 214,
+    "dx": 342,
+    "dy": 1034
+   },
+   "k": 0.3843
+  },
+  {
+   "id": "arbol_bajo",
+   "tipo": "arbol",
+   "archivo": "arbol_bajo.png",
+   "w": 1154,
+   "h": 1225,
+   "ancla": [
+    577,
+    1224
+   ],
+   "huella": [
+    438,
+    1052,
+    715,
+    1224
+   ],
+   "origen": "klein_arbol_s2_0_x2.png",
+   "sombra": {
+    "archivo": "arbol_bajo_sombra.png",
+    "w": 1199,
+    "h": 332,
+    "dx": 197,
+    "dy": 989
+   },
+   "k": 0.4142
+  },
+  {
+   "id": "roca_0",
+   "tipo": "roca",
+   "archivo": "roca_0.png",
+   "w": 845,
+   "h": 771,
+   "ancla": [
+    422,
+    770
+   ],
+   "huella": [
+    101,
+    446,
+    743,
+    739
+   ],
+   "origen": "klein_roca_s1_0_x2.png",
+   "sombra": {
+    "archivo": "roca_0_sombra.png",
+    "w": 939,
+    "h": 477,
+    "dx": 71,
+    "dy": 331
+   },
+   "k": 0.284
+  },
+  {
+   "id": "roca_1",
+   "tipo": "roca",
+   "archivo": "roca_1.png",
+   "w": 997,
+   "h": 907,
+   "ancla": [
+    498,
+    906
+   ],
+   "huella": [
+    119,
+    525,
+    877,
+    869
+   ],
+   "origen": "klein_roca_s2_0_x2.png",
+   "sombra": {
+    "archivo": "roca_1_sombra.png",
+    "w": 975,
+    "h": 641,
+    "dx": 117,
+    "dy": 322
+   },
+   "k": 0.1214
+  },
+  {
+   "id": "roca_2",
+   "tipo": "roca",
+   "archivo": "roca_2.png",
+   "w": 1161,
+   "h": 1012,
+   "ancla": [
+    580,
+    1011
+   ],
+   "huella": [
+    139,
+    585,
+    1021,
+    970
+   ],
+   "origen": "klein_roca_b_s1_0_x2.png",
+   "sombra": {
+    "archivo": "roca_2_sombra.png",
+    "w": 1228,
+    "h": 528,
+    "dx": 34,
+    "dy": 497
+   },
+   "k": 0.1559
+  },
+  {
+   "id": "roca_3",
+   "tipo": "roca",
+   "archivo": "roca_3.png",
+   "w": 1200,
+   "h": 1132,
+   "ancla": [
+    600,
+    1131
+   ],
+   "huella": [
+    144,
+    655,
+    1056,
+    1085
+   ],
+   "origen": "klein_roca_b_s2_0_x2.png",
+   "sombra": {
+    "archivo": "roca_3_sombra.png",
+    "w": 742,
+    "h": 619,
+    "dx": 578,
+    "dy": 525
+   },
+   "k": 0.135
+  },
+  {
+   "id": "roca_4",
+   "tipo": "roca",
+   "archivo": "roca_4.png",
+   "w": 845,
+   "h": 771,
+   "ancla": [
+    422,
+    770
+   ],
+   "huella": [
+    101,
+    446,
+    743,
+    739
+   ],
+   "origen": "klein_roca_s1_0_x2.png",
+   "sombra": {
+    "archivo": "roca_4_sombra.png",
+    "w": 939,
+    "h": 477,
+    "dx": 71,
+    "dy": 331
+   },
+   "k": 0.2249
+  },
+  {
+   "id": "roca_5",
+   "tipo": "roca",
+   "archivo": "roca_5.png",
+   "w": 989,
+   "h": 634,
+   "ancla": [
+    494,
+    632
+   ],
+   "huella": [
+    118,
+    365,
+    870,
+    606
+   ],
+   "origen": "klein_roca_c_s1_0_x2.png",
+   "k": 0.1891
+  },
+  {
+   "id": "roca_6",
+   "tipo": "roca",
+   "archivo": "roca_6.png",
+   "w": 997,
+   "h": 907,
+   "ancla": [
+    498,
+    906
+   ],
+   "huella": [
+    119,
+    525,
+    877,
+    869
+   ],
+   "origen": "klein_roca_s2_0_x2.png",
+   "sombra": {
+    "archivo": "roca_6_sombra.png",
+    "w": 975,
+    "h": 641,
+    "dx": 117,
+    "dy": 322
+   },
+   "k": 0.1996
+  },
+  {
+   "id": "roca_7",
+   "tipo": "roca",
+   "archivo": "roca_7.png",
+   "w": 1161,
+   "h": 1012,
+   "ancla": [
+    580,
+    1011
+   ],
+   "huella": [
+    139,
+    585,
+    1021,
+    970
+   ],
+   "origen": "klein_roca_b_s1_0_x2.png",
+   "sombra": {
+    "archivo": "roca_7_sombra.png",
+    "w": 1228,
+    "h": 528,
+    "dx": 34,
+    "dy": 497
+   },
+   "k": 0.205
+  },
+  {
+   "id": "roca_8",
+   "tipo": "roca",
+   "archivo": "roca_8.png",
+   "w": 750,
+   "h": 620,
+   "ancla": [
+    375,
+    619
+   ],
+   "huella": [
+    90,
+    358,
+    660,
+    594
+   ],
+   "origen": "klein_roca_c_s2_0_x2.png",
+   "sombra": {
+    "archivo": "roca_8_sombra.png",
+    "w": 1054,
+    "h": 434,
+    "dx": -192,
+    "dy": 204
+   },
+   "k": 0.408
+  },
+  {
+   "id": "estanque",
+   "tipo": "estanque",
+   "archivo": "estanque.png",
+   "w": 1569,
+   "h": 1202,
+   "ancla": [
+    784,
+    1201
+   ],
+   "huella": [
+    62,
+    119,
+    1506,
+    1164
+   ],
+   "origen": "klein_estanque_s1_0_x2.png",
+   "k": 0.3907
+  },
+  {
+   "id": "piedras_0",
+   "tipo": "piedras",
+   "archivo": "piedras_0.png",
+   "w": 1276,
+   "h": 1411,
+   "ancla": [
+    638,
+    1409
+   ],
+   "huella": null,
+   "origen": "klein_edit_piedras_s2_0_x2.png",
+   "k": 0.1904
+  },
+  {
+   "id": "hoguera",
+   "tipo": "roca",
+   "archivo": "hoguera.png",
+   "w": 1208,
+   "h": 980,
+   "ancla": [
+    604,
+    978
+   ],
+   "huella": [
+    144,
+    566,
+    1063,
+    938
+   ],
+   "origen": "klein_hoguera_s1_0_x2.png",
+   "sombra": {
+    "archivo": "hoguera_sombra.png",
+    "w": 1221,
+    "h": 721,
+    "dx": 13,
+    "dy": 271
+   },
+   "k": 0.1689
+  },
+  {
+   "id": "camino_c",
+   "tipo": "piedras",
+   "archivo": "camino_c.png",
+   "w": 716,
+   "h": 1121,
+   "ancla": [
+    358,
+    1119
+   ],
+   "huella": null,
+   "origen": "klein_camino_c_s2_0_x2.png",
+   "k": 0.5866
+  },
+  {
+   "id": "camino_d",
+   "tipo": "piedras",
+   "archivo": "camino_d.png",
+   "w": 842,
+   "h": 1182,
+   "ancla": [
+    421,
+    1180
+   ],
+   "huella": null,
+   "origen": "klein_camino_f_s3_0_x2.png",
+   "k": 0.6413
+  },
+  {
+   "id": "tienda",
+   "tipo": "casa",
+   "archivo": "tienda.png",
+   "w": 1258,
+   "h": 1409,
+   "ancla": [
+    629,
+    1408
+   ],
+   "huella": [
+    46,
+    1005,
+    1198,
+    1291
+   ],
+   "origen": "klein_tienda_s1_0_x2.png",
+   "sombra": {
+    "archivo": "tienda_sombra.png",
+    "w": 976,
+    "h": 729,
+    "dx": 565,
+    "dy": 680
+   },
+   "k": 0.7154
+  },
+  {
+   "id": "almacen",
+   "tipo": "casa",
+   "archivo": "almacen.png",
+   "w": 1267,
+   "h": 1226,
+   "ancla": [
+    633,
+    1225
+   ],
+   "huella": [
+    145,
+    896,
+    1140,
+    1158
+   ],
+   "origen": "klein_almacen_s2_0_x2.png",
+   "sombra": {
+    "archivo": "almacen_sombra.png",
+    "w": 1297,
+    "h": 593,
+    "dx": 208,
+    "dy": 683
+   },
+   "k": 0.7814
+  },
+  {
+   "id": "pozo",
+   "tipo": "roca",
+   "archivo": "pozo.png",
+   "w": 1044,
+   "h": 1440,
+   "ancla": [
+    522,
+    1438
+   ],
+   "huella": [
+    125,
+    833,
+    918,
+    1380
+   ],
+   "origen": "klein_pozo_s1_0_x2.png",
+   "sombra": {
+    "archivo": "pozo_sombra.png",
+    "w": 790,
+    "h": 588,
+    "dx": 406,
+    "dy": 845
+   },
+   "k": 0.2414
+  },
+  {
+   "id": "arbusto",
+   "tipo": "roca",
+   "archivo": "arbusto.png",
+   "w": 1097,
+   "h": 1012,
+   "ancla": [
+    548,
+    1011
+   ],
+   "huella": [
+    131,
+    585,
+    965,
+    970
+   ],
+   "origen": "klein_arbusto_s1_0_x2.png",
+   "sombra": {
+    "archivo": "arbusto_sombra.png",
+    "w": 1131,
+    "h": 643,
+    "dx": 74,
+    "dy": 489
+   },
+   "k": 0.1641
+  },
+  {
+   "id": "valla",
+   "tipo": "roca",
+   "archivo": "valla.png",
+   "w": 1149,
+   "h": 971,
+   "ancla": [
+    574,
+    969
+   ],
+   "huella": [
+    137,
+    561,
+    1011,
+    930
+   ],
+   "origen": "klein_valla_s1_0_x2.png",
+   "sombra": {
+    "archivo": "valla_sombra.png",
+    "w": 1124,
+    "h": 531,
+    "dx": 87,
+    "dy": 438
+   },
+   "k": 0.3133
+  },
+  {
+   "id": "tocon",
+   "tipo": "roca",
+   "archivo": "tocon.png",
+   "w": 1157,
+   "h": 1056,
+   "ancla": [
+    578,
+    1055
+   ],
+   "huella": [
+    138,
+    611,
+    1018,
+    1012
+   ],
+   "origen": "klein_tocon_s2_0_x2.png",
+   "sombra": {
+    "archivo": "tocon_sombra.png",
+    "w": 1127,
+    "h": 538,
+    "dx": 79,
+    "dy": 512
+   },
+   "k": 0.1245
+  },
+  {
+   "id": "flores",
+   "tipo": "detalle",
+   "archivo": "flores.png",
+   "w": 927,
+   "h": 810,
+   "ancla": [
+    463,
+    808
+   ],
+   "huella": null,
+   "origen": "klein_flores_s1_0_x2.png",
+   "k": 0.1424
+  },
+  {
+   "id": "camino_e",
+   "tipo": "piedras",
+   "archivo": "camino_e.png",
+   "w": 1023,
+   "h": 1373,
+   "ancla": [
+    511,
+    1371
+   ],
+   "huella": null,
+   "origen": "klein_camino_f_s1_0_x2.png",
+   "k": 0.4692
+  },
+  {
+   "id": "farola",
+   "tipo": "roca",
+   "archivo": "farola.png",
+   "w": 431,
+   "h": 1690,
+   "ancla": [
+    215,
+    1689
+   ],
+   "huella": [
+    51,
+    979,
+    379,
+    1621
+   ],
+   "origen": "klein_farola_s1_0_x2.png",
+   "sombra": {
+    "archivo": "farola_sombra.png",
+    "w": 233,
+    "h": 186,
+    "dx": 222,
+    "dy": 1508
+   },
+   "k": 0.1671
+  },
+  {
+   "id": "farola_madera",
+   "tipo": "roca",
+   "archivo": "farola_madera.png",
+   "w": 342,
+   "h": 1613,
+   "ancla": [
+    171,
+    1612
+   ],
+   "huella": [
+    41,
+    934,
+    300,
+    1547
+   ],
+   "origen": "klein_farola_b_s1_0_x2.png",
+   "sombra": {
+    "archivo": "farola_madera_sombra.png",
+    "w": 185,
+    "h": 108,
+    "dx": 0,
+    "dy": 1490
+   },
+   "k": 0.1754
+  }
+ ]
+}

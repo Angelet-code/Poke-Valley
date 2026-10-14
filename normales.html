@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo: normales de Bulbasaur</title>
+<!-- Demo de iluminación por normal map (Light2D de Phaser) con los sprites PMD de Bulbasaur.
+     Mapas generados píxel a píxel por tools/normales_pokemon.py. Código: src/paginas/normales.ts. -->
+<style>
+  html, body { margin: 0; background: #151a12; color: #e4ecd8; font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  #game { width: 100vw; height: 78vh; }
+  canvas { image-rendering: pixelated; }
+  .nota { max-width: 1200px; margin: 10px auto 24px; padding: 0 16px; color: #b9c4ab; }
+  .nota kbd { background: #2a3324; border: 1px solid #45523c; border-radius: 4px; padding: 0 5px; color: #e4ecd8; }
+  .nota b { color: #e4ecd8; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div class="nota">
+  <b>Fila de arriba:</b> con mapa de normales · <b>fila de abajo:</b> sin él (misma luz, igual que hoy el juego).
+  <kbd>ratón</kbd> mueve la luz · <kbd>D</kbd> ciclo de día automático · <kbd>M</kbd> volver al ratón ·
+  <kbd>A</kbd> Idle/Andar · <kbd>N</kbd> quitar/poner normales en la fila de arriba · <kbd>+</kbd>/<kbd>-</kbd> intensidad ·
+  <kbd>C</kbd> cel (anime) / suave · <kbd>B</kbd> nº de bandas · <kbd>U</kbd> umbral de la sombra · <kbd>H</kbd> altura de la luz · <kbd>S</kbd> transición entre bandas · <kbd>Z</kbd> zoom. A la derecha, el mapa de normales del primer fotograma.
+</div>
+<script type="module" src="/src/paginas/normales.ts"></script>
+</body>
+</html>

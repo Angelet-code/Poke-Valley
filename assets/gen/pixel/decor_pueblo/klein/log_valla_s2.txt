@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\valla_s2_0.png
+6.3s

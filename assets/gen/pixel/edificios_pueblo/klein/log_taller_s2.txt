@@ -1,0 +1,2 @@
+assets\gen\pixel\edificios_pueblo\klein\taller_s2_0.png
+6.0s

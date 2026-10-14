@@ -1,0 +1,2 @@
+assets\gen\pixel\decor_pueblo\klein\farol_s2_0.png
+8.0s

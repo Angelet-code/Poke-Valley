@@ -5,11 +5,18 @@ export const VW = 480, VH = 270;
 export const S = Math.max(1, Math.floor(Math.min(innerWidth / VW, innerHeight / VH)));
 
 const params = new URLSearchParams(location.search);
-export const MAPA = params.get('mapa') || 'aldea_a';
+export const MAPA = params.get('mapa') || 'dibujo'; // dibujo = el pueblo en el estilo del lab (src/data/mapaDibujo.ts); aldea_d = el pueblo pixel art
+// Mapa en estilo dibujo: elementos Klein vectoriales, suelo con la paleta del dibujo, farolas y luz del día (Light2D).
+export const DIBUJO = MAPA === 'dibujo';
 export const NUEVA = params.has('nueva');
 
 // Claves del registro de Phaser donde Boot deja los datos cargados.
-export const REG = { mapa: 'mapa', objs: 'objs', bayas: 'bayas', anims: 'anims' } as const;
+export const REG = { mapa: 'mapa', objs: 'objs', bayas: 'bayas', anims: 'anims', animsAldeanos: 'animsAldeanos', pelipper: 'animsPelipper', dibujo: 'dibujo' } as const;
+// Pelipper (no es aldeano): trae las Pokécoins de la caja al amanecer (WorldScene.pelipperTrae).
+export const PELIPPER_DEX = '0279';
+
+// Especies que pueden vivir en el pueblo → carpeta PMD en assets/sprites/pokemon/.
+export { ESPECIES } from './data/especies';
 
 // Animaciones PMD (AnimData.xml) que usamos: ancho/alto de fotograma y duraciones (en 1/60 s).
 export interface AnimInfo { fw: number; fh: number; durs: number[] }

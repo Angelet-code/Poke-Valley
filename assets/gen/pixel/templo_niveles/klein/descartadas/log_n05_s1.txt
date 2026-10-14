@@ -1,0 +1,2 @@
+assets\gen\pixel\templo_niveles\klein\n05_s1_0.png
+38.1s

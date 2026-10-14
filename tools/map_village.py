@@ -29,6 +29,8 @@ OUT = Path(__file__).resolve().parent.parent / "docs" / "art" / "mapas"
 
 # Huellas (ancho, alto) en px de mundo, centradas en el ancla y hacia arriba (como en los catálogos).
 FOOT = {"casa": (144, 72), "tienda": (144, 72), "mesa_trabajo": (48, 20)}  # casa/tienda V4: 154 px de ancho, huella 6x3
+# Dibujo entero (ancho, alto) de cada objeto: lo que tapa, para que nada se ponga debajo (variante "pueblo").
+SPRITE = {"casa": (130, 135), "tienda": (151, 126), "mesa_trabajo": (48, 36), "nido": (34, 30)}
 ITEM_TILES = {"palo": 1, "palo_1": 1, "tronco": 1, "piedra": 1, "piedra_1": 1,
               "pokeball": 1, "superball": 1, "ultraball": 1, "masterball": 1, "honorball": 1}
 
@@ -39,6 +41,8 @@ class Mapa:
         self.vert = [[0] * (MW + 1) for _ in range(MH + 1)]
         self.objetos, self.arboles, self.rocas = [], [], []
         self.inicio = None  # [x, y] px de mundo donde aparece Bulbasaur
+        self.nidos = []     # [x, y] px de mundo de los nidos con los que empieza la partida
+        self.solares = []   # zonas libres reservadas para construir (x0, y0, x1, y1 en px), solo informativo
         self.ocupado = []  # rectángulos (x0, y0, x1, y1) en px de mundo que nada más puede pisar
 
     # --- terreno -------------------------------------------------------------
@@ -117,6 +121,25 @@ class Mapa:
         self.objetos.append({"id": id, "x": x, "y": y})
         self.ocupado.append(box)
         return x, y
+
+    def objeto(self, id, x, y, margen=6):
+        """Como edificio() pero en px y con el dibujo entero ocupado (SPRITE): nada se pone delante ni detrás."""
+        w, h = SPRITE[id]
+        box = (x - w / 2 - margen, y - h - margen, x + w / 2 + margen, y + margen)
+        assert self.zona(x - w / 2, y - 20, x + w / 2, y) <= {0, 1}, f"{id} sobre agua/losas"
+        assert self.libre(*box), f"{id} choca"
+        self.ocupado.append(box)
+        if id == "nido":
+            self.nidos.append([int(x), int(y)])
+        else:
+            self.objetos.append({"id": id, "x": int(x), "y": int(y)})
+
+    def reservar(self, x0, y0, x1, y1, solar=True):
+        """Zona (en casillas) donde no se pone nada del mapa: solares para construir, plaza, barrio de nidos."""
+        box = (x0 * T, y0 * T, x1 * T, y1 * T)
+        self.ocupado.append(box)
+        if solar:
+            self.solares.append([int(v) for v in box])
 
     def item(self, id, tx, ty):
         x, y = tx * T + T // 2, ty * T + T - 2
@@ -200,6 +223,10 @@ class Mapa:
         d = {"mw": MW, "mh": MH, "vert": self.vert, "objetos": self.objetos, "arboles": self.arboles, "rocas": self.rocas}
         if self.inicio:
             d["inicio"] = self.inicio
+        if self.nidos:
+            d["nidos"] = self.nidos
+        if self.solares:
+            d["solares"] = self.solares
         return d
 
 
@@ -276,7 +303,51 @@ def orilla():
     return m
 
 
-VARIANTES = {"a": pradera, "b": lago, "c": orilla}
+def pueblo():
+    """El pueblo (2026-10-14), pensado para todo lo que se construye: cada cosa con su sitio y nada tapa nada.
+
+    Casa (taller, 130x135) arriba en el centro mirando a una plaza de losas; a su izquierda el barrio de los
+    nidos (3 al empezar y sitio para más o un nido grande), a su derecha un solar mediano (cobertizo, nido
+    grande); la mesa (almacén) y la caja de Pelipper al este de la plaza, la tienda más allá; abajo a la
+    izquierda el lago con un solar junto a la orilla (santuario) y abajo a la derecha el solar grande
+    (almacén, horno, guardería). El camino baja de la plaza a la salida del sur (por ahí llegan los
+    visitantes); las bayas silvestres salen en el prado entre la mesa y el solar grande.
+    """
+    m = Mapa(41)
+    m.blob(6, 24, 5.5, 4, 3)                          # lago abajo a la izquierda
+    m.mancha_tierra(20, 13.5, 6, 2.2)                 # plaza (tierra bajo las losas)
+    m.mancha_tierra(12, 11, 4.5, 1.6)                 # suelo pisado del barrio de nidos
+    # Caminos: puerta de la casa -> plaza -> salida sur; ramales a la mesa/tienda y a los nidos.
+    m.camino([(20, 10.6), (20, 14), (20, 22), (19, 30)])
+    m.camino([(20, 14), (25, 14.6), (33, 14.6)])
+    m.camino([(20, 14), (15, 13)], losas=False)
+    m.camino([(20, 22), (12, 22.5)], losas=False)     # al lago y al santuario
+    m.inicio = [20 * T, 12 * T]                       # delante de la puerta
+    m.objeto("casa", 20 * T, 10 * T)
+    for i in range(3):                                # nidos en fila, delante del barrio (no los tapa nada)
+        m.objeto("nido", 9.5 * T + i * 44, 11 * T, margen=2)
+    m.objeto("mesa_trabajo", 25 * T, 13 * T)          # la caja de Pelipper la pone el juego a su derecha
+    m.objeto("tienda", 33 * T, 13 * T)
+    # Solares y zonas que se quedan libres (ni árboles, ni rocas, ni recolectables).
+    m.reservar(3, 5, 15.5, 9.5)                       # barrio de nidos, detrás de la fila (más nidos, nido grande)
+    m.reservar(24.5, 4, 30, 11.5)                     # solar mediano, a la derecha de la casa
+    m.reservar(11, 14.5, 17.5, 21.5)                  # solar junto al lago (santuario), por encima del sendero
+    m.reservar(22.5, 20, 37.5, 27)                    # solar grande (almacén, horno, guardería)
+    m.reservar(21.5, 16.5, 37, 20, solar=False)       # prado de las bayas silvestres, junto a la mesa
+    m.reservar(17.5, 11, 23, 16, solar=False)         # plaza
+    m.reservar(26, 11, 28.5, 13.5, solar=False)       # sitio de la caja de Pelipper
+    m.anillo_arboles(huecos=[(17, 22, "s")])
+    m.corro(5, 15, 2.5, 5)
+    m.corro(36, 6, 2.5, 4)
+    m.corro(18, 26, 2, 3)
+    m.esparcir(lambda x, y: m.roca(x * T, y * T), 7)
+    m.items_cerca(["palo", "palo_1", "tronco"], [(5, 15), (36, 6), (18, 26)], 7)
+    m.items_cerca(["piedra", "piedra_1"], [(r["x"] / T, r["y"] / T) for r in m.rocas], 4, radio=2)
+    m.items_cerca(["pokeball", "superball", "ultraball", "honorball", "masterball"], [(37.5, 11), (29.5, 10.5)], 5, radio=1.5)
+    return m
+
+
+VARIANTES = {"a": pradera, "b": lago, "c": orilla, "d": pueblo}
 
 
 def main():

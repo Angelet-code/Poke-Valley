@@ -1,0 +1,28 @@
+{
+ "elementos": [
+  {
+   "id": "casa_klein",
+   "tipo": "casa",
+   "archivo": "casa_klein.png",
+   "w": 1348,
+   "h": 1267,
+   "ancla": [
+    674,
+    1266
+   ],
+   "huella": [
+    132,
+    936,
+    1192,
+    1183
+   ],
+   "origen": "klein_edit_casa_s1_0 (Flux.2 Klein, edicion de casa_grande)",
+   "area": 302415,
+   "medio": [
+    133,
+    107,
+    74
+   ]
+  }
+ ]
+}
