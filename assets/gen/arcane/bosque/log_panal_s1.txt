@@ -1,0 +1,2 @@
+assets\gen\arcane\bosque\panal_s1_0.png
+45.2s

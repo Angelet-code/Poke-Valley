@@ -1,0 +1,2 @@
+assets\gen\arcane\bosque\roca_3_s3_0.png
+16.1s

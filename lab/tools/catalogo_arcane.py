@@ -25,6 +25,7 @@ F, PNG_X = 1 / 3, 2
 
 # id → (tipo para la huella, imagen elegida relativa al repo). Fase 1: el lago (assets/gen/arcane/lago/gen.sh).
 L = "assets/gen/arcane/lago"
+BQ = "assets/gen/arcane/bosque"
 ELEGIDOS = {
     "arbol_alto": ("arbol", f"{L}/arbol_alto_s1_0.png"),
     "arbol_bajo": ("arbol", f"{L}/arbol_bajo_s3_0.png"),
@@ -40,9 +41,24 @@ ELEGIDOS = {
     "juncos": ("roca", f"{L}/juncos_s2_0.png"),
     "muelle": ("roca", f"{L}/muelle_s2_0.png"),
     "nenufar": ("detalle", f"{L}/nenufar_s2_0.png"),
+    # Fase 2: el Bosque Verde (assets/gen/arcane/bosque/gen.sh) y el poste de las salidas.
+    "estanque": ("estanque", f"{BQ}/estanque_s3_0.png"),
+    "roca_1": ("roca", f"{BQ}/roca_1_s2_0.png"),
+    "roca_3": ("roca", f"{BQ}/roca_3_s1_0.png"),
+    "roca_5": ("roca", f"{BQ}/roca_5_s2_0.png"),
+    "roca_7": ("roca", f"{BQ}/roca_7_s1_0.png"),
+    "roca_8": ("roca", f"{BQ}/roca_8_s1_0.png"),
+    "seta": ("detalle", f"{BQ}/seta_s1_0.png"),
+    "tronco_caido": ("roca", f"{BQ}/tronco_caido_s2_0.png"),
+    "arbol_viejo": ("arbol", f"{BQ}/arbol_viejo_s2_0.png"),
+    "panal": ("roca", f"{BQ}/panal_s1_0.png"),
+    "poste": ("roca", f"{BQ}/poste_s2_0.png"),
 }
+# Tipo en el juego distinto del de la huella: el nenúfar va a ras de suelo como un detalle, pero no puede ser
+# "detalle", porque Aventura reparte los detalles por el césped (y saldrían nenúfares en la hierba).
+TIPO_JUEGO = {"nenufar": "losa"}
 # Ancho en px de mundo de los que no tienen equivalente en el catálogo dibujo.
-ANCHO = {"sauce": 84, "juncos": 22, "muelle": 72, "nenufar": 30}
+ANCHO = {"sauce": 84, "juncos": 22, "muelle": 72, "nenufar": 30, "seta": 14, "tronco_caido": 48, "arbol_viejo": 130, "panal": 26, "poste": 20}
 
 
 def ancho_mundo(id_, klein):
@@ -98,6 +114,7 @@ def main():
         e = recortar(x2, id_, tipo, OUT, abrir_huecos=False)
         e["k"] = round(ancho_mundo(id_, klein) / (e["w"] * F / PNG_X), 4)
         e["origen"] = img
+        e["tipo"] = TIPO_JUEGO.get(id_, e["tipo"])
         hechos[id_] = e
         print(f"{id_:12s} {e['w']}x{e['h']}  k={e['k']}  ({img})", flush=True)
         cat_path.write_text(json.dumps({"escala": PNG_X, "elementos": list(hechos.values())}, indent=1, ensure_ascii=False), encoding="utf-8")

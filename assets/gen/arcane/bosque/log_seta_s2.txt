@@ -1,0 +1,2 @@
+assets\gen\arcane\bosque\seta_s2_0.png
+14.0s

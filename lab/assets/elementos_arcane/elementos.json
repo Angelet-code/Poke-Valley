@@ -289,7 +289,7 @@
   },
   {
    "id": "nenufar",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "nenufar.png",
    "w": 1283,
    "h": 908,
@@ -300,6 +300,259 @@
    "huella": null,
    "origen": "assets/gen/arcane/lago/nenufar_s2_0.png",
    "k": 0.1403
+  },
+  {
+   "id": "estanque",
+   "tipo": "estanque",
+   "archivo": "estanque.png",
+   "w": 1732,
+   "h": 1374,
+   "ancla": [
+    866,
+    1373
+   ],
+   "huella": [
+    69,
+    136,
+    1662,
+    1331
+   ],
+   "origen": "assets/gen/arcane/bosque/estanque_s3_0.png",
+   "sombra": {
+    "archivo": "estanque_sombra.png",
+    "w": 1803,
+    "h": 1528,
+    "dx": -71,
+    "dy": -143
+   },
+   "k": 0.3539
+  },
+  {
+   "id": "roca_1",
+   "tipo": "roca",
+   "archivo": "roca_1.png",
+   "w": 1277,
+   "h": 1227,
+   "ancla": [
+    638,
+    1225
+   ],
+   "huella": [
+    153,
+    709,
+    1123,
+    1175
+   ],
+   "origen": "assets/gen/arcane/bosque/roca_1_s2_0.png",
+   "k": 0.0948
+  },
+  {
+   "id": "roca_3",
+   "tipo": "roca",
+   "archivo": "roca_3.png",
+   "w": 1583,
+   "h": 1449,
+   "ancla": [
+    791,
+    1448
+   ],
+   "huella": [
+    189,
+    839,
+    1393,
+    1390
+   ],
+   "origen": "assets/gen/arcane/bosque/roca_3_s1_0.png",
+   "k": 0.1023
+  },
+  {
+   "id": "roca_5",
+   "tipo": "roca",
+   "archivo": "roca_5.png",
+   "w": 1194,
+   "h": 854,
+   "ancla": [
+    597,
+    853
+   ],
+   "huella": [
+    143,
+    494,
+    1050,
+    818
+   ],
+   "origen": "assets/gen/arcane/bosque/roca_5_s2_0.png",
+   "sombra": {
+    "archivo": "roca_5_sombra.png",
+    "w": 1635,
+    "h": 386,
+    "dx": -434,
+    "dy": 452
+   },
+   "k": 0.1566
+  },
+  {
+   "id": "roca_7",
+   "tipo": "roca",
+   "archivo": "roca_7.png",
+   "w": 1579,
+   "h": 1189,
+   "ancla": [
+    789,
+    1187
+   ],
+   "huella": [
+    189,
+    687,
+    1389,
+    1139
+   ],
+   "origen": "assets/gen/arcane/bosque/roca_7_s1_0.png",
+   "k": 0.1507
+  },
+  {
+   "id": "roca_8",
+   "tipo": "roca",
+   "archivo": "roca_8.png",
+   "w": 1471,
+   "h": 1003,
+   "ancla": [
+    735,
+    1001
+   ],
+   "huella": [
+    176,
+    579,
+    1294,
+    960
+   ],
+   "origen": "assets/gen/arcane/bosque/roca_8_s1_0.png",
+   "k": 0.208
+  },
+  {
+   "id": "seta",
+   "tipo": "detalle",
+   "archivo": "seta.png",
+   "w": 1289,
+   "h": 1120,
+   "ancla": [
+    644,
+    1119
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/bosque/seta_s1_0.png",
+   "sombra": {
+    "archivo": "seta_sombra.png",
+    "w": 840,
+    "h": 540,
+    "dx": 408,
+    "dy": 618
+   },
+   "k": 0.0652
+  },
+  {
+   "id": "tronco_caido",
+   "tipo": "roca",
+   "archivo": "tronco_caido.png",
+   "w": 1571,
+   "h": 1141,
+   "ancla": [
+    785,
+    1140
+   ],
+   "huella": [
+    188,
+    660,
+    1382,
+    1094
+   ],
+   "origen": "assets/gen/arcane/bosque/tronco_caido_s2_0.png",
+   "sombra": {
+    "archivo": "tronco_caido_sombra.png",
+    "w": 1437,
+    "h": 878,
+    "dx": 115,
+    "dy": 294
+   },
+   "k": 0.1833
+  },
+  {
+   "id": "arbol_viejo",
+   "tipo": "arbol",
+   "archivo": "arbol_viejo.png",
+   "w": 1742,
+   "h": 1808,
+   "ancla": [
+    871,
+    1806
+   ],
+   "huella": [
+    661,
+    1552,
+    1080,
+    1806
+   ],
+   "origen": "assets/gen/arcane/bosque/arbol_viejo_s2_0.png",
+   "sombra": {
+    "archivo": "arbol_viejo_sombra.png",
+    "w": 1840,
+    "h": 1753,
+    "dx": -165,
+    "dy": 48
+   },
+   "k": 0.4478
+  },
+  {
+   "id": "panal",
+   "tipo": "roca",
+   "archivo": "panal.png",
+   "w": 1365,
+   "h": 1547,
+   "ancla": [
+    682,
+    1545
+   ],
+   "huella": [
+    163,
+    895,
+    1201,
+    1483
+   ],
+   "origen": "assets/gen/arcane/bosque/panal_s1_0.png",
+   "sombra": {
+    "archivo": "panal_sombra.png",
+    "w": 1334,
+    "h": 1481,
+    "dx": 29,
+    "dy": 26
+   },
+   "k": 0.1143
+  },
+  {
+   "id": "poste",
+   "tipo": "roca",
+   "archivo": "poste.png",
+   "w": 1255,
+   "h": 1550,
+   "ancla": [
+    627,
+    1549
+   ],
+   "huella": [
+    150,
+    898,
+    1104,
+    1487
+   ],
+   "origen": "assets/gen/arcane/bosque/poste_s2_0.png",
+   "sombra": {
+    "archivo": "poste_sombra.png",
+    "w": 1044,
+    "h": 520,
+    "dx": -31,
+    "dy": 1076
+   },
+   "k": 0.0956
   }
  ]
 }

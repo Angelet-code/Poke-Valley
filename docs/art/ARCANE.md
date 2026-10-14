@@ -109,3 +109,21 @@ Se ve con `http://127.0.0.1:5174/?set=arcane`. Capturas: [lago_vista](arcane/lag
   queda algo doble.
 - El agua es lisa, sin pincelada.
 - Los juncos se ven pequeños (22 px de ancho).
+
+### Fase 2 hecha (2026-10-15): el Bosque Verde
+Capturas: [bosque_vista](arcane/bosque_vista.jpg), [bosque_arbol_viejo](arcane/bosque_arbol_viejo.jpg),
+[bosque_claro](arcane/bosque_claro.jpg) y [bosque_noche](arcane/bosque_noche.jpg).
+
+- **Piezas** (`assets/gen/arcane/bosque/gen.sh`, la misma receta que el lago; hoja `hoja.png`). Elegidas:
+  - estanque s3, arbol_viejo s2 (con hueco en el tronco);
+  - rocas: roca_1 s2, roca_3 s1, roca_5 s2, roca_7 s1, roca_8 s1;
+  - seta s1, tronco_caido s2, panal s1, poste s2.
+- **Catálogo Arcane**: 25 elementos (`lab/assets/elementos_arcane/hoja.png`).
+  - El nenúfar es de tipo `losa` (`TIPO_JUEGO` en `catalogo_arcane.py`). Como `detalle`, Aventura lo repartía por
+    el césped.
+- **Bosque** (`src/data/bosque.ts`):
+  - El árbol viejo está al fondo del claro más lejano, con el alfa Pidgeotto delante.
+  - Por los claros hay 4 troncos caídos, 2 panales y 12 setas (planas), y las rocas 1, 3, 5 y 7.
+  - Hay un poste junto a cada salida: entrada del bosque, salida del este y salida del lago al bosque.
+- **Sin `?set=arcane`**: las piezas nuevas no existen en el catálogo dibujo y no se dibujan. Esto vale para la
+  seta, el tronco, el panal, el árbol viejo, el poste y el nenúfar.
