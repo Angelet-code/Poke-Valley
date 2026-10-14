@@ -286,6 +286,12 @@ cuenta) y del sombreado propio del sprite (paso alto de la luminancia). Convenci
 pipeline `Light2D` de Phaser. También escribe `<Anim>-Luz.png`: el sprite con el contorno negro teñido hacia el color
 de sus vecinos (`--tinte 0.6`), porque el negro puro no se aclara con luz; es esa variante la que se carga con el normal map.
 Tarda ~1 s por Pokémon (4 hojas), así que hacerlo para todos es un bucle.
+Pokémon-pelota (tabla `BOLAS` del script o `--bola 0.9`; 2026-10-14: Natu, Marill, Togepi, Cleffa, Swinub, Wailmer,
+Glalie, Wooloo, y a 0.7 Gastly y Hoothoot; también Jigglypuff, Voltorb, Electrode, Koffing y Spheal, para cuando entren): la altura la marca un elipsoide
+ajustado al cuerpo (sin patas ni penacho) y las piezas apenas lo abollan; sin esto, los contornos de ojos y pico partían
+la cara en piezas y quedaba plana. `--bola 0` vuelve al cálculo de antes; los normales previos, en
+`assets/gen/normales/v_antes_bola/`. Comparativas: `assets/gen/normales/bolas_*.png` (`bolas_descartados.png`: Azurill,
+Magnemite, Geodude, Oddish y Munchlax, que no son una sola bola).
 Demo: `/normales.html` en el servidor del juego (`src/paginas/normales.ts`): fila con normales / fila sin, luz con el
 ratón o ciclo de día (D). Pipeline «Cel» propio (`CelPipeline`, mismo shader de luz de Phaser con el difuso cortado
 en bandas: C alterna cel/suave, B número de bandas, U umbral de la sombra, H altura de la luz, S transición entre bandas); las normales van sin suavizar (una faceta por píxel). Vistas previas: `assets/gen/normales/` (`0001_*.png` = sprite, normal y 4 luces; `demo_*.png`).

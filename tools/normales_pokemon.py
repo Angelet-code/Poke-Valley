@@ -11,6 +11,8 @@ Cómo se calcula la altura de cada píxel (no hay modelo 3D: se "infla" el dibuj
   2. piezas: los contornos oscuros del sprite separan cabeza, bulbo, patas…; cada pieza se infla
      por su cuenta, así la luz las distingue;
   3. detalle: el sombreado propio del sprite (paso alto de la luminancia) añade relieve fino.
+Pokémon-pelota (tabla BOLAS o `--bola 0.9`): manda un elipsoide ajustado al cuerpo y las piezas apenas lo abollan;
+si no, los contornos de ojos y pico parten la cara en piezas planas (Natu).
 De la altura salen las normales (gradiente). Convención OpenGL (verde = arriba), la de Phaser.
 
 Además escribe `<Anim>-Luz.png`: el mismo sprite con el contorno negro teñido hacia el color de sus vecinos
@@ -27,6 +29,16 @@ from PIL import Image
 from scipy import ndimage as ndi
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Pokémon cuya forma base es una pelota: peso del elipsoide del cuerpo (0..1) frente a las piezas (`--bola`).
+# Comparativa: assets/gen/normales/bolas_*.png. Gastly y Hoothoot a 0.7: el gas y las alas no son bola.
+# Probados y descartados: Azurill (dos bolas), Magnemite, Geodude, Oddish, Munchlax.
+BOLAS = {
+    '0039': 0.9, '0100': 0.9, '0101': 0.9, '0109': 0.9, '0363': 0.9,  # Jigglypuff, Voltorb, Electrode, Koffing, Spheal
+    '0173': 0.9, '0175': 0.9, '0177': 0.9, '0183': 0.9,  # Cleffa, Togepi, Natu, Marill
+    '0220': 0.9, '0320': 0.9, '0362': 0.9, '0831': 0.9,  # Swinub, Wailmer, Glalie, Wooloo
+    '0092': 0.7, '0163': 0.7,  # Gastly, Hoothoot
+}
 
 
 def tam_fotograma(carpeta: str, anim: str) -> tuple[int, int]:
@@ -79,7 +91,29 @@ def contorno_tintado(rgba: np.ndarray, factor: float = 0.3, umbral: float = 0.08
     return out
 
 
-def altura_fotograma(rgba: np.ndarray, umbral_contorno: float = 0.08) -> tuple[np.ndarray, np.ndarray]:
+def elipsoide(a: np.ndarray) -> np.ndarray:
+    """Altura de un elipsoide ajustado al cuerpo (silueta sin patas, alas ni penachos finos): para Pokémon-pelota.
+    Semiejes en pantalla por momentos de la máscara; profundidad = semieje menor."""
+    h = np.zeros(a.shape, np.float32)
+    cuerpo = ndi.binary_opening(a, ndi.generate_binary_structure(2, 1), iterations=2)
+    etiq, n = ndi.label(cuerpo)
+    if n == 0:
+        return h
+    cuerpo = etiq == (np.bincount(etiq.ravel())[1:].argmax() + 1)
+    ys, xs = np.nonzero(cuerpo)
+    cy, cx = ys.mean(), xs.mean()
+    cov = np.cov(np.stack([xs - cx, ys - cy]))
+    val, vec = np.linalg.eigh(cov)
+    ejes = 2 * np.sqrt(np.maximum(val, 1e-6)) + 0.5  # elipse de área igual a la máscara
+    yy, xx = np.mgrid[:a.shape[0], :a.shape[1]]
+    p = np.stack([xx - cx, yy - cy], -1) @ vec  # coordenadas en los ejes de la elipse
+    r2 = (p[..., 0] / ejes[0]) ** 2 + (p[..., 1] / ejes[1]) ** 2
+    dentro = a & (r2 < 1)
+    h[dentro] = np.sqrt(1 - r2[dentro]) * ejes.min()
+    return h
+
+
+def altura_fotograma(rgba: np.ndarray, umbral_contorno: float = 0.08, bola: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
     a = rgba[..., 3] > 0
     rgb = rgba[..., :3].astype(np.float32) / 255
     lum = 0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2]
@@ -101,7 +135,14 @@ def altura_fotograma(rgba: np.ndarray, umbral_contorno: float = 0.08) -> tuple[n
     peso = ndi.gaussian_filter(a.astype(np.float32), 1.2)
     suave = ndi.gaussian_filter(lum_in, 1.2) / np.maximum(peso, 1e-3)
     detalle = np.where(a, lum - suave, 0)
-    h = 0.5 * h_sil + 0.9 * h_pz + 2.0 * detalle  # todo en píxeles de altura; sin suavizar: cada píxel es una faceta
+    h = 0.5 * h_sil + 0.9 * h_pz  # todo en píxeles de altura; sin suavizar: cada píxel es una faceta
+    if bola > 0:
+        # Pokémon-pelota: manda el elipsoide del cuerpo; las piezas (ojos, pico) apenas lo abollan. Fuera del
+        # elipsoide (patas, penacho) queda lo de siempre, apoyado en el borde de la bola.
+        h_el = elipsoide(a)
+        dentro = h_el > 0
+        h = np.where(dentro, bola * 1.6 * h_el + (1 - bola) * h, h)
+    h = h + 2.0 * detalle
     h = np.where(a, h, 0)
     return h.astype(np.float32), a
 
@@ -135,7 +176,8 @@ def iluminar(rgba: np.ndarray, nrm: np.ndarray, luz: tuple[float, float, float],
     return out
 
 
-def procesar(dex: str, anim: str, fuerza: float, vista: bool, tinte: float = 0.6) -> str:
+def procesar(dex: str, anim: str, fuerza: float, vista: bool, tinte: float = 0.6, bola: float | None = None) -> str:
+    bola = BOLAS.get(dex, 0.0) if bola is None else bola
     carpeta = os.path.join(RAIZ, 'assets', 'sprites', 'pokemon', dex)
     fw, fh = tam_fotograma(carpeta, anim)
     img = Image.open(os.path.join(carpeta, f'{anim}-Anim.png')).convert('RGBA')
@@ -146,7 +188,7 @@ def procesar(dex: str, anim: str, fuerza: float, vista: bool, tinte: float = 0.6
     for y in range(0, H, fh):
         for x in range(0, W, fw):
             cel = rgba[y:y + fh, x:x + fw]
-            h, a = altura_fotograma(cel)
+            h, a = altura_fotograma(cel, bola=bola)
             salida[y:y + fh, x:x + fw] = normales(h, a, fuerza)
     destino = os.path.join(carpeta, f'{anim}-Normal.png')
     Image.fromarray(salida).save(destino)
@@ -172,10 +214,11 @@ def main() -> None:
     ap.add_argument('anims', nargs='+', help='Idle Walk Sleep Eat…')
     ap.add_argument('--fuerza', type=float, default=1.5, help='multiplica la pendiente de las normales (1 = geometría tal cual)')
     ap.add_argument('--tinte', type=float, default=0.6, help='brillo del contorno teñido respecto a su vecino (0.3 = oscuro)')
+    ap.add_argument('--bola', type=float, default=None, help='forma de pelota: peso del elipsoide del cuerpo (por defecto, tabla BOLAS)')
     ap.add_argument('--vista', action='store_true', help='guardar comparativa en assets/gen/normales/')
     args = ap.parse_args()
     for anim in args.anims:
-        print(procesar(args.dex, anim, args.fuerza, args.vista, args.tinte))
+        print(procesar(args.dex, anim, args.fuerza, args.vista, args.tinte, args.bola))
 
 
 if __name__ == '__main__':
