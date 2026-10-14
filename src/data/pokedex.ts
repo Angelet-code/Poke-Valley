@@ -48,6 +48,9 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   miltank: L('normal', ['normal'], 'lento', ['0241', 'Miltank', 1, [95, 80, 105, 40, 70, 100]]),
   munchlax: L('normal', ['normal'], 'lento', ['0446', 'Munchlax', 1, [135, 85, 40, 40, 85, 5]], ['0143', 'Snorlax', 25, [160, 110, 65, 65, 110, 30], 'amistad']),
   // Planta
+  // Bulbasaur: el Pokémon con el que empiezas en el modo aventura (docs/GDD-combate.md).
+  bulbasaur: L('planta', ['planta', 'veneno'], 'parabolico', ['0001', 'Bulbasaur', 1, [45, 49, 49, 65, 65, 45]], ['0002', 'Ivysaur', 16, [60, 62, 63, 80, 80, 60]],
+    ['0003', 'Venusaur', 32, [80, 82, 83, 100, 100, 80]]),
   oddish: L('planta', ['planta', 'veneno'], 'parabolico', ['0043', 'Oddish', 1, [45, 50, 55, 75, 65, 30]], ['0044', 'Gloom', 21, [60, 65, 70, 85, 75, 40]],
     ['0045', 'Vileplume', 36, [75, 80, 85, 110, 90, 50], 'piedra hoja']),
   sunkern: L('planta', ['planta'], 'parabolico', ['0191', 'Sunkern', 1, [30, 30, 30, 30, 30, 30]], ['0192', 'Sunflora', 30, [75, 75, 55, 105, 85, 30], 'piedra solar']),

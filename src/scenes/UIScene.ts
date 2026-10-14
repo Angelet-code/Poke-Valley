@@ -11,17 +11,17 @@ import { LINEAS, NIVEL_MAX, NOMBRE_GRUPO, NOMBRE_PERFIL, NOMBRE_STAT, NOMBRE_TIP
 import { ICONO_RECURSO, NOMBRE_RECURSO, type WorldScene } from './WorldScene';
 
 export const FUENTE = '"Segoe UI", system-ui, -apple-system, sans-serif';
-const FUENTE_PX = `"Pixelify Sans", ${FUENTE}`;        // textos y números
-const FUENTE_TIT = `"Silkscreen", ${FUENTE_PX}`;         // títulos de panel
+export const FUENTE_PX = `"Pixelify Sans", ${FUENTE}`;        // textos y números
+export const FUENTE_TIT = `"Silkscreen", ${FUENTE_PX}`;         // títulos de panel
 
 // Paleta del lienzo de diseño.
-const C = {
+export const C = {
   madera: 0x6b4226, maderaClara: 0x8b5a33, perg: 0xf6e7c1, pergLuz: 0xfff6dc, pergSombra: 0xe2c690,
   bandeja: 0xd9b97c, bandejaLuz: 0xecd29c, bandejaSombra: 0xb8935a, hueco: 0xe6cd96, huecoSombra: 0xc7a565,
   elegido: 0xffd65a, elegidoFondo: 0xfbeec8, tinta: 0x4a2e1a, tintaOsc: 0x3a2414, sombra: 0x3a2212,
   barraFondo: 0x5b3a22, falta: 0xb03a2e, hoja: 0x8fd36a, hojaLuz: 0xc6f0a0, hojaOsc: 0x63a843, aviso: 0xe8a33a, avisoLuz: 0xffd08a, avisoOsc: 0xb97a22,
 };
-const HEX = (c: number) => '#' + c.toString(16).padStart(6, '0');
+export const HEX = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
 // Iconos de la interfaz (pixel art 1:1, '.' = transparente).
 const PALETA: Record<string, string> = {
@@ -48,20 +48,20 @@ const ALM_VISTA = 4000, ALM_FUNDIDO = 250;       // ms a la vista tras un cambio
 const CAJA_W = 216, CAJA_H = 134 + MAS * 15, CAJA_Y = 52 - MAS * 6; // panel de la caja de Pelipper (px de juego)
 const CASA_W = 220, CASA_Y = 50;                 // panel de la casa (alto según lo que haya)
 
-type G = Phaser.GameObjects.Graphics;
-const rect = (g: G, c: number, a: number, x: number, y: number, w: number, h: number) =>
+export type G = Phaser.GameObjects.Graphics;
+export const rect = (g: G, c: number, a: number, x: number, y: number, w: number, h: number) =>
   g.fillStyle(c, a).fillRect(x * S, y * S, w * S, h * S);
 // Rectángulo con esquinas en escalón de 2 píxeles (marco) o de 1 (relleno interior).
-const forma2 = (g: G, c: number, a: number, x: number, y: number, w: number, h: number) => {
+export const forma2 = (g: G, c: number, a: number, x: number, y: number, w: number, h: number) => {
   rect(g, c, a, x + 2, y, w - 4, 1); rect(g, c, a, x + 1, y + 1, w - 2, 1); rect(g, c, a, x, y + 2, w, h - 4);
   rect(g, c, a, x + 1, y + h - 2, w - 2, 1); rect(g, c, a, x + 2, y + h - 1, w - 4, 1);
 };
-const forma1 = (g: G, c: number, a: number, x: number, y: number, w: number, h: number) => {
+export const forma1 = (g: G, c: number, a: number, x: number, y: number, w: number, h: number) => {
   rect(g, c, a, x + 1, y, w - 2, 1); rect(g, c, a, x, y + 1, w, h - 2); rect(g, c, a, x + 1, y + h - 1, w - 2, 1);
 };
-interface Estilo { borde: number; fondo: number; luz?: number; osc?: number; oscAlto?: number; hundido?: number; sombra?: boolean }
-const PANEL: Estilo = { borde: C.madera, fondo: C.perg, luz: C.pergLuz, osc: C.pergSombra, sombra: true };
-function marco(g: G, x: number, y: number, w: number, h: number, e: Estilo): void {
+export interface Estilo { borde: number; fondo: number; luz?: number; osc?: number; oscAlto?: number; hundido?: number; sombra?: boolean }
+export const PANEL: Estilo = { borde: C.madera, fondo: C.perg, luz: C.pergLuz, osc: C.pergSombra, sombra: true };
+export function marco(g: G, x: number, y: number, w: number, h: number, e: Estilo): void {
   if (e.sombra) forma2(g, C.sombra, 0.55, x, y + 1, w, h);
   forma2(g, e.borde, 1, x, y, w, h);
   forma1(g, e.fondo, 1, x + 1, y + 1, w - 2, h - 2);

@@ -2,7 +2,8 @@
 // (continuar, nueva partida, controles). Portada del diseño de Claude Design (1440×810 = 480×270 ×3):
 // las posiciones están en px del diseño y D() las pasa a px de pantalla.
 import Phaser from 'phaser';
-import { NUEVA, S, VH, VW } from '../config';
+import { GRANJA, NUEVA, S, VH, VW } from '../config';
+import { Partida } from '../combate/partida';
 import { World } from '../sim/World';
 import { FUENTE } from './UIScene';
 
@@ -28,6 +29,9 @@ const POKES: [string, number, number, number, number, number][] = [
   ['growlithe-Idle', 990, 668, 64, 1900, 400],
 ];
 const FLECHA = [0, 0, 6, 0, 6, 4, 10, 4, 10, 8, 14, 8, 14, 14, 10, 14, 10, 18, 6, 18, 6, 22, 0, 22];
+// Modo aventura (el de por defecto, docs/GDD-combate.md).
+const CONTROLES_AVENTURA = 'WASD: mover · clic o Tab: elegir objetivo · 1-0: tu barra (movimientos y objetos)\n'
+  + 'K: colocar movimientos en la barra · F: convertirte en otro de tus Pokémon (en el pueblo) · Esc: título';
 const CONTROLES = 'WASD: mover\nF, espacio o clic: acción (recoger, Látigo Cepa, sembrar, almacén, dormir)\n'
   + 'clic en un aldeano y luego en su sitio de trabajo\nB: construir · rueda o Q/E: elegir · M: mapa · Esc: título';
 
@@ -40,20 +44,28 @@ export class Title extends Phaser.Scene {
   constructor() { super('title'); }
 
   create(): void {
-    const res = NUEVA ? null : World.resumenPartida(), hay = !!res;
+    const aventura = GRANJA ? null : NUEVA ? null : Partida.resumen();
+    const res = GRANJA ? (NUEVA ? null : World.resumenPartida()) : aventura ? { dia: aventura.dia, aldeanos: 0 } : null, hay = !!res;
     this.sel = 0; this.textos = [];
     this.fondo();
     this.cabecera();
 
     const empezar = (nueva: boolean) => {
-      if (nueva) World.borrarPartida();
-      this.scene.start('world', { nueva: nueva || !hay });
+      if (GRANJA) {
+        if (nueva) World.borrarPartida();
+        this.scene.start('world', { nueva: nueva || !hay });
+        return;
+      }
+      if (nueva) Partida.borrar();
+      this.scene.start('aventura', { nueva: nueva || !hay });
     };
-    const controles = { texto: 'Controles', detalle: 'WASD, F, B, M…', hacer: () => this.verControles() };
+    const controles = { texto: 'Controles', detalle: GRANJA ? 'WASD, F, B, M…' : 'WASD, 1-0, Tab, K…', hacer: () => this.verControles() };
+    const detalle = !res ? '' : aventura ? `${aventura.nombre} Nv ${aventura.nivel} · ${aventura.equipo} Pokémon`
+      : `Día ${res.dia} · ${res.aldeanos} ${res.aldeanos === 1 ? 'aldeano' : 'aldeanos'}`;
     const ops: Opcion[] = res
-      ? [{ texto: 'Continuar', detalle: `Día ${res.dia} · ${res.aldeanos} ${res.aldeanos === 1 ? 'aldeano' : 'aldeanos'}`, hacer: () => empezar(false) },
+      ? [{ texto: 'Continuar', detalle, hacer: () => empezar(false) },
         { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: () => empezar(true) }, controles]
-      : [{ texto: 'Empezar', detalle: 'un valle vacío te espera', hacer: () => empezar(true) }, controles];
+      : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'Bulbasaur y diez Poké Balls', hacer: () => empezar(true) }, controles];
     this.menu(ops);
     this.poke('b-Idle', 684, 640, 72, 1600, 0);
     this.pie();
@@ -185,7 +197,7 @@ export class Title extends Phaser.Scene {
     g.fillStyle(0x3a2412).fillRoundedRect(D(px), D(py), D(pw), D(ph), D(10));
     g.fillStyle(0xf6e7c1).fillRoundedRect(D(px + 8), D(py + 8), D(pw - 16), D(ph - 16), D(6));
     const tit = this.texto(W / k / 2, py + 44, 'Controles', 30, '#3a2412', { fontStyle: 'bold' }).setOrigin(0.5);
-    const txt = this.texto(W / k / 2, py + 140, CONTROLES, 20, '#3a2412', { align: 'center', lineSpacing: D(6) }).setOrigin(0.5);
+    const txt = this.texto(W / k / 2, py + 140, GRANJA ? CONTROLES : CONTROLES_AVENTURA, 20, '#3a2412', { align: 'center', lineSpacing: D(6) }).setOrigin(0.5);
     const nota = this.texto(W / k / 2, py + ph - 28, 'cualquier tecla o clic para volver', 16, '#6b4a2a').setOrigin(0.5);
     c.add([velo, g, tit, txt, nota]);
     this.cubre = c;

@@ -1,7 +1,7 @@
 // Preload: todas las imágenes (terreno, árboles, rocas, objetos pixel art, bayas, Bulbasaur).
 /// <reference types="vite/client" />
 import Phaser from 'phaser';
-import { A, DIBUJO, ESPECIES, PELIPPER_DEX, REG, S, VH, VW, type AnimSet } from '../config';
+import { A, DIBUJO, ESPECIES, GALERIA, PELIPPER_DEX, REG, S, VH, VW, type AnimSet } from '../config';
 import { L, precargar } from '../render/Dibujo';
 import type { BayasData, ObjCatalog } from '../data/types';
 import { Terrain } from '../render/Terrain';
@@ -93,6 +93,6 @@ export class Preload extends Phaser.Scene {
     for (const name of ['Walk', 'Idle']) if (pel[name] && this.textures.exists('pelipper-' + name)) for (let r = 0; r < 8; r++) {
       this.anims.create({ key: `pelipper-${name}-${r}`, repeat: -1, frames: pel[name].durs.map((d, k) => ({ key: 'pelipper-' + name, frame: r * pel[name].durs.length + k, duration: d * 1000 / 60 })) });
     }
-    this.scene.start('title');
+    this.scene.start(GALERIA ? 'galeria' : 'title');
   }
 }

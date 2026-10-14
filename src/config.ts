@@ -9,6 +9,11 @@ export const MAPA = params.get('mapa') || 'dibujo'; // dibujo = el pueblo en el 
 // Mapa en estilo dibujo: elementos Klein vectoriales, suelo con la paleta del dibujo, farolas y luz del día (Light2D).
 export const DIBUJO = MAPA === 'dibujo';
 export const NUEVA = params.has('nueva');
+// ?modo=granja: el juego de antes (pueblo con aldeanos, cultivos y construcción). Sin él, el modo aventura
+// (combate en tiempo real y capturas, docs/GDD-combate.md), el de por defecto desde 2026-10-14.
+export const GRANJA = params.get('modo') === 'granja';
+// ?galeria: galería de animaciones de movimientos (scenes/Galeria.ts) en lugar del título.
+export const GALERIA = params.has('galeria');
 
 // Claves del registro de Phaser donde Boot deja los datos cargados.
 export const REG = { mapa: 'mapa', objs: 'objs', bayas: 'bayas', anims: 'anims', animsAldeanos: 'animsAldeanos', pelipper: 'animsPelipper', dibujo: 'dibujo' } as const;

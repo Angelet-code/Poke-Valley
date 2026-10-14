@@ -1,7 +1,7 @@
 // Boot: carga los datos (mapa, catálogos, bayas, AnimData.xml) y pasa a Preload, que ya
 // sabe qué imágenes hacen falta.
 import Phaser from 'phaser';
-import { A, DIBUJO, ESPECIES, MAPA, PELIPPER_DEX, REG, type AnimSet } from '../config';
+import { A, DIBUJO, ESPECIES, GRANJA, MAPA, PELIPPER_DEX, REG, type AnimSet } from '../config';
 import { cargarCatalogos, catalogo } from '../render/Dibujo';
 import { terrenoDibujo } from '../data/mapaDibujo';
 import type { BayasData, ObjCatalog } from '../data/types';
@@ -24,7 +24,10 @@ function leerAnims(xml: XMLDocument, extras: string[] = []): AnimSet {
 }
 
 // Formas de la línea de una especie de aldeano (la clave de ESPECIES es la de su línea).
-const formasAldeano = (id: string) => LINEAS[id]?.formas ?? [{ id, dex: ESPECIES[id].dex }];
+// En el modo aventura no hay aldeanos (cada mapa carga sus Pokémon, combate/sprites.ts): solo los del título
+// (Title.ts: POKES), no las 1 700 hojas de todas las formas.
+const DEL_TITULO = ['marill', 'oddish', 'bidoof', 'geodude', 'growlithe'];
+const formasAldeano = (id: string) => (LINEAS[id]?.formas ?? [{ id, dex: ESPECIES[id].dex }]).filter(f => GRANJA || DEL_TITULO.includes(f.id));
 
 export class Boot extends Phaser.Scene {
   constructor() { super('boot'); }
