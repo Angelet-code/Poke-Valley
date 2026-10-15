@@ -5,7 +5,7 @@
 // El tiempo es el suyo (`ahora`, s): solo corre en `paso`, así que con la escena en pausa no pasa nada.
 import { ROW_FROM_ANGLE } from '../config';
 import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
-import { FORMAS } from '../data/pokedex';
+import { FORMAS, LINEAS } from '../data/pokedex';
 import { APARICION, RAREZA_AVISO, tirarEspecie } from '../data/aparicion';
 import { ESPECIES } from '../data/especies';
 import { BALL, ITEMS } from '../data/items';
@@ -382,7 +382,7 @@ export class Mundo {
   }
   private formaL(l: Luchador) { return l.forma ? FORMAS[l.forma] : formaDe(l.linea, l.nivel); }
   private crearSalvaje(r: Ronda): Luchador {
-    const l = this.crearLuchador('salvaje', r.linea, r.nivel, r.x, r.y, undefined, undefined, this.rnd() < this.probShiny);
+    const l = this.crearLuchador('salvaje', r.linea, r.nivel, r.x, r.y, undefined, undefined, this.rnd() < this.partida.probShiny(r.linea, this.probShiny));
     l.ronda = r;
     l.natu = this.natuForzada ?? IDS_NATURALEZA[Math.floor(this.rnd() * IDS_NATURALEZA.length)];
     l.tabla = tablaDe(l.natu, this.rnd);
@@ -401,7 +401,7 @@ export class Mundo {
     this.despues(falta / 1000, () => { this.salvajes.push(this.crearAlfa(a)); this.aviso(`Ha vuelto el ${FORMAS[a.forma].nombre} alfa`); });
   }
   private crearAlfa(a: Alfa): Luchador {
-    const l = this.crearLuchador('salvaje', a.linea, a.nivel, a.x, a.y, undefined, a.forma, this.rnd() < this.probShiny);
+    const l = this.crearLuchador('salvaje', a.linea, a.nivel, a.x, a.y, undefined, a.forma, this.rnd() < this.partida.probShiny(a.linea, this.probShiny));
     this.hacerAlfa(l);
     l.golpeAlfa = this.ahora + 3;
     return l;
@@ -835,6 +835,8 @@ export class Mundo {
       this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`);
     }
     this.contarMision(t.alfa ? 'alfa' : 'derrotar', t.linea);
+    const tir = this.partida.derrotado(t.linea);   // racha de shiny de su línea
+    if (tir) this.aviso(`¡Racha! ${this.partida.estado.derrotas![t.linea]} ${LINEAS[t.linea]?.formas[0].nombre ?? t.nombre} derrotados: probabilidad de shiny ×${tir}`);
     this.guardar();
   }
   // ---- Misiones (tablón del pueblo; las pinta el HUD) ----

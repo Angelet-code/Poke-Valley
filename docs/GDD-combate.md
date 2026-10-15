@@ -234,6 +234,9 @@ a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 bot�
 ### 4.1 Shiny (2026-10-15)
 - Cada salvaje que aparece (también el alfa) tiene 1/4096 de salir shiny (`PROB_SHINY` en `combate/partida.ts`;
   en la consola, `pv.scene.getScene('aventura').probShiny = 1` para probar).
+- **Racha** (2026-10-16, como el contador de KO de Espada/Escudo): cada derrota cuenta para su línea
+  (`estado.derrotas`, se guarda). Cada salvaje de esa línea tira el 1/4096 varias veces: 20 derrotas ×2, 50 ×3,
+  100 ×5, 200 ×8, 500 ×12 (`RACHA_SHINY`). Al subir de tramo sale un aviso.
 - Al entrar en pantalla destella (estrellas) y sale el aviso «¡Un X shiny!».
 - Capturado, el shiny va con el Pokémon (`Miembro.shiny`), no con la forma: sigue siéndolo al evolucionar, en la
   cinemática y en el pueblo.

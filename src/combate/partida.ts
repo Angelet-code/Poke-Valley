@@ -12,6 +12,10 @@ export const CASILLAS = 10;
 export const HUECOS_OBJ = 2;          // objetos equipables que lleva cada Pokémon (inventario, I)
 // Probabilidad de que un salvaje salga shiny (la de los juegos desde la 6.ª generación).
 export const PROB_SHINY = 1 / 4096;
+// Racha de derrotas (como el contador de KO de Espada/Escudo): cuantos más derrotas de una misma línea, más tiradas
+// de shiny tiene cada uno de esa línea que aparece. [derrotas, tiradas], de menos a más.
+export const RACHA_SHINY: [number, number][] = [[20, 2], [50, 3], [100, 5], [200, 8], [500, 12]];
+export const tiradasRacha = (n: number) => RACHA_SHINY.reduce((t, [d, k]) => n >= d ? k : t, 1);
 // Piedra de hogar (como en el WoW): H, se canaliza unos segundos sin moverte ni recibir golpes y te lleva al pueblo.
 export const HOGAR_CARGA = 8;          // s
 export const HOGAR_CD = 5 * 60;        // s reales hasta poder usarla otra vez
@@ -50,6 +54,7 @@ export interface Estado {
   hallados?: Record<string, { t: number; n: number }>;   // objetos del suelo (`zona:i`): cuándo lo cogiste (Date.now()) y cuántas veces
   hogar?: number;                             // Date.now() desde el que se puede volver a usar la piedra de hogar
   regalo?: boolean;                           // recibió el regalo de equipables por error: se le retira al cargar
+  derrotas?: Record<string, number>;          // por línea: cuántos has derrotado (racha de shiny, RACHA_SHINY)
   vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
 }
 export type Aviso =
@@ -192,6 +197,15 @@ export class Partida {
   }
   progresoMision(m: Mision): number { return Math.min(m.n, this.estado.misiones?.[m.id]?.n ?? 0); }
   aceptar(m: Mision): void { (this.estado.misiones ??= {})[m.id] ??= { n: 0 }; }
+  // Uno más de la línea derrotado: devuelve las tiradas de shiny si con este sube de tramo (para avisar), o 0.
+  derrotado(linea: string): number {
+    const d = (this.estado.derrotas ??= {}), n = (d[linea] ?? 0) + 1;
+    d[linea] = n;
+    const t = tiradasRacha(n);
+    return t > tiradasRacha(n - 1) ? t : 0;
+  }
+  // Probabilidad de shiny de un salvaje de la línea: `base` en cada tirada de su racha.
+  probShiny(linea: string, base: number): number { return 1 - (1 - base) ** tiradasRacha(this.estado.derrotas?.[linea] ?? 0); }
   // Algo que cuenta para las misiones aceptadas (derrotar o capturar a uno de la línea, o derrotar al alfa de la zona).
   // Devuelve las que avanzan.
   contar(tipo: 'derrotar' | 'capturar' | 'alfa', linea: string, zona: string): Mision[] {
