@@ -2,7 +2,7 @@
 // `icono` es la clave de textura (los recolectables usan su propio sprite pixel art;
 // las bayas, el icono de 24×24 de Esmeralda).
 
-export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina';
+export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina' | 'equipable';   // equipable: combate/objetos.ts
 
 export interface ItemDef {
   id: string;

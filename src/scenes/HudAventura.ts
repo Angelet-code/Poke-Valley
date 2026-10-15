@@ -5,6 +5,8 @@
 //   quedan; se oscurecen mientras se enfrían y el número se pone rojo si el objetivo está lejos. Al pasar el ratón,
 //   la ficha del movimiento. Clic = usar; clic derecho = quitar de la barra.
 // - K: panel de movimientos y objetos. Clic en uno y luego en una casilla (o su tecla) para colocarlo.
+// - I: inventario. Arriba, el objeto que lleva tu Pokémon (clic = quitarlo); debajo, los equipables (clic = equiparlo,
+//   combate/objetos.ts) y el resto de la mochila. Al pasar el ratón, la ficha del objeto.
 // - F en el tablón del pueblo: las misiones de cada zona, solo con iconos (cara, número, Ball u objeto). Clic en una
 //   nueva = aceptarla; en una cumplida = entregarla. A la derecha, bajo la hora, el seguimiento (cara + "2/5").
 import Phaser from 'phaser';
@@ -12,9 +14,10 @@ import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
 import { type Aura, type Aventura, type Luchador } from './Aventura';
-import { COLOR_TIPO, TIPO_ES, getMove } from '../data/movimientos';
+import { COLOR_TIPO, TIPO_ES, getMove, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
-import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
+import { EQUIPABLES } from '../combate/objetos';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, type Atajo } from '../combate/partida';
 import { clave } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
@@ -64,6 +67,7 @@ const DESC_ESTADO: Record<string, string> = {
   'TÓX': 'Pierde vida cada 3 s, cada vez más',
   DOR: 'No puede moverse ni atacar',
   CON: 'No puede moverse ni atacar. Un ataque de Fuego lo descongela',
+  BAN: 'Ya te ha salvado: vuelve a servir cuando se vacíe la barra',
 };
 
 export class HudAventura extends Phaser.Scene {
@@ -84,9 +88,15 @@ export class HudAventura extends Phaser.Scene {
   private fichaG!: G;
   private fichaTapada = false;           // la ficha la está usando la piedra de hogar
   private ficha!: Phaser.GameObjects.Text;
+  private fichaTipo!: Phaser.GameObjects.Text;   // tipo del movimiento, en su color, junto al nombre
   private panelObjs: Phaser.GameObjects.GameObject[] = [];
   private panelClave = '';
   private panelZonas: { x: number; y: number; w: number; h: number; a: { m: string } | { i: string } }[] = [];
+  // Inventario (I): se rehace cuando cambia algo.
+  private invObjs: Phaser.GameObjects.GameObject[] = [];
+  private invClave = '';
+  private invZonas: { x: number; y: number; w: number; h: number; id: string | null }[] = [];   // id null: el objeto equipado
+  private invCaja: { x: number; y: number; w: number; h: number } | null = null;
   private avisoC!: Phaser.GameObjects.Container;
   private avisoG!: G;
   private avisoTxt!: Phaser.GameObjects.Text;
@@ -113,6 +123,7 @@ export class HudAventura extends Phaser.Scene {
   create(): void {
     this.av = this.scene.get('aventura') as Aventura;
     this.casillas = []; this.panelObjs = []; this.panelClave = ''; this.panelZonas = [];
+    this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
@@ -150,8 +161,9 @@ export class HudAventura extends Phaser.Scene {
     // Ficha del movimiento bajo el ratón.
     this.fichaG = this.add.graphics().setDepth(9);
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(10).setVisible(false);
+    this.fichaTipo = this.texto(0, 0, '', 5, 0xffffff, { stroke: '#3a2a1a', strokeThickness: 1 * S }).setDepth(10).setVisible(false);
     // Teclas de ayuda.
-    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar', 'M mapa', ...(redDeLaPagina() ? ['R retar a duelo'] : [])];
+    const ayuda = ['Tab objetivo', 'K movimientos', 'I inventario', 'F cambiar', 'H piedra de hogar', 'M mapa', ...(redDeLaPagina() ? ['R retar a duelo'] : [])];
     ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
 
     // Avisos.
@@ -172,6 +184,8 @@ export class HudAventura extends Phaser.Scene {
       const x = p.x / S, y = p.y / S;
       const z = this.panelZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (z) { this.av.asignando = z.a; return; }
+      const iz = this.invZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
+      if (iz) { if (iz.id === null) this.av.equipar(null); else if (EQUIPABLES[iz.id]) this.av.equipar(iz.id); return; }
       const mz = this.misZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (mz) {
         const st = this.av.partida.estadoMision(mz.m);
@@ -190,7 +204,8 @@ export class HudAventura extends Phaser.Scene {
     const x = px / S, y = py / S;
     const c = this.misCaja;
     return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
-      || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h);
+      || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h)
+      || (this.av.panel === 'inv' && !!this.invCaja && x >= this.invCaja.x && x < this.invCaja.x + this.invCaja.w && y >= this.invCaja.y && y < this.invCaja.y + this.invCaja.h);
   }
   private casillaEn(x: number, y: number): number {
     if (y < BY + 4 || y > BY + 4 + CH) return -1;
@@ -344,10 +359,13 @@ export class HudAventura extends Phaser.Scene {
     this.pintarHogar(ptr.x / S, ptr.y / S);
     const px = ptr.x / S, py = ptr.y / S, chip = [...this.yo.zonas, ...this.obj.zonas].find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h);
     const carta = av.panel === 'movs' ? this.panelZonas.find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h) : undefined;
+    const inv = av.panel === 'inv' ? this.invZonas.find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h) : undefined;
     if (chip) this.fichaAura(chip);
     else if (carta) this.pintarFicha(carta.a, -1, carta);
+    else if (inv) this.fichaInv(inv);
     else if (!this.fichaTapada) this.pintarFicha(sobre >= 0 ? m.barra[sobre] : null, sobre);
     this.pintarPanel();
+    this.pintarInventario();
     this.pintarMisiones();
     this.pintarSeguimiento(cl ? 44 : 30);
   }
@@ -451,25 +469,39 @@ export class HudAventura extends Phaser.Scene {
   private pintarFicha(a: Atajo, i: number, carta?: { x: number; y: number; w: number; h: number }): void {
     const g = this.fichaG;
     g.clear();
+    this.fichaTipo.setVisible(false);
     if (!a || (i < 0 && !carta)) { this.ficha.setVisible(false); return; }
-    let txt: string;
+    let txt: string, tipo: TypeName | null = null;
     if ('m' in a) {
       const m = getMove(a.m);
       if (!m) { this.ficha.setVisible(false); return; }
-      const datos = [TIPO_ES[m.type], CATEGORIA[m.category]];
+      tipo = m.type;
+      const datos = [CATEGORIA[m.category]];
       if (m.basePower) datos.push(`Potencia ${m.basePower}`);
       datos.push(m.accuracy === true ? 'No falla' : `Precisión ${m.accuracy}`);
       // Cómo se lanza y cuánto tarda, con la celeridad de tu Pokémon (docs/GDD-combate.md §3.2).
       const pf = perfil(m), k = this.av.cel(this.av.jugador), seg = (v: number) => `${(Math.round(v / k * 10) / 10).toLocaleString('es')} s`;
       const lanza = pf.lanza === 'cast' ? `Lanzamiento ${seg(pf.t)}` : pf.lanza === 'canal' ? `Canalizado ${seg(pf.t)}` : 'Instantáneo';
       const extra = [pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
-      txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}`;
+      const efectos = descEfecto(m);
+      txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}${efectos.length ? `\n${efectos.join('\n')}` : ''}`;
     } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : ITEMS[a.i]?.cura ? `Te cura ${ITEMS[a.i]!.cura} PS` : 'Te cura un poco'}`;
     this.ficha.setText(txt).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, cx = carta ? carta.x + carta.w / 2 : BX + 4 + i * (CW + HUECO) + CW / 2;
     const x = Math.max(4, Math.min(VW - w - 4, cx - w / 2)), y = carta ? (carta.y - h - 3 >= 4 ? carta.y - h - 3 : carta.y + carta.h + 3) : BY - h - 3;
     marco(g, x, y, w, h, PANEL);
     this.ficha.setPosition((x + 4) * S, (y + 3) * S);
+    if (tipo) {
+      // Etiqueta del tipo tras el nombre (primera línea), con el color del tipo.
+      const ctx = this.ficha.context;
+      ctx.save(); ctx.font = `${this.ficha.style.fontSize} ${this.ficha.style.fontFamily}`; const nw = ctx.measureText(this.ficha.getWrappedText()[0] ?? '').width / S; ctx.restore();
+      this.fichaTipo.setText(TIPO_ES[tipo].toUpperCase()).setVisible(true);
+      const tw = this.fichaTipo.width / S + 4, tx = x + 4 + nw + 3, ty = y + 3.5;
+      rect(g, COLOR_TIPO[tipo], 1, tx, ty, tw, 7);
+      rect(g, 0xffffff, 0.3, tx, ty, tw, 1);
+      rect(g, 0x000000, 0.2, tx, ty + 6, tw, 1);
+      this.fichaTipo.setPosition((tx + 2) * S, (ty + 0.5) * S);
+    }
   }
 
   // Casilla de la piedra de hogar (persiana mientras se recarga, con los minutos que faltan), su ficha al pasar el
@@ -486,6 +518,7 @@ export class HudAventura extends Phaser.Scene {
     if (px >= HX && px < HX + HW && py >= BY && py < BY + HW) {
       rect(g, C.elegido, 1, x - 1, y - 1, w + 2, 1); rect(g, C.elegido, 1, x - 1, y + w, w + 2, 1); rect(g, C.elegido, 1, x - 1, y, 1, w); rect(g, C.elegido, 1, x + w, y, 1, w);
       const fg = this.fichaG;
+      this.fichaTipo.setVisible(false);
       this.ficha.setText(`Piedra de hogar
 Te lleva al pueblo. Quieto ${HOGAR_CARGA} s: si te mueves o te golpean, se corta
 Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60)} min)` : ''}`).setVisible(true);
@@ -538,7 +571,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.panelClave = k;
     this.panelObjs.forEach(o => o.destroy()); this.panelObjs = []; this.panelZonas = [];
     if (av.panel !== 'movs') return;
-    const items = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id]);
+    const items = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id] && !EQUIPABLES[id]);   // los equipables, en el inventario (I)
     const filasM = Math.ceil(m.movs.length / 3), filasI = Math.ceil(items.length / 3);
     const w = 250, h = 30 + filasM * 18 + (items.length ? 14 + filasI * 18 : 0) + 12, x = Math.round(VW / 2 - w / 2), y = Math.max(32, BY - h - 6);
     const g = this.add.graphics().setDepth(6);
@@ -566,6 +599,72 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       items.forEach(([id, n], i) => carta(x + 6 + (i % 3) * 81, yi + 11 + Math.floor(i / 3) * 18, { i: id }, `${ITEMS[id].nombre} ×${n}`, 0x8b5a33, ITEMS[id].icono));
     }
     this.panelObjs.push(g);
+  }
+
+  // Inventario (I): el objeto que lleva tu Pokémon, los equipables y el resto de la mochila, en casillas con su icono.
+  private pintarInventario(): void {
+    const av = this.av, m = av.partida.activo, todos = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id]);
+    const k = av.panel === 'inv' ? `${m.uid}|${m.linea}|${m.nivel}|${m.objeto}|${JSON.stringify(todos)}` : '';
+    if (k === this.invClave) return;
+    this.invClave = k;
+    this.invObjs.forEach(o => o.destroy()); this.invObjs = []; this.invZonas = []; this.invCaja = null;
+    if (av.panel !== 'inv') return;
+    const eq = todos.filter(([id]) => EQUIPABLES[id]), resto = todos.filter(([id]) => !EQUIPABLES[id]);
+    const COLS = 10, CS = 22, PASO = CS + 2, filas = (n: number) => Math.max(1, Math.ceil(n / COLS));
+    const w = 12 + COLS * PASO - 2, h = 50 + 11 + filas(eq.length) * PASO + 12 + 11 + filas(resto.length) * PASO - 6;
+    const x = Math.round(VW / 2 - w / 2), y = Math.max(32, BY - h - 6);
+    this.invCaja = { x, y, w, h };
+    const g = this.add.graphics().setDepth(6);
+    this.invObjs.push(g);
+    marco(g, x, y, w, h, PANEL);
+    const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(7); this.invObjs.push(q); return q; };
+    // Icono a escala entera de pantalla (el pixel art no se emborrona) que quepa en `tam` px de juego.
+    const icono = (cx: number, cy: number, id: string, tam: number) => {
+      const ic = ITEMS[id]?.icono;
+      if (!ic || !this.textures.exists(ic)) return;
+      const im = this.add.image(cx * S, cy * S, ic).setDepth(7);
+      im.setScale(Math.max(1, Math.floor(S * tam / Math.max(im.frame.width, im.frame.height))));
+      this.invObjs.push(im);
+    };
+    const casilla = (cx: number, cy: number, id: string | null, n: number, lado: number, borde: number, fondo: number) => {
+      rect(g, borde, 1, cx - 1, cy - 1, lado + 2, lado + 2);
+      rect(g, fondo, 1, cx, cy, lado, lado);
+      const ob = id ?? m.objeto;
+      if (ob) icono(cx + lado / 2, cy + lado / 2, ob, lado - 2);
+      if (n > 1) this.invObjs.push(this.sombreado(cx + lado - 0.5, cy + lado + 0.5, String(n), 5).setOrigin(1, 1).setDepth(8));
+      this.invZonas.push({ x: cx, y: cy, w: lado, h: lado, id });
+    };
+    t(x + 6, y + 5, 'INVENTARIO', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    t(x + w - 6, y + 5, 'Clic en un equipable para ponérselo', 5, C.maderaClara).setOrigin(1, 0);
+    // Lo que lleva el que manejas.
+    const yo = av.partida.forma(m).nombre, ob = m.objeto ? EQUIPABLES[m.objeto] : null;
+    casilla(x + 7, y + 17, null, 0, 28, ob ? C.elegido : C.huecoSombra, ob ? C.elegidoFondo : C.hueco);
+    t(x + 42, y + 16, `${yo} lleva`, 5, C.tinta).setAlpha(0.8);
+    t(x + 42, y + 23, ob ? ob.nombre : 'Nada', 6.5, C.tinta, { fontStyle: 'bold' });
+    t(x + 42, y + 33, ob ? ob.desc : 'Elige un equipable de abajo para ponérselo', 5, C.tinta, { wordWrap: { width: (w - 48) * S } }).setAlpha(0.85);
+    const rejilla = (y0: number, titulo: string, lista: [string, number][], vacio: string) => {
+      t(x + 6, y0, titulo, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+      if (!lista.length) t(x + 7, y0 + 11 + CS / 2, vacio, 5, C.tinta).setOrigin(0, 0.5).setAlpha(0.7);
+      lista.forEach(([id, n], i) => casilla(x + 7 + (i % COLS) * PASO, y0 + 11 + Math.floor(i / COLS) * PASO, id, n, CS, C.huecoSombra, C.hueco));
+    };
+    const ye = y + 50;
+    rejilla(ye, 'EQUIPABLES', eq, 'Ninguno: los sueltan los alfas');
+    rejilla(ye + 11 + filas(eq.length) * PASO + 12, 'MOCHILA', resto, 'Vacía');
+  }
+  // Ficha de un objeto del inventario (encima de su casilla).
+  private fichaInv(z: { x: number; y: number; w: number; h: number; id: string | null }): void {
+    const g = this.fichaG, m = this.av.partida.activo, id = z.id ?? m.objeto;
+    g.clear();
+    this.fichaTipo.setVisible(false);
+    if (!id) { this.ficha.setVisible(false); return; }
+    const it = ITEMS[id], eq = EQUIPABLES[id];
+    const desc = eq ? eq.desc : it?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : it?.cura ? `Te cura ${it.cura} PS` : 'Te cura un poco';
+    const uso = z.id === null ? 'Clic: quitárselo' : eq ? 'Clic: ponérselo' : 'Ponlo en la barra con K';
+    this.ficha.setText(`${it?.nombre ?? id}\n${desc}\n${uso}`).setVisible(true);
+    const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6;
+    const x = Math.max(4, Math.min(VW - w - 4, z.x + z.w / 2 - w / 2)), y = z.y - h - 3 >= 4 ? z.y - h - 3 : z.y + z.h + 3;
+    marco(g, x, y, w, h, PANEL);
+    this.ficha.setPosition((x + 4) * S, (y + 3) * S);
   }
 
   zona(z: { nombre: string; lema: string }): void {

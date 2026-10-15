@@ -119,7 +119,7 @@ export class Aventura extends Phaser.Scene {
   vueloNuevo = false;                 // el punto de vuelo de aquí se acaba de descubrir (al abrir el mapa de vuelo)
   vuelo: { x: number; y: number; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
-  panel: 'movs' | 'misiones' | null = null;   // panel abierto (K movimientos, F en el tablón): lo dibuja el HUD
+  panel: 'movs' | 'misiones' | 'inv' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
   listo = false;
   evolucionando = false;
@@ -553,7 +553,7 @@ export class Aventura extends Phaser.Scene {
   // ---- Entrada ----
   private entradas(): void {
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,H,M,R', false) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,I,H,M,R', false) as Record<string, Phaser.Input.Keyboard.Key>;
     // Al perder el foco (otra ventana, Alt+Tab) no llega el "soltar": que no se quede andando solo.
     const soltar = () => kb.resetKeys();
     this.game.events.on(Phaser.Core.Events.BLUR, soltar);
@@ -568,6 +568,7 @@ export class Aventura extends Phaser.Scene {
     this.keys.M.on('down', () => this.mostrarMapa(!this.verMapa));
     this.keys.R.on('down', () => { if (this.listo && this.red) this.mundo?.retar(); });
     this.keys.K.on('down', () => { this.panel = this.panel === 'movs' ? null : 'movs'; this.asignando = null; });
+    this.keys.I.on('down', () => { this.panel = this.panel === 'inv' ? null : 'inv'; this.asignando = null; });
     this.keys.ESC.on('down', () => {
       if (this.verMapa) { this.mostrarMapa(false); return; }
       if (this.mundo?.rechazarReto()) return;
@@ -693,6 +694,7 @@ export class Aventura extends Phaser.Scene {
   cel(l: Luchador): number { return this.mundo?.cel(l) ?? 1; }
   auras(l: Luchador): Aura[] { return this.mundo?.auras(l) ?? []; }
   aceptarMision(m: Mision): void { this.mundo?.aceptarMision(m); }
+  equipar(id: string | null): void { if (this.listo) this.mundo?.equipar(id); }
   entregarMision(m: Mision): void { this.mundo?.entregarMision(m); }
   hogarFalta(): number { return this.mundo?.hogarFalta() ?? 0; }
   hogarFrac(): number { return this.mundo?.hogarFrac() ?? 0; }

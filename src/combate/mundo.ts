@@ -16,6 +16,7 @@ import { HOGAR_CARGA, HOGAR_CD, Partida, movsHasta, tirarSexo, type Atajo, type 
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
 import { MEJOR, nivelZona, sortear, tierDe } from './botin';
+import { EQUIPABLES, POTENCIA_TIPO, RECARGA_BANDA, sortearEquipable } from './objetos';
 import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
@@ -108,6 +109,7 @@ export interface Luchador {
   shiny?: boolean;
   remoto?: { x: number; y: number; t: number; animN: number };   // a dónde va (lo último que ha llegado de la red) y cuándo llegó
   golpeadores?: Set<string>;           // uids de los jugadores (tú o remotos) que le han hecho daño: se reparten la experiencia
+  ticObjeto?: number; bandaHasta?: number;   // Restos: próximo turno; Banda Focus: hasta cuándo se recarga
 }
 
 // Lo que manda cada jugador por la red (scenes/Aventura.ts) para que los demás lo vean.
@@ -615,10 +617,21 @@ export class Mundo {
   private lanzarMov(l: Luchador, id: string, t: Luchador, parte?: MoveData): void {
     const m = parte ?? getMove(id)!;
     if (l.muerto || this.cambiando) return;
-    const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(m, l, t, this.clima?.tipo ?? null, this.rnd);
+    const ob = this.objeto(l);
+    const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(ob === 'scopelens' ? { ...m, critRatio: m.critRatio + 1 } : m, l, t, this.clima?.tipo ?? null, this.rnd);
+    if (r.dano > 0 && ob && !m.fixedDamage) r.dano = Math.max(1, Math.floor(r.dano * this.potencia(ob, m, r)));
     const ef = this.efectos(m, l, t, r), n = ++this.n;
     this.pendientes.set(n, { l, id, t, r, ef, hasta: this.ahora + IMPACTO_MAX });
     this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
+  }
+  // Objeto equipado (combate/objetos.ts): solo los de tu equipo llevan.
+  objeto(l: Luchador): string | undefined { return l.miembro?.objeto; }
+  private potencia(ob: string, m: MoveData, r: Golpe): number {
+    if (ob === 'lifeorb') return 1.3;
+    if (ob === 'muscleband') return m.category === 'Physical' ? 1.1 : 1;
+    if (ob === 'wiseglasses') return m.category === 'Special' ? 1.1 : 1;
+    if (ob === 'expertbelt') return r.eficacia > 1 ? 1.2 : 1;
+    return EQUIPABLES[ob]?.tipo === m.type ? POTENCIA_TIPO : 1;
   }
   impacto(n: number): void {
     const p = this.pendientes.get(n);
@@ -670,6 +683,13 @@ export class Mundo {
         this.cortarLanza(t, '¡Interrumpido!');
       }
       if (!ajeno) this.danar(t, r.dano, l);
+      // Objetos: la Vidasfera cuesta 1/10, la Campana Concha devuelve 1/8 del daño, el Casco Dentado pincha al que toca.
+      const ob = this.objeto(l);
+      if (!this.ajeno(l) && !l.muerto) {
+        if (ob === 'shellbell') this.curar(l, Math.max(1, Math.floor(r.dano / 8)));
+        if (ob === 'lifeorb') this.danar(l, Math.max(1, Math.floor(l.stats.hp / 10)), null);
+        if (!ajeno && !l.muerto && this.objeto(t) === 'rockyhelmet' && m.flags.includes('contact')) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 6)), null);
+      }
       if (m.drain) this.curar(l, Math.max(1, Math.floor(r.dano * m.drain[0] / m.drain[1])));
       if (m.recoil) this.danar(l, Math.max(1, Math.floor(r.dano * m.recoil[0] / m.recoil[1])), null);
     }
@@ -689,6 +709,13 @@ export class Mundo {
   }
   private danar(t: Luchador, n: number, de: Luchador | null): void {
     // En un duelo nadie se debilita: el que llega a 1 PS pierde.
+    // Banda Focus (con la vida entera, cada RECARGA_BANDA s) y Cinta Focus (1 de cada 10): aguanta con 1 PS un golpe.
+    const ob = this.objeto(t);
+    if (de && n >= t.ps && t.ps >= 1 && ((ob === 'focussash' && t.ps >= t.stats.hp && this.ahora > (t.bandaHasta ?? -99)) || (ob === 'focusband' && this.rnd() < 0.1))) {
+      n = Math.floor(t.ps - 1);
+      if (ob === 'focussash') t.bandaHasta = this.ahora + RECARGA_BANDA;
+      this.rotulo(t, `¡Aguanta con ${EQUIPABLES[ob].nombre}!`, 'strong', 200);
+    }
     const pierde = t.rol === 'jugador' && !!de && this.luchandoCon(de) && t.ps - n < 1;
     if (pierde) n = Math.max(0, Math.floor(t.ps - 1));
     t.ps = Math.max(pierde ? 1 : 0, t.ps - n);
@@ -793,8 +820,12 @@ export class Mundo {
     const r = this.rnd();
     if (t.alfa) {   // el alfa suelta siempre lo mejor de su nivel: dos Balls y dos curas (combate/botin.ts)
       const { ball, cura } = MEJOR[tierDe(t.nivel)];
-      this.partida.dar(ball, 2); this.partida.dar(cura, 2);
-      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2 y ${ITEMS[cura].nombre} ×2`);
+      const eq = sortearEquipable(this.rnd);   // y un objeto equipable (inventario, I)
+      this.partida.dar(ball, 2); this.partida.dar(cura, 2); this.partida.dar(eq);
+      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2, ${ITEMS[cura].nombre} ×2 y ${ITEMS[eq].nombre} (equípalo con I)`);
+    } else if (r < 0.02) {   // muy de vez en cuando, un equipable
+      const eq = sortearEquipable(this.rnd);
+      this.partida.dar(eq); this.aviso(`${t.nombre} ha soltado: ${ITEMS[eq].nombre} (equípalo con I)`);
     } else if (r < 0.35) {   // uno de cada tres, algo acorde a su nivel
       const suelta = sortear(t.nivel, this.rnd);
       this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`);
@@ -948,6 +979,18 @@ export class Mundo {
     }
   }
 
+  // ---- Objetos ----
+  // Equipar (o quitar, id null) el objeto del que manejas, desde el inventario (I). En combate no se puede.
+  equipar(id: string | null): void {
+    const l = this.jugador, m = this.partida.activo;
+    if (l.muerto || this.cambiando) return;
+    if (this.ahora - l.ultimoCombate < 6) { this.aviso('No puedes cambiar de objeto en combate'); return; }
+    if (id === null) { if (m.objeto) { this.aviso(`${l.nombre} ya no lleva ${ITEMS[m.objeto]?.nombre ?? m.objeto}`); this.partida.desequipar(m); } }
+    else if (this.partida.equipar(m, id)) this.aviso(`${l.nombre} lleva ${ITEMS[id]?.nombre ?? id}`);
+    else return;
+    l.bandaHasta = undefined; l.ticObjeto = undefined;
+    this.guardar();
+  }
   // ---- Objetos ----
   usarItem(id: string): void {
     const l = this.jugador, def = ITEMS[id];
@@ -1118,6 +1161,11 @@ export class Mundo {
       }
       if (l.muerto) return;
     }
+    // Restos: en combate, 1/16 de su vida cada turno.
+    if (enCombate && this.objeto(l) === 'leftovers' && l.ps < l.stats.hp && this.ahora > (l.ticObjeto ?? -99)) {
+      if (l.ticObjeto !== undefined && this.ahora - l.ticObjeto < TURNO) this.curar(l, Math.max(1, Math.floor(l.stats.hp / 16)));
+      l.ticObjeto = this.ahora + TURNO;
+    }
     for (const [s, h] of Object.entries(l.boostHasta) as [Stat6, number][]) if (this.ahora > h) { delete l.boosts[s]; delete l.boostHasta[s]; }
     // Solo se cura fuera de combate: nadie le persigue, lleva 6 s sin pegar ni recibir y no tiene un estado que dañe.
     if (!enCombate && this.ahora - l.ultimoCombate > 6 && !(l.estado && DANO_ESTADO[l.estado]) && !l.semilla && l.ps < l.stats.hp) l.ps = Math.min(l.stats.hp, l.ps + l.stats.hp * CURA_FUERA * dt);
@@ -1133,6 +1181,7 @@ export class Mundo {
     const drena = [...this.todos(), ...this.remotos].filter(o => o.semilla?.de === l.uid && !o.muerto);
     if (drena.length) out.push({ txt: drena.length > 1 ? `DRE×${drena.length}` : 'DRE', nombre: drena.length > 1 ? `Drenando a ${drena.length}` : `Drenando a ${drena[0].nombre}`,
       color: 0x4fae4a, frac: Math.max(0, Math.min(1, (Math.max(...drena.map(o => o.semilla!.hasta)) - this.ahora) / DURA_SEMILLA)) });
+    if (this.objeto(l) === 'focussash' && (l.bandaHasta ?? 0) > this.ahora) out.push({ txt: 'BAN', nombre: 'Banda Focus gastada', color: 0x8a7a6a, frac: Math.max(0, Math.min(1, (l.bandaHasta! - this.ahora) / RECARGA_BANDA)) });
     for (const [s, n] of Object.entries(l.boosts) as [Stat6, number][]) {
       if (!n) continue;
       out.push({ txt: `${CORTO_STAT[s]}${n > 0 ? '+' : ''}${n}`, nombre: `${NOMBRE_STAT[s]} ${n > 0 ? '+' : ''}${n}`, color: n > 0 ? 0x4fae4a : 0xc0453a,

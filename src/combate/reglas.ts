@@ -197,4 +197,54 @@ export function curaClima(id: string, c: Clima | null): number | null {
 export const DURA_BOOST = 15;            // s que dura un cambio de stats
 export const NOMBRE_STAT: Record<Stat6, string> = { atk: 'Atq', def: 'Def', spa: 'At. Esp', spd: 'Def. Esp', spe: 'Vel', accuracy: 'Precisión', evasion: 'Evasión' };
 
+// Lo que hace un movimiento además del daño, en frases para su ficha (solo lo que la simulación aplica de verdad:
+// MundoAventura.efectos y .aplicar). Un movimiento de estado que aquí no hace nada lo dice.
+const STAT_LARGO: Record<Stat6, string> = { atk: 'Ataque', def: 'Defensa', spa: 'Ataque Especial', spd: 'Defensa Especial', spe: 'Velocidad', accuracy: 'Precisión', evasion: 'Evasión' };
+const FRACCION: Record<string, string> = { '1/2': 'la mitad', '1/3': 'un tercio', '1/4': 'un cuarto', '2/3': 'dos tercios', '3/4': 'tres cuartos', '33/100': 'un tercio', '1/8': 'un octavo' };
+const fraccion = ([a, b]: [number, number]) => FRACCION[`${a}/${b}`] ?? `${a}/${b}`;
+const ESTADO_FRASE: Record<string, string> = {
+  slp: 'Lo duerme', frz: 'Lo congela', par: 'Lo paraliza', psn: 'Lo envenena', tox: 'Lo envenena gravemente', brn: 'Lo quema',
+};
+const ESTADO_INF: Record<string, string> = {
+  slp: 'dormirlo', frz: 'congelarlo', par: 'paralizarlo', psn: 'envenenarlo', tox: 'envenenarlo gravemente', brn: 'quemarlo',
+};
+const EFECTO_ESTADO: Record<string, string> = {
+  slp: 'ni se mueve ni ataca', frz: 'ni se mueve ni ataca; el Fuego lo descongela', par: 'va a media velocidad y a veces no ataca',
+  psn: 'pierde 1/8 de su vida cada 3 s', tox: 'pierde vida cada 3 s, cada vez más', brn: 'hace la mitad de daño físico y pierde 1/16 cada 3 s',
+};
+const EFECTO_CLIMA: Record<Clima, string> = {
+  lluvia: 'Agua ×1,5 y Fuego ×½', sol: 'Fuego ×1,5 y Agua ×½', arena: 'daña a quien no sea Roca, Tierra ni Acero',
+  nieve: 'Defensa ×1,5 a los de Hielo', granizo: 'daña a quien no sea de Hielo',
+};
+function fraseBoosts(b: Boosts, tuyo: boolean): string[] {
+  const grupos = new Map<number, string[]>();
+  for (const [s, n] of Object.entries(b) as [Stat6, number][]) if (n) grupos.set(n, [...(grupos.get(n) ?? []), STAT_LARGO[s]]);
+  return [...grupos].sort((a, b) => b[0] - a[0]).map(([n, ss]) => {
+    const lista = ss.length > 1 ? `${ss.slice(0, -1).join(', ')} y ${ss[ss.length - 1]}` : ss[0];
+    const niv = `${Math.abs(n)} nivel${Math.abs(n) > 1 ? 'es' : ''}`;
+    return `${n > 0 ? 'Sube' : 'Baja'} ${niv} ${tuyo ? 'tu' : ss[0].startsWith('Ataque') ? 'el' : 'la'} ${lista}${tuyo ? '' : ' del objetivo'} (${DURA_BOOST} s)`;
+  });
+}
+export function descEfecto(m: MoveData): string[] {
+  const out: string[] = [], aTi = !necesitaObjetivo(m);
+  if (m.boosts) out.push(...fraseBoosts(m.boosts, aTi));
+  if (m.selfBoosts) out.push(...fraseBoosts(m.selfBoosts, true));
+  if (m.status) out.push(`${ESTADO_FRASE[m.status] ?? m.status} ${DURA_ESTADO[m.status]} s: ${EFECTO_ESTADO[m.status] ?? ''}`);
+  if (m.id === 'leechseed') out.push(`Lo siembra ${DURA_SEMILLA} s: cada ${TURNO} s le quita 1/8 de su vida y te cura eso. No prende a los de Planta`);
+  if (m.heal) out.push(`Te cura ${fraccion(m.heal)} de tus PS`);
+  if (curaClima(m.id, null)) out.push('Te cura la mitad de tus PS (dos tercios con sol, un cuarto con otro clima)');
+  const c = CLIMA_DE[m.id];
+  if (c) out.push(`${NOMBRE_CLIMA[c]} en todo el mapa ${DURA_CLIMA} s: ${EFECTO_CLIMA[c]}`);
+  if (m.drain) out.push(`Te cura ${fraccion(m.drain)} del daño que hace`);
+  if (m.recoil) out.push(`Te dañas ${fraccion(m.recoil)} del daño que hace`);
+  const s = m.secondary;
+  if (s) {
+    if (s.status) out.push(`${s.chance} % de ${ESTADO_INF[s.status] ?? s.status}`);
+    if (s.boosts) out.push(...fraseBoosts(s.boosts, false).map(f => `${s.chance} %: ${f[0].toLowerCase()}${f.slice(1)}`));
+    if (s.selfBoosts) out.push(...fraseBoosts(s.selfBoosts, true).map(f => `${s.chance} %: ${f[0].toLowerCase()}${f.slice(1)}`));
+  }
+  if (!out.length && m.category === 'Status') out.push('Aún no hace nada en este modo');
+  return out;
+}
+
 export { getMove, tiposDe };
