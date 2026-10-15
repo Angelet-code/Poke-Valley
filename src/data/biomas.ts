@@ -534,7 +534,7 @@ const DEFS: Record<Bioma, DefZona> = {
   },
   ruinas: {
     id: 'ruinas', bioma: 'ruinas', bajo: ['muro_roto', 'columna_rota', 'flores_hada'], rio: true, diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'columna_rota'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
-    nombre: 'Ruinas Antiguas', lema: 'Nivel 14-20 · Psíquico y Hada', sal: 0x2a1b5e, caminoLosas: true,
+    nombre: 'Ruinas Antiguas', lema: 'Nivel 14-20 · Psíquico y Hada', sal: 0x2a1b5e, caminoLosas: true, clima: { tipo: 'arena', prob: 0.3 },
     bienvenida: 'Las ruinas. Columnas rotas, cristales que brillan y un arco al fondo.',
     puertas: [{ lado: 's', t: 0.6, a: 'pantano', texto: 'Al pantano' }, { lado: 'o', t: 0.4, a: 'volcan', texto: 'Al volcán' }, { lado: 'e', t: 0.4, a: 'nieve', texto: 'A las cumbres' }],
     muro: ['arbol_flores'], relleno: ['arbol_flores', 'muro_roto', 'columna_rota'], claros: 6,

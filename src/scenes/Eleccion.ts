@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { INICIALES, LINEAS, NOMBRE_TIPO, type Tipo } from '../data/pokedex';
-import { APARICION } from '../data/aparicion';
+import { APARICION, muyRaras } from '../data/aparicion';
 import { cargar, clave, info, poner } from '../combate/sprites';
 import { FUENTE } from './UIScene';
 
@@ -17,9 +17,9 @@ const P = Math.max(1, Math.round(5 * S / 3));        // zoom entero del pixel ar
 const CW = 250, CH = 160, GAP = 22, TOP = 124, ABAJO = TOP + 3 * CH + 2 * GAP;
 
 // Los raros de verdad: los que cada zona de bioma esconde como rareza (data/biomas.ts), los pseudolegendarios y las
-// tres últimas raras de cada tabla de aparición (data/aparicion.ts, 1,5 % o menos).
+// tres últimas raras de día y de noche de cada tabla de aparición (data/aparicion.ts, 1,5 % o menos).
 const ULTRA_RAROS = ['lapras', 'larvitar', 'misdreavus', 'togepi', 'dratini', 'beldum', 'gible', 'munchlax', 'aron',
-  ...Object.values(APARICION).flatMap(t => t.raras.slice(4))];
+  ...Object.values(APARICION).flatMap(muyRaras)];
 const ELEMENTALES: Tipo[] = ['planta', 'fuego', 'agua'];
 const MIN_NOMBRE = 3, MAX_NOMBRE = 20;
 

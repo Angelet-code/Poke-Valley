@@ -6,7 +6,7 @@
 import { ROW_FROM_ANGLE } from '../config';
 import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
 import { FORMAS, LINEAS } from '../data/pokedex';
-import { APARICION, RAREZA_AVISO, tirarEspecie } from '../data/aparicion';
+import { PROB_CLIMA, RAREZA_AVISO, lineasClima, momentoDe, puedeSalir, rarezaDe, tirarEspecie, type Cuando } from '../data/aparicion';
 import { ESPECIES } from '../data/especies';
 import { BALL, ITEMS } from '../data/items';
 import { alturaDe, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
@@ -32,6 +32,10 @@ const ANCHO_NPC = 6;               // el de los demás Pokémon (salvajes y veci
 const CUBO = 64;                   // px de lado de los cubos de colisión
 const TIRO = 150;                  // hasta dónde llega una Poké Ball
 const RESPAWN = 40;                // s hasta que vuelve a salir un salvaje en su sitio
+// Al cambiar la hora o el clima (data/aparicion.ts): en cuántos s se cambian los salvajes, a qué distancia de ti como
+// poco (px).
+const CAMBIO_SALVAJES = 25;
+const LEJOS_CAMBIO = 300;
 const HALLAZGOS = 5;               // objetos tirados por el suelo en cada zona (no en el pueblo)
 const HALLAZGO_VUELVE = 10 * 60e3;  // ms (reales) hasta que vuelve a haber algo donde cogiste uno
 const HALLAZGO_COGER = 12;          // px: se coge al pisarlo
@@ -204,6 +208,7 @@ export class Mundo {
   private n = 0;                       // numera movimientos y Balls en vuelo
   private lanzando = false;
   private climaTic = 0;
+  private claveAparicion = '';        // hora y clima con los que se tiró a los salvajes (pasoAparicion)
   private climaSorteo = 0;             // cuándo se vuelve a sortear el clima de la zona
   private sucesos: Suceso[] = [];
   private relojes: { t: number; fn: () => void }[] = [];
@@ -233,6 +238,10 @@ export class Mundo {
     this.jugador = this.crearLuchador('jugador', act.linea, act.nivel, lleg.x, lleg.y, act);
     this.jugador.ps = Math.max(1, Math.round(this.jugador.stats.hp * act.ps));
     this.jugador.dir = lleg.dir;
+    // El mapa trae las especies de siempre: se tira según la hora que es (el clima llega en el primer paso).
+    const cuando = this.cuando();
+    for (const r of this.mapa.salvajes) if (!r.fija) r.linea = tirarEspecie(this.mapa.id, this.rnd, cuando)?.linea ?? r.linea;
+    this.claveAparicion = `${cuando.momento}|`;
     for (const r of this.mapa.salvajes) this.salvajes.push(this.crearSalvaje(r));
     if (this.mapa.id === 'pueblo') this.crearVecinos();
     this.ponerAlfa();
@@ -387,7 +396,7 @@ export class Mundo {
     l.natu = this.natuForzada ?? IDS_NATURALEZA[Math.floor(this.rnd() * IDS_NATURALEZA.length)];
     l.tabla = tablaDe(l.natu, this.rnd);
     // Uno de los rarísimos de la tabla de la zona (data/aparicion.ts): se avisa, que es todo un acontecimiento.
-    const rz = r.fija ? -1 : APARICION[this.mapa.id]?.raras.indexOf(r.linea) ?? -1;
+    const rz = r.fija ? -1 : rarezaDe(this.mapa.id, r.linea, this.cuando().momento);
     if (rz >= RAREZA_AVISO) this.aviso(rz === RAREZA_AVISO ? `Un ${l.nombre} muy raro ronda por aquí` : `¡Un ${l.nombre} rarísimo ronda por aquí!`);
     return l;
   }
@@ -811,9 +820,47 @@ export class Mundo {
   // En su sitio vuelve a salir otro de la tabla de la zona (la rareza del rincón secreto, siempre la misma).
   private reaparecer(r?: Ronda): void {
     if (r) this.despues(RESPAWN, () => {
-      if (!r.fija) r.linea = tirarEspecie(this.mapa.id, this.rnd)?.linea ?? r.linea;
+      if (!r.fija) r.linea = tirarEspecie(this.mapa.id, this.rnd, this.cuando())?.linea ?? r.linea;
       this.salvajes.push(this.crearSalvaje(r));
     });
+  }
+  // La hora del día y el clima que hace (data/aparicion.ts): de qué tabla salen los salvajes.
+  private cuando(): Cuando { return { momento: momentoDe(this.partida.estado.minuto), clima: this.clima?.tipo ?? null }; }
+  // Al hacerse de noche (o de día) y al cambiar el clima, los que ya no tocan se van y en su sitio sale otro de los que
+  // tocan; si empieza a hacer clima, además, cada uno de los demás pasa a ser de los del clima con PROB_CLIMA (los que
+  // salen con clima). Solo los que pasean tranquilos y lejos de ti, uno a uno en los CAMBIO_SALVAJES s siguientes,
+  // para que no se note el cambio.
+  private pasoAparicion(): void {
+    if (this.espejo) return;
+    const c = this.cuando(), clave = `${c.momento}|${c.clima ?? ''}`;
+    if (clave === this.claveAparicion) return;
+    const empiezaClima = !!c.clima && !this.claveAparicion.endsWith(`|${c.clima}`);
+    this.claveAparicion = clave;
+    const nada = this.ahora < 1.5;   // recién entrado en el mapa: aún no se ha visto a nadie
+    for (const l of this.salvajes) {
+      const r = l.ronda;
+      if (!r || r.fija || l.alfa) continue;
+      const aClima = empiezaClima && !!lineasClima(this.mapa.id, c.clima).length && this.rnd() < PROB_CLIMA;
+      if (!aClima && puedeSalir(this.mapa.id, r.linea, c)) continue;
+      if (nada) this.cambiarSalvaje(l, aClima);
+      else this.despues(this.rnd() * CAMBIO_SALVAJES, () => this.cambiarSalvaje(l, aClima));
+    }
+  }
+  // `aClima`: pasa a ser uno de los del clima (si aún hace). El que ya no toca lo intenta hasta que puede; el que
+  // solo iba a pasar a ser del clima, unas cuantas veces.
+  private cambiarSalvaje(l: Luchador, aClima: boolean, intentos = 6): void {
+    const r = l.ronda!;
+    if (!this.salvajes.includes(l) || l.muerto || l.enBall) return;
+    const c = this.cuando(), toca = puedeSalir(this.mapa.id, r.linea, c), delClima = aClima ? lineasClima(this.mapa.id, c.clima) : [];
+    if (toca && !delClima.length) return;   // entretanto ya vuelve a tocar (o ya no hace el clima)
+    const quieto = l.modo === 'pasear' && !l.rival && l.ps >= l.stats.hp, lejos = Math.hypot(l.x - this.jugador.x, l.y - this.jugador.y) > LEJOS_CAMBIO;
+    if (!quieto || (!lejos && this.ahora >= 1.5)) {   // ahora no: se vuelve a mirar más tarde
+      if (!toca || intentos > 0) this.despues(10, () => this.cambiarSalvaje(l, aClima, intentos - 1));
+      return;
+    }
+    this.quitar(l);
+    r.linea = delClima.length ? delClima[Math.floor(this.rnd() * delClima.length)] : tirarEspecie(this.mapa.id, this.rnd, c)?.linea ?? r.linea;
+    this.salvajes.push(this.crearSalvaje(r));
   }
   // Experiencia para el que manejas y, a veces, algo que suelta (bayas, alguna Ball).
   private recompensa(t: Pick<Luchador, 'linea' | 'nivel' | 'alfa' | 'nombre'>): void {
@@ -1303,6 +1350,7 @@ export class Mundo {
     for (const [n, q] of this.pendientes) if (this.ahora >= q.hasta) this.impacto(n);
     if (this.partida.tick(dt)) this.aviso(`Amanece. Día ${this.partida.estado.dia}`);
     this.pasoClima();
+    this.pasoAparicion();
 
     // Tú.
     const p = this.jugador;

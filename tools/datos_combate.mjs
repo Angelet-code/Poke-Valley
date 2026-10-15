@@ -72,7 +72,8 @@ const ES_MAS = {
   teleport: 'Teletransporte', thundershock: 'Impactrueno', twister: 'Ciclón', vinewhip: 'Látigo Cepa', vitalthrow: 'Tiro Vital',
   watergun: 'Pistola Agua', wingattack: 'Ataque Ala', withdraw: 'Refugio', aurorabeam: 'Rayo Aurora', branchpoke: 'Punzada Rama',
   leafage: 'Follaje', lovelykiss: 'Beso Amoroso', naturepower: 'Adaptación', poisontail: 'Cola Veneno', present: 'Presente',
-  shelltrap: 'Coraza Trampa', workup: 'Avivar',
+  shelltrap: 'Coraza Trampa', workup: 'Avivar', aromatherapy: 'Aromaterapia', craftyshield: 'Truco Defensa', grudge: 'Rabia',
+  magiccoat: 'Capa Mágica', spore: 'Espora', submission: 'Sumisión', visegrip: 'Agarre',
 };
 
 const flags = o =>Object.keys(o ?? {}).filter(k => o[k]);

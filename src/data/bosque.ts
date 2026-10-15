@@ -189,7 +189,7 @@ export function bosque(semilla: number): MapaAventura {
 
   return {
     id: 'bosque', alfa, nombre: 'Bosque Verde', datos: { mw: MW, mh: MH, vert, inicio: [entrada.x, entrada.y - 20] }, W, H, colocados: col, detalles: 90,
-    lema: 'Nivel 1-7 · Bicho, Planta, Volador y más',
+    lema: 'Nivel 1-7 · Bicho, Planta, Volador y más', clima: { tipo: 'lluvia', prob: 0.25 },
     bienvenida: 'El bosque. Elige a un salvaje (clic o Tab) y atácalo con los números. Al fondo, un sendero sale al este, hacia el lago.',
     llegada: { pueblo: { x: entrada.x, y: H - 50, dir: 4 }, inicio: { x: entrada.x, y: H - 50, dir: 4 }, lago: { x: W - 40, y: este, dir: 6 }, cantera: { x: norte, y: 50, dir: 0 } },
     salidas: [{ x0: entrada.x - 50, y0: H - 12, x1: entrada.x + 50, y1: H, a: 'pueblo', texto: 'Al pueblo' },
@@ -323,7 +323,7 @@ export function lago(semilla: number): MapaAventura {
 
   return {
     id: 'lago', alfa, nombre: 'Lago Celeste', datos: { mw: LW, mh: LH, vert, inicio: [40, entrada.y] }, W, H, colocados: col, detalles: 80,
-    lema: 'Nivel 5-10 · Agua y orilla',
+    lema: 'Nivel 5-10 · Agua y orilla', clima: { tipo: 'lluvia', prob: 0.35 },
     bienvenida: 'El lago. Un camino lo rodea; cuanto más lejos de la entrada, más fuertes son los salvajes.',
     llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 }, costa: { x: W - 40, y: salidaE.y, dir: 6 } },
     salidas: [{ x0: 0, y0: entrada.y - 50, x1: 14, y1: entrada.y + 50, a: 'bosque', texto: 'Al bosque' },
