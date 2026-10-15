@@ -31,6 +31,15 @@
       "port": 5190
     },
     {
+      "name": "online",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "online"
+      ],
+      "port": 5185
+    },
+    {
       "name": "juego-b",
       "runtimeExecutable": "npx",
       "runtimeArgs": [

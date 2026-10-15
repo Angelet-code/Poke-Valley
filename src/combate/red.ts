@@ -1,4 +1,4 @@
-// Conexión del multijugador cooperativo (`?mp=ws://host:puerto[/sala]`, servidor en tools/servidor_mp.mjs). Cada
+// Conexión del multijugador cooperativo (`?mp=ws://host:puerto[/sala]` o `?mp[=sala]`, servidor en tools/servidor_mp.mjs). Cada
 // jugador manda su estado unas 10 veces por segundo y apunta el último de cada uno; el resto de mensajes (fotos de los
 // salvajes, golpes, sucesos que animar) los manda y los recibe la escena (`enviar` / `on`).
 // Sin Phaser; la conexión sobrevive a los cambios de mapa (la escena se reinicia, esto no) y se rehace si se cae.
@@ -79,7 +79,10 @@ export class Red {
 let red: Red | null | undefined;
 export function redDeLaPagina(): Red | null {
   if (red === undefined) {
-    const url = new URLSearchParams(location.search).get('mp');
+    // ?mp=ws://host:puerto[/sala]: ese servidor. ?mp o ?mp=sala: el de esta misma dirección, por /mp (vite.online.config.ts).
+    const mp = new URLSearchParams(location.search).get('mp');
+    const url = mp === null ? null : /^wss?:/.test(mp) ? mp
+      : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/mp/${encodeURIComponent(mp || 'valle')}`;
     red = url ? new Red(url) : null;
   }
   return red;

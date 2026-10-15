@@ -82,7 +82,8 @@ servidor.on('upgrade', (req, sock) => {
   const acepta = createHash('sha1').update(clave + GUID).digest('base64');
   sock.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${acepta}\r\n\r\n`);
   sock.setNoDelay(true);
-  const sala = decodeURIComponent((req.url ?? '/').split('?')[0].replace(/^\/+|\/+$/g, '')) || 'valle';
+  // La ruta es la sala (sin el /mp/ del proxy de vite.online.config.ts).
+  const sala = decodeURIComponent((req.url ?? '/').split('?')[0].replace(/^\/+|\/+$/g, '').replace(/^mp(\/|$)/, '')) || 'valle';
   const c = { sock, sala, uid: null, buf: Buffer.alloc(0), cerrado: false };
   if (!salas.has(sala)) salas.set(sala, new Set());
   salas.get(sala).add(c);

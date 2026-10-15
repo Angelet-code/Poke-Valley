@@ -400,6 +400,11 @@ De 2 a 4 jugadores en la misma red, cada uno con su partida. Se juega con:
   los mensajes a los demás jugadores de la sala, que es la ruta de la URL (por defecto "valle"), y apunta en qué orden
   ha llegado cada uno y la semilla de la sala.
 - `npm run dev:red`: el juego abierto a la red. Cada jugador entra en `http://<ip>:5174/?mp=ws://<ip>:5190`.
+- **Por internet desde este PC** (2026-10-15): `npm run mp` + `npm run online` (`vite.online.config.ts`, puerto 5185:
+  sirve el juego y pasa el WebSocket por `/mp` al servidor; sin recarga automática) + un túnel rápido de Cloudflare,
+  `%LOCALAPPDATA%\cloudflared\cloudflared.exe tunnel --url http://127.0.0.1:5185`, que da una dirección
+  `https://….trycloudflare.com` (cambia cada vez que se abre). Los amigos entran en `https://…/?mp=sala` (`?mp` sola =
+  sala "valle"). Para una dirección fija: túnel con nombre y el dominio en Cloudflare.
 
 Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
 - **Verse.** Cada uno manda su estado 10 veces por segundo: mapa, posición, animación, estado, vida, forma y nivel.

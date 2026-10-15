@@ -7,6 +7,7 @@
     "dev": "vite --port 5174 --strictPort",
     "dev:red": "vite --port 5174 --strictPort --host 0.0.0.0",
     "mp": "node tools/servidor_mp.mjs",
+    "online": "vite --config vite.online.config.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
