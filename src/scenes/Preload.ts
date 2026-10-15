@@ -1,7 +1,7 @@
 // Preload: todas las imágenes (terreno, árboles, rocas, objetos pixel art, bayas, Bulbasaur).
 /// <reference types="vite/client" />
 import Phaser from 'phaser';
-import { A, ARCANE, DIBUJO, ESPECIES, GALERIA, PELIPPER_DEX, REG, S, VH, VW, type AnimSet } from '../config';
+import { A, ARCANE, DIBUJO, ESPECIES, GALERIA, PELIPPER_DEX, REG, type AnimSet } from '../config';
 import { L, precargar } from '../render/Dibujo';
 import type { BayasData, ObjCatalog } from '../data/types';
 import { Terrain } from '../render/Terrain';
@@ -9,6 +9,7 @@ import { BIOMAS, SUELO_BIOMA } from '../data/biomas';
 import { SUELOS_CIUDAD } from '../data/ciudad';
 import { TRABAJOS } from '../data/especies';
 import { FORMAS } from '../data/pokedex';
+import { PantallaCarga } from './carga';
 
 export const TREE_N = 4, ROCK_N = 4;
 // Hojas PMD con mapa de normales (tools/normales_pokemon.py: <Anim>-Normal.png y <Anim>-Luz.png, contorno teñido).
@@ -16,11 +17,11 @@ export const TREE_N = 4, ROCK_N = 4;
 const NORMALES = new Set(Object.keys(import.meta.glob('/assets/sprites/pokemon/*/*-Normal.png')).map(r => r.replace(/^.*pokemon\//, '').replace('-Normal.png', '')));
 
 export class Preload extends Phaser.Scene {
+  private carga: PantallaCarga | null = null;
   constructor() { super('preload'); }
 
   preload(): void {
-    const txt = this.add.text(VW * S / 2, VH * S / 2, 'Cargando el valle…', { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${7 * S}px`, color: '#e4ecd8' }).setOrigin(0.5);
-    this.load.on('progress', (p: number) => txt.setText(`Cargando el valle… ${Math.round(p * 100)} %`));
+    this.carga = new PantallaCarga(this);
     this.load.on('loaderror', (f: Phaser.Loader.File) => console.warn('No se pudo cargar', f.key, f.url));
 
     // Mapa en estilo dibujo: césped y arena del dibujo (sin calcomanías pixel) y sus elementos (SVG).
@@ -34,9 +35,7 @@ export class Preload extends Phaser.Scene {
     // Pantalla de título (Title.ts): césped de fondo y flores.
     this.load.image('tit-cesped', `${A}game/cesped_0.png`);
     for (const n of [0, 7, 18]) this.load.image('tit-flor' + n, `${A}game/flores_nuevas/flor_${n}.png`);
-    // Modo aventura: logo pixel (tools/logo_pixel.py) y claro del bosque Arcane (tools/fondo_titulo.py).
-    this.load.image('tit-logo', `${A}ui/logo/logo_pow.png`);
-    this.load.image('tit-fondo', `${A}ui/titulo/fondo_arcane.jpg`);
+    // Modo aventura: el logo pixel y el claro Arcane del título ya los carga Boot (para esta pantalla de carga).
     for (let i = 0; i < ROCK_N; i++) this.load.image('roca' + i, `${A}game/rocas/roca_${i}.png`);
 
     const objs = this.registry.get(REG.objs) as ObjCatalog;
@@ -106,6 +105,8 @@ export class Preload extends Phaser.Scene {
     for (const name of ['Walk', 'Idle']) if (pel[name] && this.textures.exists('pelipper-' + name)) for (let r = 0; r < 8; r++) {
       this.anims.create({ key: `pelipper-${name}-${r}`, repeat: -1, frames: pel[name].durs.map((d, k) => ({ key: 'pelipper-' + name, frame: r * pel[name].durs.length + k, duration: d * 1000 / 60 })) });
     }
-    this.scene.start(GALERIA ? 'galeria' : 'title');
+    // Se sale cuando el Pokémon de la pantalla de carga llega al final de la barra.
+    const ir = () => this.scene.start(GALERIA ? 'galeria' : 'title');
+    if (this.carga) this.carga.alTerminar(ir); else ir();
   }
 }

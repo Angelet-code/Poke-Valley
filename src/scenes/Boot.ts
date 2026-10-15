@@ -9,6 +9,10 @@ import { registrarBayas } from '../data/items';
 import { TRABAJOS } from '../data/especies';
 import { LINEAS } from '../data/pokedex';
 import { DEX_MUESTRA, MUESTRA, claveMuestra } from '../data/muestra';
+import { REG_CARGA, TEX_CARGA } from './carga';
+
+// Pantalla de carga (scenes/carga.ts): un Pokémon en su primera forma, al azar, que camina sobre la barra.
+const PRIMERAS = Object.values(LINEAS).map(l => l.formas[0]);
 
 // Animaciones PMD que usamos, leídas del AnimData.xml de cada Pokémon.
 function leerAnims(xml: XMLDocument, extras: string[] = []): AnimSet {
@@ -47,6 +51,25 @@ export class Boot extends Phaser.Scene {
     for (const id in ESPECIES) for (const f of formasAldeano(id)) this.load.xml(`${f.id}-xml`, `${A}sprites/pokemon/${f.dex}/AnimData.xml`);
     if (MUESTRA) for (const dex of DEX_MUESTRA) this.load.xml(`${claveMuestra(dex)}-xml`, `${A}sprites/pokemon/${dex}/AnimData.xml`);
     this.load.on('loaderror', (f: Phaser.Loader.File) => console.warn('No se pudo cargar', f.key, f.url));
+    // Lo que enseña la pantalla de carga: el Pokémon que camina (su hoja Walk), el fondo y el logo del título.
+    this.carga = PRIMERAS[Math.floor(Math.random() * PRIMERAS.length)];
+    this.load.xml('carga-xml', `${A}sprites/pokemon/${this.carga.dex}/AnimData.xml`);
+    this.load.image('carga-walk-img', `${A}sprites/pokemon/${this.carga.dex}/Walk-Anim.png`);
+    this.load.image('tit-logo', `${A}ui/logo/logo_pow.png`);
+    this.load.image('tit-fondo', `${A}ui/titulo/fondo_arcane.jpg`);
+  }
+
+  private carga = PRIMERAS[0];
+
+  // Hoja Walk del Pokémon de la pantalla de carga y su animación hacia la derecha (fila 2 de PMD).
+  private prepararCarga(): void {
+    const xml = this.cache.xml.get('carga-xml') as XMLDocument | undefined, w = xml && leerAnims(xml).Walk;
+    if (!w || !this.textures.exists('carga-walk-img')) return;
+    const img = this.textures.get('carga-walk-img').getSourceImage() as HTMLImageElement;
+    this.textures.addSpriteSheet(TEX_CARGA, img, { frameWidth: w.fw, frameHeight: w.fh });
+    const fila = Math.min(2, Math.floor(img.height / w.fh) - 1);
+    this.anims.create({ key: `${TEX_CARGA}-der`, repeat: -1, frames: w.durs.map((d, i) => ({ key: TEX_CARGA, frame: fila * w.durs.length + i, duration: d * 1000 / 60 })) });
+    this.registry.set(REG_CARGA, { dex: this.carga.dex, nombre: this.carga.nombre });
   }
 
   create(): void {
@@ -70,6 +93,7 @@ export class Boot extends Phaser.Scene {
     this.registry.set(REG.animsAldeanos, aldeanos);
     const pel = this.cache.xml.get('pelipper-xml') as XMLDocument | undefined;
     this.registry.set(REG.pelipper, pel ? leerAnims(pel) : {});
+    this.prepararCarga();
     this.scene.start('preload');
   }
 }
