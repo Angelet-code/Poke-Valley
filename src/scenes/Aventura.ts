@@ -14,7 +14,7 @@ import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
-import { despejarPuentes, tirasDeBorde } from '../data/bordes';
+import { despejarPuentes, tirasDeBorde, vestirMacizo } from '../data/bordes';
 import { dibujar, enRect, expandirTiras, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
 import { pipelineCel } from '../render/CelPipeline';
@@ -205,7 +205,8 @@ export class Aventura extends Phaser.Scene {
     if (n !== this.montaje || !this.sys.isActive()) return;
     this.terrain.build(this);
     const cat = this.registry.get(REG.dibujo) as { elementos: Elemento[] }, porId = new Map(cat.elementos.map(e => [e.id, e]));
-    tirasDeBorde(this.mapa, porId, (x, y) => this.terrain.esAgua(x, y));   // acantilados y muros en el borde del macizo
+    const caras = tirasDeBorde(this.mapa, porId, (x, y) => this.terrain.esAgua(x, y));   // acantilados y muros en el borde del macizo
+    vestirMacizo(this.mapa, porId, caras);   // el resto del macizo: montañas, arboledas y piezas que no tapan lo pisable
     const tiras = expandirTiras(this.mapa.colocados, porId);   // muros, vallas, acantilados y puentes en fila
     this.mapa.colocados = tiras.colocados;
     despejarPuentes(this.mapa, tiras.pasos);

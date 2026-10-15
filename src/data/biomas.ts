@@ -294,13 +294,20 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     for (const { p, dx, dy } of vados) {
       const hor = Math.abs(dx) > Math.abs(dy), ux = hor ? 1 : 0, uy = hor ? 0 : 1;
       let a = 0, b = 0;   // hasta dónde llega el agua a cada lado del cruce
-      while (a < 90 && enRio(p.x - ux * a, p.y - uy * a, 0)) a += 4;
-      while (b < 90 && enRio(p.x + ux * b, p.y + uy * b, 0)) b += 4;
-      const c: Colocado = hor ? { id: `puente_${def.bioma}`, x: Math.round(p.x - a - 10), y: Math.round(p.y + 20), tira: { hasta: Math.round(p.x + b + 10) } }
-        : { id: `puente_v_${def.bioma}`, x: Math.round(p.x), y: Math.round(p.y - a - 10), tira: { hasta: Math.round(p.y + b + 10) } };
-      puentes.push(hor ? { x0: p.x - a - 10, y0: p.y - 15, x1: p.x + b + 10, y1: p.y + 15, c } : { x0: p.x - 13, y0: p.y - a - 10, x1: p.x + 13, y1: p.y + b + 10, c });
+      while (a < 200 && enRio(p.x - ux * a, p.y - uy * a, 0)) a += 4;
+      while (b < 200 && enRio(p.x + ux * b, p.y + uy * b, 0)) b += 4;
+      if (a + b > 180) continue;   // el camino va por dentro del río, no lo cruza: se queda el vado
+      // M: lo que entra en tierra por cada lado (el agua dibujada sigue los vértices del suelo, cada 24 px, y llega algo
+      // más allá del río exacto).
+      const M = 28;
+      const c: Colocado = hor ? { id: `puente_${def.bioma}`, x: Math.round(p.x - a - M), y: Math.round(p.y + 20), tira: { hasta: Math.round(p.x + b + M) } }
+        : { id: `puente_v_${def.bioma}`, x: Math.round(p.x), y: Math.round(p.y - a - M), tira: { hasta: Math.round(p.y + b + M) } };
+      puentes.push(hor ? { x0: p.x - a - M, y0: p.y - 15, x1: p.x + b + M, y1: p.y + 15, c } : { x0: p.x - 13, y0: p.y - a - M, x1: p.x + 13, y1: p.y + b + M, c });
     }
-    const cerca = (x: number, y: number) => puentes.some(q => x > q.x0 - 40 && x < q.x1 + 40 && y > q.y0 - 40 && y < q.y1 + 40);
+    // Sin vado a los lados de cada puente (el agua sigue por debajo), pero no más allá de sus extremos: ahí el camino
+    // sigue en tierra (o en el vado, si continúa mojado).
+    const cerca = (x: number, y: number) => puentes.some(q => q.x1 - q.x0 > q.y1 - q.y0
+      ? x > q.x0 && x < q.x1 && y > q.y0 - 40 && y < q.y1 + 40 : x > q.x0 - 40 && x < q.x1 + 40 && y > q.y0 && y < q.y1);
     vado = (x, y) => celda(mCamino, x, y) && !(dist(ptsRio, x, y) < 60 && cerca(x, y));
   }
   const enPuente = (x: number, y: number) => puentes.some(q => x >= q.x0 && x <= q.x1 && y >= q.y0 && y <= q.y1);
@@ -415,18 +422,16 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     poner({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.8, 1.1) }, 16); k++;
   }
 
-  // Islas en las explanadas (no en la arena del alfa): relleno suelto que cubre sin cerrar el paso, lejos de los
-  // caminos y del centro de los claros (donde van los hitos locales y los salvajes).
-  const islas = [...def.relleno, ...def.muro];
+  // Islas en las explanadas (no en la arena del alfa): cubren sin cerrar el paso, lejos de los caminos y del centro de
+  // los claros (donde van los hitos locales y los salvajes). Cada isla es un grupo ordenado: una arboleda o un
+  // montículo del bioma a escala pequeña (2026-10-15; antes, 1-3 piezas de relleno al azar, que parecían barreras sueltas).
   explanadas.slice(0, -1).forEach(f => {
     const area = f.reduce((s, e) => s + Math.PI * e.rx * e.ry, 0), n = Math.round(area / 30000);
     for (let k = 0, i = 0; k < n && i < 400; i++) {
       const e = pick(f), a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.85;
       const x = e.x + Math.cos(a) * e.rx * d, y = e.y + Math.sin(a) * e.ry * d;
       if (enAgua(x, y, 16) || aSendero(x, y) < 40 || enClaro(x, y, -20) || tapaRellano(rellano, x, y) || !libre(x, y, 34)) continue;
-      // a veces un grupito de dos o tres, para que haya rincones donde esconderse
-      const g = r() < 0.35 ? 2 + Math.floor(r() * 2) : 1;
-      for (let q = 0; q < g; q++) poner({ id: pick(islas), x: Math.round(x + (q ? entre(-22, 22) : 0)), y: Math.round(y + (q ? entre(-14, 14) : 0)), flip: r() < 0.5, s: entre(0.85, 1.15) }, 22);
+      poner({ id: `${r() < 0.6 ? 'arboleda' : 'montana'}_${def.bioma}`, x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.3, 0.42) }, 30);
       k++;
     }
   });
@@ -504,12 +509,12 @@ const DEFS: Record<Bioma, DefZona> = {
     especies: ['grimer', 'trubbish', 'zubat', 'gastly', 'litwick', 'misdreavus', 'poochyena', 'sableye', 'murkrow', 'spinarak'], niveles: [12, 18],
   },
   ruinas: {
-    id: 'ruinas', bioma: 'ruinas', bajo: ['muro_roto', 'columna_rota', 'flores_hada'], rio: true, diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'muro_roto'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
+    id: 'ruinas', bioma: 'ruinas', bajo: ['muro_roto', 'columna_rota', 'flores_hada'], rio: true, diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'columna_rota'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
     nombre: 'Ruinas Antiguas', lema: 'Nivel 14-20 · Psíquico y Hada', sal: 0x2a1b5e, caminoLosas: true,
     bienvenida: 'Las ruinas. Columnas rotas, cristales que brillan y un arco al fondo.',
     puertas: [{ lado: 's', t: 0.6, a: 'pantano', texto: 'Al pantano' }, { lado: 'o', t: 0.4, a: 'volcan', texto: 'Al volcán' }, { lado: 'e', t: 0.4, a: 'nieve', texto: 'A las cumbres' }],
     muro: ['arbol_flores'], relleno: ['arbol_flores', 'muro_roto', 'columna_rota'], claros: 6,
-    extras: [['muro_roto', 6, 'borde'], ['estatua', 4, 'borde'], ['altar', 2, 'claro'], ['cristal_psiquico', 6, 'borde'], ['losas_ruina', 6, 'claro'], ['flores_hada', 14, 'claro'], ['columna_rota', 6, 'borde']],
+    extras: [['estatua', 4, 'borde'], ['altar', 2, 'claro'], ['cristal_psiquico', 6, 'borde'], ['losas_ruina', 6, 'claro'], ['flores_hada', 14, 'claro'], ['columna_rota', 9, 'borde']],   // sin muro_roto suelto (un bloque cuadrado que parecía un pilar puesto al azar)
     hito: 'arco_ruinas', alfa: { linea: 'ralts', forma: 'kirlia', nivel: 22 },
     especies: ['abra', 'ralts', 'natu', 'clefairy', 'togepi', 'flabebe'], niveles: [14, 20],
   },

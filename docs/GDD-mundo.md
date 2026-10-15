@@ -385,6 +385,26 @@ Con las tiras de [ARCANE.md](art/ARCANE.md) ("Muros y barreras"):
     pilares sueltos).
   - Salen 2-7 tiras por zona: los bordes del generador son orgánicos y casi nunca van rectos mucho trecho.
 - Comprobado: los 7 puentes de las 5 zonas con río se cruzan enteros, y las ruinas se ven bien de día.
+- **El macizo, vestido** (`bordes.ts`, `vestirMacizo`, 2026-10-15). Antes se llenaba con ~900-1 400 piezas sueltas al
+  azar, que se leían como barreras puestas de cualquier manera. Ahora la escena quita las que caen en el macizo y lo
+  viste por capas:
+  1. montañas y arboledas del bioma, al tresbolillo;
+  2. las mismas a media escala en las franjas estrechas;
+  3. piezas medianas en lo que quede;
+  4. piezas bajas solo en el borde con lo pisable, separadas.
+  - Cada pieza se pone solo si toda su silueta (`cubre`, de `lab/tools/mascaras_arcane.py`) cae en el macizo y fuera
+    de la cara de los acantilados: nunca tapa un pasillo. Quedan ~240-400 piezas por zona.
+  - Las **islas** de las explanadas son ahora una arboleda o un montículo del bioma a escala pequeña (antes, 1-3 piezas
+    de relleno al azar). En las ruinas, el bloque de muro roto deja de usarse suelto (extras y hitos locales).
+  - Los acantilados y muros de borde miden al menos extremo + tramo + extremo (~180 px). Más cortos parecían sellos
+    sueltos. Los muros verticales, solo en las ruinas.
+  - Enderezar un borde para un acantilado se deshace si parte lo pisable en dos.
+  - Puentes: cubren el agua con 28 px de margen por lado, porque el agua dibujada sigue los vértices del suelo. Donde
+    el camino va por dentro del río más de 180 px, se queda el vado.
+  - Comprobado en las seis zonas: todos los salvajes, el alfa y las salidas se alcanzan. Vistas:
+    [todas](img/macizo_zonas.jpg), [cantera](img/macizo_cantera.jpg), [costa](img/macizo_costa.jpg),
+    [ruinas](img/macizo_ruinas.jpg), [pantano](img/macizo_pantano.jpg), [volcán](img/macizo_volcan.jpg) y
+    [cumbres](img/macizo_nieve.jpg).
 
 Siguiente paso posible, con arte: **acantilados y desniveles** (bordes de meseta, rampas y escaleras), para tener alturas
 y no solo paredes.

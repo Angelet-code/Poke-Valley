@@ -23,6 +23,7 @@ export interface Elemento {
   // (izq/tramo/der en las horizontales, arr/tramo/abj en las verticales, o el inserto: escalera, porton).
   tira?: { id: string; parte: string; forma: 'H' | 'V' };
   huellas?: [number, number, number, number][];     // varias huellas (insertos: se pasa por el centro)
+  cubre?: { c: number; f: number; b: string };      // silueta reducida (lab/tools/mascaras_arcane.py): qué celdas pinta
 }
 // Lo dibujado: imagen, factor px PNG → mundo, alto en el mundo, base (para el orden) y huella en el mundo.
 export interface Pieza {

@@ -207,4 +207,6 @@ lago y pueblo). Para cada uno de los 7 sets (`comun`, `costa`, `cantera`, `panta
   - Ya en las zonas de bioma: puentes en los ríos y acantilados/muros en los bordes del macizo ([GDD-mundo.md](../GDD-mundo.md) §5d).
   - Una tira puede ser solo sus dos extremos (encajan: el derecho empieza donde acaba el izquierdo); los puentes
     cubren todo su largo y el resto cabe dentro, centrada.
+  - Silueta de cada pieza para colocarlas sin tapar lo pisable: `python -I lab/tools/mascaras_arcane.py` añade `cubre`
+    a elementos.json. Hay que ejecutarlo de nuevo tras `catalogo_arcane.py` o `tiras_arcane.py`.
   - Pendiente: repetir con semilla 2 lo flojo.
