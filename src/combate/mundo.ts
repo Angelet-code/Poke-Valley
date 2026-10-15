@@ -820,6 +820,10 @@ export class Mundo {
     const yo = this.partida.activo, exp = expPor(t.linea, t.nivel) * (t.alfa ? ALFA_VIDA : 1);
     this.rotulo(this.jugador, `+${exp} exp`, 'strong', 300);
     this.procesar(this.partida.ganarExp(yo, exp));
+    // Pokécoins (para la tienda del pueblo): según su nivel; el alfa, cinco veces más.
+    const din = Math.round((8 + t.nivel * 4) * (t.alfa ? 5 : 1) * (0.8 + this.rnd() * 0.4));
+    this.partida.cobrar(din);
+    this.rotulo(this.jugador, `+${din} Pokécoins`, 'strong', 900);
     const r = this.rnd();
     if (t.alfa) {   // el alfa suelta siempre lo mejor de su nivel: dos Balls y dos curas (combate/botin.ts)
       const { ball, cura } = MEJOR[tierDe(t.nivel)];

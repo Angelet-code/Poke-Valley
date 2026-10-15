@@ -9,7 +9,7 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
@@ -47,6 +47,7 @@ export interface MapaAventura {
   alfa?: Alfa;
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
+  tienda?: Punto;                 // el tendero (pueblo): F a su lado abre la tienda (Poké Balls y pociones)
   vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
@@ -67,6 +68,7 @@ export function pueblo(): MapaAventura {
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,
+    tienda: TENDERO,
     rellano: { x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }, vuelo: sitioVolador({ x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }),   // junto a la boca norte
     parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };

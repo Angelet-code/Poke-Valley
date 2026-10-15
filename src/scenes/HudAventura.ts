@@ -11,11 +11,13 @@
 //   Arriba, nombre, sexo, nivel y tipos; bajo el Pokémon, sus stats.
 // - F en el tablón del pueblo: las misiones de cada zona, solo con iconos (cara, número, Ball u objeto). Clic en una
 //   nueva = aceptarla; en una cumplida = entregarla. A la derecha, bajo la hora, el seguimiento (cara + "2/5").
+// - F junto a Kecleon (el tendero del pueblo): la tienda, Poké Balls y pociones. Clic = comprar uno; Mayús+clic, cinco.
+//   Arriba, tus Pokécoins (también en el inventario, I).
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
-import { type Aura, type Aventura, type Luchador } from './Aventura';
+import { NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES } from '../combate/objetos';
@@ -38,6 +40,11 @@ const PIX: Record<string, string[]> = {
   corona: ['y..y..y', 'yy.y.yy', 'yyyyyyy', 'yryyyry', 'yyyyyyy'],
   visto: ['.....g', '....gg', 'g..gg.', 'gggg..', '.gg...'],
 };
+// Pokécoin (la misma moneda que el HUD de la granja, UIScene).
+const MONEDA = ['..kkk..', '.kyyyk.', 'kyhkyyk', 'kyykyyk', 'kyykyyk', '.kyyyk.', '..kkk..'];
+const COL_MONEDA = { k: 0xc28a2c, y: 0xf2c94c, h: 0xfff2b0 };
+// Lo que dice la tienda de cada cosa.
+const DESC_VENTA: Record<string, string> = { pokeball: 'Para capturar salvajes', superball: 'Captura mejor que la Poké Ball', pocion: 'Cura 20 PS', superpocion: 'Cura 60 PS' };
 const pix = (g: G, x: number, y: number, id: string) => PIX[id].forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') rect(g, PIX_COL[ch], 1, x + i, y + j, 1, 1); }));
 // Marco del alfa (como el de élite del WoW): el sprite pixel art de Aerodactyl (PMD) entero de color tierra
 // (assets/game/pixel/ui/aerodactyl_alfa.png, de assets/gen/pixel/ui_dragon/tierra.py), en la esquinita de arriba a la
@@ -114,6 +121,11 @@ export class HudAventura extends Phaser.Scene {
   private misCaja: { x: number; y: number; w: number; h: number } | null = null;
   private segObjs: Phaser.GameObjects.GameObject[] = [];
   private segClave = '';
+  // Tienda (F junto a Kecleon).
+  private tiObjs: Phaser.GameObjects.GameObject[] = [];
+  private tiClave = '';
+  private tiZonas: { x: number; y: number; w: number; h: number; id: string }[] = [];
+  private tiCaja: { x: number; y: number; w: number; h: number } | null = null;
 
   constructor() { super('hud'); }
 
@@ -129,6 +141,7 @@ export class HudAventura extends Phaser.Scene {
     this.casillas = []; this.panelObjs = []; this.panelClave = ''; this.panelZonas = [];
     this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null; this.invElegido = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
+    this.tiObjs = []; this.tiClave = ''; this.tiZonas = []; this.tiCaja = null;
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
 
@@ -191,6 +204,8 @@ export class HudAventura extends Phaser.Scene {
       const iz = this.invZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (iz) { this.clicInventario(iz); return; }
       const mz = this.misZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
+      const tz = this.av.panel === 'tienda' ? this.tiZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h) : undefined;
+      if (tz) { this.av.comprar(tz.id, (p.event as MouseEvent | undefined)?.shiftKey ? 5 : 1); return; }
       if (mz) {
         const st = this.av.partida.estadoMision(mz.m);
         if (st === 'nueva') this.av.aceptarMision(mz.m); else if (st === 'lista') this.av.entregarMision(mz.m);
@@ -209,6 +224,7 @@ export class HudAventura extends Phaser.Scene {
     const c = this.misCaja;
     return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
       || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h)
+      || (this.av.panel === 'tienda' && !!this.tiCaja && x >= this.tiCaja.x && x < this.tiCaja.x + this.tiCaja.w && y >= this.tiCaja.y && y < this.tiCaja.y + this.tiCaja.h)
       || (this.av.panel === 'inv' && !!this.invCaja && x >= this.invCaja.x && x < this.invCaja.x + this.invCaja.w && y >= this.invCaja.y && y < this.invCaja.y + this.invCaja.h);
   }
   private casillaEn(x: number, y: number): number {
@@ -371,6 +387,7 @@ export class HudAventura extends Phaser.Scene {
     this.pintarPanel();
     this.pintarInventario();
     this.pintarMisiones();
+    this.pintarTienda();
     this.pintarSeguimiento(cl ? 44 : 30);
   }
 
@@ -443,6 +460,41 @@ export class HudAventura extends Phaser.Scene {
     }
     if (hecha) rect(g, C.hueco, 0.55, x, y, MW, MH);   // entregada: apagada
     this.misZonas.push({ x, y, w: MW, h: MH, m });
+  }
+
+  // Tienda (F junto a Kecleon): una fila por cosa, con su icono, lo que hace, cuántas llevas y el precio. Lo que no
+  // te llega, apagado.
+  private pintarTienda(): void {
+    const av = this.av, pa = av.partida;
+    const k = av.panel === 'tienda' ? `${pa.dinero}|${VENTA.map(id => pa.tiene(id)).join()}` : '';
+    if (k === this.tiClave) return;
+    this.tiClave = k;
+    this.tiObjs.forEach(o => o.destroy()); this.tiObjs = []; this.tiZonas = []; this.tiCaja = null;
+    if (av.panel !== 'tienda') return;
+    const FH = 24, w = 176, h = 18 + VENTA.length * (FH + 3) + 12, x = 4, y = 40;   // a la izquierda, como la ventana del vendedor del WoW (no tapa al tendero ni los avisos)
+    this.tiCaja = { x, y, w, h };
+    const g = this.add.graphics().setDepth(6);
+    this.tiObjs.push(g);
+    marco(g, x, y, w, h, PANEL);
+    const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.tiObjs.push(q); return q; };
+    const moneda = (mx: number, my: number) => { const im = this.add.image(mx * S, my * S, this.pixeles('hud_moneda', MONEDA, COL_MONEDA)).setOrigin(0, 0.5).setDepth(8); this.tiObjs.push(im); };
+    t(x + 6, y + 5, `TIENDA DE ${NOMBRE_TIENDA.toUpperCase()}`, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    const din = t(x + w - 6, y + 4, String(pa.dinero), 6.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
+    moneda(x + w - 6 - din.width / S - 9, y + 8.5);
+    VENTA.forEach((id, i) => {
+      const it = ITEMS[id], fx = x + 6, fy = y + 16 + i * (FH + 3), fw = w - 12, llega = pa.dinero >= it.precio;
+      rect(g, C.huecoSombra, 1, fx - 1, fy - 1, fw + 2, FH + 2);
+      rect(g, C.hueco, 1, fx, fy, fw, FH);
+      rect(g, C.bandeja, 1, fx + 2, fy + 2, FH - 4, FH - 4);
+      this.iconoItem(fx + FH / 2, fy + FH / 2, id, 16, this.tiObjs, 8);
+      t(fx + FH + 2, fy + 3, it.nombre, 6, C.tinta, { fontStyle: 'bold' });
+      t(fx + FH + 2, fy + 13, `${DESC_VENTA[id] ?? ''} · llevas ${pa.tiene(id)}`, 4.5, C.maderaClara);
+      const pr = t(fx + fw - 4, fy + FH / 2, String(it.precio), 6.5, llega ? C.tinta : 0xb03a2e, { fontStyle: 'bold' }).setOrigin(1, 0.5);
+      moneda(fx + fw - 4 - pr.width / S - 9, fy + FH / 2);
+      if (!llega) rect(g, C.hueco, 0.45, fx, fy, fw, FH);
+      this.tiZonas.push({ x: fx, y: fy, w: fw, h: FH, id });
+    });
+    t(x + w / 2, y + h - 9, 'Clic: comprar uno · Mayús+clic: cinco', 5, C.maderaClara).setOrigin(0.5, 0);
   }
 
   // Seguimiento (derecha, bajo la hora): las misiones aceptadas con su cara y "2/5"; "?" en dorado si está cumplida.
@@ -627,13 +679,13 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     const av = this.av, m = av.partida.activo, obs = av.partida.objetos(m), dex = av.jugador?.dex ?? '';
     const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && (EQUIPABLES[id] || ITEMS[id]?.tipo === 'evolutivo'));   // y las piedras evolutivas
     if (av.panel !== 'inv') this.invElegido = null;
-    const k = av.panel === 'inv' ? `${m.uid}|${dex}|${m.nivel}|${JSON.stringify(av.jugador?.boosts)}|${obs.join()}|${JSON.stringify(eq)}|${this.invElegido}|${listo(this, dex)}` : '';
+    const k = av.panel === 'inv' ? `${av.partida.dinero}|${m.uid}|${dex}|${m.nivel}|${JSON.stringify(av.jugador?.boosts)}|${obs.join()}|${JSON.stringify(eq)}|${this.invElegido}|${listo(this, dex)}` : '';
     if (k === this.invClave) return;
     this.invClave = k;
     this.invObjs.forEach(o => o.destroy()); this.invObjs = []; this.invZonas = []; this.invCaja = null;
     if (av.panel !== 'inv') return;
     const COLS = 6, CS = 18, PASO = CS + 2, filas = Math.max(1, Math.ceil(eq.length / COLS)), HUECO = 24, FONDO = 78;
-    const STATS = 3 * 7 + 4, w = 12 + COLS * PASO - 2, h = 24 + FONDO + 4 + STATS + 6 + 11 + filas * PASO + 12;
+    const STATS = 3 * 7 + 4, w = 12 + COLS * PASO - 2, h = 24 + FONDO + 4 + STATS + 6 + 11 + filas * PASO + 12 + 11;
     const x = 4, y = Math.max(32, Math.min(48, BY - 6 - h));   // bajo los bufos de tu marco, si cabe
     this.invCaja = { x, y, w, h };
     const g = this.add.graphics().setDepth(6);
@@ -700,6 +752,9 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     t(x + 6, ye, 'OBJETOS', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
     if (!eq.length) t(x + 7, ye + 11 + CS / 2, 'Ninguno: los sueltan los alfas', 5, C.tinta).setOrigin(0, 0.5).setAlpha(0.7);
     eq.forEach(([id, n], i) => casilla(x + 7 + (i % COLS) * PASO, ye + 11 + Math.floor(i / COLS) * PASO, CS, id, { id }, this.invElegido === id, n));
+    // Pokécoins (como el oro de las bolsas del WoW).
+    const din = t(x + w - 7, y + h - 20, `${av.partida.dinero} Pokécoins`, 5.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
+    this.invObjs.push(this.add.image((x + w - 7 - din.width / S - 9) * S, (y + h - 16.5) * S, this.pixeles('hud_moneda', MONEDA, COL_MONEDA)).setOrigin(0, 0.5).setDepth(8));
     t(x + w / 2, y + h - 9, this.invElegido ? 'Ahora elige qué objeto cambiar' : 'Clic: ponérselo · en el suyo: quitar', 5, C.maderaClara).setOrigin(0.5, 0);
   }
   // Ficha de un objeto del inventario (a la derecha del panel, a su altura).

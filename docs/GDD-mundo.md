@@ -158,6 +158,15 @@ Como en los juegos: lo que encuentras va con el nivel. `src/combate/botin.ts` ti
   - **El viaje**: Corviknight va a por ti, subís los dos mientras se funde a negro y apareces delante del volador de
     la zona de destino (`Aventura.aterrizaje` busca el sitio libre más cercano).
   - Por hacer: una animación de aterrizaje y, quizá, un coste en Pokécoins.
+- **Tienda del pueblo**, hecho (2026-10-16): **Kecleon** (el tendero de Mystery Dungeon) delante del mostrador del
+  puesto (`TENDERO` en `puebloAventura.ts`, `MapaAventura.tienda`). Encima, «Kecleon ‹Tienda›» y el icono del vendedor
+  del WoW en pixel art: una bolsa de dinero con una moneda (`ICONO_TIENDA`, `Aventura.ts`). Te mira al acercarte.
+  - **F a su lado** abre la tienda (panel del HUD a la izquierda, como la ventana del vendedor del WoW): Poké Ball,
+    Super Ball, Poción y Superpoción (`VENTA`), a los precios de `data/items.ts`. Clic = uno; Mayús+clic = cinco. Lo
+    que no te llega sale apagado y con el precio en rojo. Se cierra al alejarte.
+  - **Pokécoins** (`estado.dinero`, `Partida.cobrar/comprar`): empiezas con 200 (también las partidas de antes); cada
+    salvaje derrotado da unas `8 + 4·nivel` (±20 %), el alfa cinco veces más. Se ven arriba en la tienda y abajo en el
+    inventario (I).
 
 ### Mundo continuo (v2)
 Hoy el suelo de cada zona es un único canvas a resolución de pantalla. Un mundo de 3 zonas a zoom 4 ocuparía unos

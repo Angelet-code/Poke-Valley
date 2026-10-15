@@ -14,6 +14,7 @@ import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
+import { ITEMS } from '../data/items';
 import { lineasDe } from '../data/aparicion';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
 import { despejarPuentes, tirasDeBorde, vestirMacizo } from '../data/bordes';
@@ -76,7 +77,29 @@ const ICONO_DESCUBRIR = [
   'kgggk',
   '.kkk.',
 ];
-const COL_VUELO: Record<string, string> = { w: '#dff7d0', W: '#ffffff', k: '#1d4a16', g: '#5fd34a', L: '#b6f5a0' };
+// Tienda del pueblo (docs/GDD-mundo.md): Kecleon, el tendero de Mystery Dungeon, delante del puesto. Encima, como el
+// vendedor del WoW, una bolsa de dinero (pixel art). F a su lado abre la tienda (la pinta el HUD).
+export const DEX_TIENDA = '0352', NOMBRE_TIENDA = 'Kecleon';
+export const TIENDA_CERCA = 46;
+// Lo que vende, por orden (precios de data/items.ts).
+export const VENTA = ['pokeball', 'superball', 'pocion', 'superpocion'];
+const ICONO_TIENDA = [
+  '...d...d...',
+  '..dBd.dBd..',
+  '...dBdBd...',
+  '....yYy....',
+  '...dbbbd...',
+  '..dBBbbbd..',
+  '.dBBbbbbbd.',
+  '.dBbbyybbd.',
+  '.dbbyYYybd.',
+  '.dbbyYYybd.',
+  '.dbbbyybbd.',
+  '..dbbbbbd..',
+  '...ddddd...',
+];
+const COL_VUELO: Record<string, string> = { w: '#dff7d0', W: '#ffffff', k: '#1d4a16', g: '#5fd34a', L: '#b6f5a0',
+  d: '#3b2412', b: '#a8692e', B: '#d99a52', y: '#d9a21e', Y: '#ffe680' };
 // Los dos iconos como texturas (una vez).
 function texturaPixel(scene: Phaser.Scene, clave: string, filas: string[]): void {
   if (scene.textures.exists(clave)) return;
@@ -118,8 +141,9 @@ export class Aventura extends Phaser.Scene {
   modoVuelo = false;                  // abierto desde el volador: para elegir a dónde volar
   vueloNuevo = false;                 // el punto de vuelo de aquí se acaba de descubrir (al abrir el mapa de vuelo)
   vuelo: { x: number; y: number; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
+  tendero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
-  panel: 'movs' | 'misiones' | 'inv' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón): lo dibuja el HUD
+  panel: 'movs' | 'misiones' | 'inv' | 'tienda' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
   listo = false;
   evolucionando = false;
@@ -188,7 +212,7 @@ export class Aventura extends Phaser.Scene {
     carga?.progreso(0.08);
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
-    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
+    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null;
     this.placas.clear(); this.bocadillos.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial, data.usuario);
@@ -215,6 +239,7 @@ export class Aventura extends Phaser.Scene {
     for (const r of this.mapa.salvajes) formas.push(formaDe(r.linea, r.nivel).dex);
     for (const nv of niveles) for (const l of tabla) formas.push(formaDe(l, nv).dex);
     formas.push(DEX_VUELO);
+    if (this.mapa.tienda) formas.push(DEX_TIENDA);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
     // Progreso: los sprites van en dos pasadas del cargador (AnimData.xml y luego las hojas); el suelo, aparte.
@@ -243,6 +268,7 @@ export class Aventura extends Phaser.Scene {
       anatomia: this.anatomia, probShiny: this.probShiny, natu: new URLSearchParams(location.search).get('natu') ?? undefined,
     });
     this.ponerVuelo(porId, bloques);
+    this.ponerTendero(bloques);
     this.ponerDetalles(cat.elementos, porId, bloques);
     const mundo = this.mundo;
     if (data.pos) { mundo.jugador.x = data.pos.x; mundo.jugador.y = data.pos.y; }
@@ -371,6 +397,42 @@ export class Aventura extends Phaser.Scene {
     const icono = this.add.image(x, placa.y - 16, vs[mapa.id] ? 'icono_vuelo' : 'icono_descubrir').setOrigin(0.5, 1).setDepth(1e5).setScale(2);
     for (const o of [sombra, placa, icono]) o.resetPipeline();
     this.vuelo = { x, y, spr, sombra, placa, icono, fila: 0 };
+  }
+  // El tendero (Kecleon) en su sitio del pueblo, con su nombre, «‹Tienda›» y la bolsa encima; su huella se suma al mundo.
+  private ponerTendero(bloques: Bloque[]): void {
+    const t = this.mapa.tienda;
+    if (!t) return;
+    const { x, y } = t, an = ancla(DEX_TIENDA), ancho = Math.max(10, Math.min(30, an.ancho * 0.75));
+    const nuevo: Bloque = { x, y: y + 2, w: 18, h: 8, rombo: true };
+    this.mundo!.anadirBloques([nuevo]); bloques.push(nuevo);
+    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
+    poner(spr, DEX_TIENDA, 'Idle', 0);
+    const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
+    const placa = this.add.text(x, y - an.alto - 2, `${NOMBRE_TIENDA}
+‹Tienda›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#9be38a', stroke: '#16301a', strokeThickness: 2 * S, align: 'center' })
+      .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
+    texturaPixel(this, 'icono_tienda', ICONO_TIENDA);
+    const icono = this.add.image(x, placa.y - 16, 'icono_tienda').setOrigin(0.5, 1).setDepth(1e5).setScale(2);
+    for (const o of [sombra, placa, icono]) o.resetPipeline();
+    this.tendero = { x, y, spr, placa, icono, fila: 0 };
+  }
+  // Quieto, el tendero mira hacia ti cuando te acercas; la bolsa flota. La tienda se cierra al alejarte.
+  private pasoTendero(): void {
+    const v = this.tendero, p = this.mundo!.jugador;
+    if (!v) return;
+    v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2.5 + 1)) * 3).setVisible(this.panel !== 'tienda');
+    const d = Math.hypot(p.x - v.x, p.y - v.y);
+    const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
+    if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_TIENDA, 'Idle', fila); }
+    if (this.panel === 'tienda' && d > TIENDA_CERCA + 30) this.panel = null;
+  }
+  // Comprar en la tienda (clic en el HUD): `n` del objeto, si llega el dinero.
+  comprar(id: string, n = 1): void {
+    const it = ITEMS[id];
+    if (!it || this.panel !== 'tienda' || !VENTA.includes(id)) return;
+    if (!this.partida.comprar(id, it.precio, n)) { this.aviso(`No te llega: ${it.nombre} ×${n} cuesta ${it.precio * n} Pokécoins`); return; }
+    this.guardar();
+    this.aviso(`Compras ${it.nombre} ×${n} por ${it.precio * n} Pokécoins`);
   }
   // Puntos de vuelo descubiertos (por zona, dónde está su volador). Se descubren hablando con él (F).
   get vuelosConocidos(): Record<string, { x: number; y: number; u: number; v: number }> { return this.partida.estado.vuelos ?? {}; }
@@ -673,6 +735,8 @@ export class Aventura extends Phaser.Scene {
       return;
     }
     if (t && Math.hypot(t.x - p.x, t.y - p.y) < TABLON_CERCA) { this.panel = this.panel === 'misiones' ? null : 'misiones'; this.asignando = null; return; }
+    const ti = this.tendero;
+    if (ti && Math.hypot(ti.x - p.x, ti.y - p.y) < TIENDA_CERCA) { this.panel = this.panel === 'tienda' ? null : 'tienda'; this.asignando = null; return; }
     mundo.interactuar();
   }
 
@@ -1080,6 +1144,7 @@ ${l.nombre} Nv.${l.nivel}`;
     this.pintarMarca();
     this.pasoTablon();
     this.pasoVuelo();
+    this.pasoTendero();
     this.pintarHogar();
     this.dibujarBarras();
     this.stage.actualizar(t, dtMs);
