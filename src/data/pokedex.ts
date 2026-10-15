@@ -69,7 +69,7 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   wailmer: L('agua', ['agua'], 'fluctuante', ['0320', 'Wailmer', 1, [130, 70, 35, 70, 35, 60]], ['0321', 'Wailord', 40, [170, 90, 45, 90, 45, 60]]),
   lapras: L('agua', ['agua', 'hielo'], 'lento', ['0131', 'Lapras', 1, [130, 85, 80, 85, 95, 60]]),
   // Eléctrico
-  pikachu: L('electrico', ['electrico'], 'medio', ['0172', 'Pichu', 1, [20, 40, 15, 35, 35, 60]], ['0025', 'Pikachu', 10, [35, 55, 40, 50, 50, 90], 'amistad'], ['0026', 'Raichu', 30, [60, 90, 55, 90, 80, 110], 'piedra trueno']),
+  pikachu: L('electrico', ['electrico'], 'medio', ['0172', 'Pichu', 1, [20, 40, 15, 35, 35, 60]], ['0025', 'Pikachu', 10, [35, 55, 40, 50, 50, 90], 'amistad']),
   magnemite: L('electrico', ['electrico', 'acero'], 'medio', ['0081', 'Magnemite', 1, [25, 35, 70, 95, 55, 45]], ['0082', 'Magneton', 30, [50, 60, 95, 120, 70, 70]],
     ['0462', 'Magnezone', 45, [70, 70, 115, 130, 90, 60], 'campo magnético']),
   pachirisu: L('electrico', ['electrico'], 'medio', ['0417', 'Pachirisu', 1, [60, 45, 70, 45, 90, 95]]),
@@ -160,6 +160,8 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   // Las evoluciones de Eevee por piedra (EVO_OBJETO): líneas aparte de una sola forma, a las que se pasa usando la
   // piedra (no salen como salvajes ni como visitantes).
   vaporeon: L('agua', ['agua'], 'medio', ['0134', 'Vaporeon', 1, [130, 65, 60, 110, 95, 65], 'piedra agua']),
+  // Raichu: Pikachu + Piedra Trueno, a cualquier nivel (ya no por nivel 30).
+  raichu: L('electrico', ['electrico'], 'medio', ['0026', 'Raichu', 1, [60, 90, 55, 90, 80, 110], 'piedra trueno']),
   jolteon: L('electrico', ['electrico'], 'medio', ['0135', 'Jolteon', 1, [65, 65, 60, 110, 95, 130], 'piedra trueno']),
   flareon: L('fuego', ['fuego'], 'medio', ['0136', 'Flareon', 1, [65, 130, 60, 95, 110, 65], 'piedra fuego']),
   leafeon: L('planta', ['planta'], 'medio', ['0470', 'Leafeon', 1, [65, 110, 130, 60, 65, 95], 'piedra hoja']),
@@ -409,6 +411,7 @@ export const INICIALES = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'c
 // no salen como salvajes, ni como visitantes del pueblo, ni para elegir al empezar.
 export const EVO_OBJETO: Record<string, Record<string, string>> = {
   eevee: { waterstone: 'vaporeon', thunderstone: 'jolteon', firestone: 'flareon', leafstone: 'leafeon', icestone: 'glaceon' },
+  pikachu: { thunderstone: 'raichu' },
 };
 export const RAMAS = new Set(Object.values(EVO_OBJETO).flatMap(o => Object.values(o)));
 
