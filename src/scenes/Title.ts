@@ -63,12 +63,14 @@ export class Title extends Phaser.Scene {
       if (nueva) Partida.borrar();
       this.scene.start('aventura', { nueva: nueva || !hay });
     };
-    const controles = { texto: 'Controles', detalle: GRANJA ? 'WASD, F, B, M…' : 'WASD, 1-0, Tab, K…', hacer: () => this.verControles() };
+    const controles: Opcion = { texto: 'Controles', detalle: GRANJA ? 'WASD, F, B, M…' : 'WASD, 1-0, Tab, K…', hacer: () => this.verControles() };
     const detalle = !res ? '' : aventura ? `${aventura.nombre} Nv ${aventura.nivel} · ${aventura.equipo} Pokémon`
       : `Día ${res.dia} · ${res.aldeanos} ${res.aldeanos === 1 ? 'aldeano' : 'aldeanos'}`;
+    // Nueva partida con una guardada: antes se pregunta, porque borra la anterior.
+    const nueva = () => hay ? this.confirmarBorrar(detalle, () => empezar(true)) : empezar(true);
     const ops: Opcion[] = res
       ? [{ texto: 'Continuar', detalle, hacer: () => empezar(false) },
-        { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: () => empezar(true) }, controles]
+        { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: nueva }, controles]
       : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'Bulbasaur y diez Poké Balls', hacer: () => empezar(true) }, controles];
     if (GRANJA) this.menu(ops); else this.menuAventura(ops);
     if (GRANJA) this.poke('b-Idle', 684, 640, 72, 1600, 0);
@@ -80,7 +82,7 @@ export class Title extends Phaser.Scene {
     kb.on('keydown-DOWN', () => mover(1)); kb.on('keydown-S', () => mover(1));
     if (!GRANJA) { kb.on('keydown-LEFT', () => mover(-1)); kb.on('keydown-A', () => mover(-1)); kb.on('keydown-RIGHT', () => mover(1)); kb.on('keydown-D', () => mover(1)); }
     for (const t of ['ENTER', 'SPACE', 'F']) kb.on('keydown-' + t, () => { if (!this.cubre) ops[this.sel].hacer(); });
-    if (hay) kb.on('keydown-N', () => { if (!this.cubre) empezar(true); });
+    if (hay) kb.on('keydown-N', () => { if (!this.cubre) nueva(); });
 
     // Pixelify Sans puede llegar después de pintar el texto: se repinta al cargarse.
     document.fonts?.ready.then(() => { if (this.sys.isActive()) this.textos.forEach(t => t.updateText()); });
@@ -269,8 +271,60 @@ export class Title extends Phaser.Scene {
     const W = VW * S;
     const y = VH * S / k - 21, c = GRANJA ? '#e9efd9' : '#e8e2cc';
     this.add.rectangle(0, VH * S - D(41), W, D(41), GRANJA ? 0x1c2414 : 0x10142c, GRANJA ? 0.72 : 0.9).setOrigin(0);
-    this.texto(24, y, GRANJA ? 'Intro / clic: elegir · ↑ ↓ mover · N: nueva partida' : 'Intro / clic: elegir · ← → mover · N: nueva partida', 17, c).setOrigin(0, 0.5);
+    this.texto(24, y, GRANJA ? 'Intro / clic: elegir · ↑ ↓ mover · N: nueva partida' : 'Intro / clic: elegir · A/D o flechas: mover · N: nueva partida', 17, c).setOrigin(0, 0.5);
     this.texto(W / k - 24, y, 'Sprites: SpriteCollab (CC BY-NC 4.0) · bayas: pokeemerald · fangame sin ánimo de lucro', 17, c).setOrigin(1, 0.5);
+  }
+
+  // Aviso antes de borrar la partida guardada: «Cancelar» elegido de entrada; ← → (A/D) cambian, Intro/espacio/F
+  // aceptan, Esc cancela. Estilo del título de cada modo (azul noche y oro en aventura, pergamino en granja).
+  private confirmarBorrar(guardada: string, borrar: () => void): void {
+    const W = VW * S, H = VH * S, c = this.add.container(0, 0).setDepth(100), cx = W / k / 2;
+    const av = !GRANJA;
+    const velo = this.add.rectangle(0, 0, W, H, av ? 0x0a0c1c : 0x101808, 0.6).setOrigin(0).setInteractive();
+    const pw = 640, ph = 250, px = cx - pw / 2, py = (H / k - ph) / 2, g = this.add.graphics();
+    if (av) {
+      g.fillStyle(0x0a0c1c).fillRect(D(px + 6), D(py + 6), D(pw), D(ph));
+      g.fillStyle(0x2e1a14).fillRect(D(px), D(py), D(pw), D(ph));
+      g.fillStyle(0xc48830).fillRect(D(px + 4), D(py + 4), D(pw - 8), D(ph - 8));
+      g.fillStyle(0x10142c).fillRect(D(px + 8), D(py + 8), D(pw - 16), D(ph - 16));
+    } else {
+      g.fillStyle(0x3a2412).fillRoundedRect(D(px), D(py), D(pw), D(ph), D(10));
+      g.fillStyle(0xf6e7c1).fillRoundedRect(D(px + 8), D(py + 8), D(pw - 16), D(ph - 16), D(6));
+    }
+    const fuerte = av ? '#fae296' : '#3a2412', suave = av ? '#b8bedc' : '#6b4a2a';
+    const tit = this.texto(cx, py + 50, '¿Borrar la partida guardada?', 28, fuerte, { fontStyle: 'bold' }).setOrigin(0.5);
+    const txt = this.texto(cx, py + 100, `${guardada}
+Se perderá para siempre.`, 18, suave, { align: 'center', lineSpacing: D(4) }).setOrigin(0.5);
+    c.add([velo, g, tit, txt]);
+
+    let elegido = 1;   // 0 = borrar, 1 = cancelar
+    const BW = 220, BH = 56, by = py + ph - 86;
+    const marcos = ['Sí, borrar', 'Cancelar'].map((t, i) => {
+      const bx = cx + (i === 0 ? -BW - 12 : 12), b = this.add.graphics(), sel = this.add.graphics();
+      b.fillStyle(av ? 0x2e1a14 : 0x3a2412).fillRect(D(bx), D(by), D(BW), D(BH));
+      b.fillStyle(i === 0 ? 0x8e2a2a : av ? 0x1e264e : 0xc99a5b).fillRect(D(bx + 4), D(by + 4), D(BW - 8), D(BH - 8));
+      sel.lineStyle(D(4), av ? 0x48c4c4 : 0xc9772b).strokeRect(D(bx - 4), D(by - 4), D(BW + 8), D(BH + 8));
+      const tx = this.texto(bx + BW / 2, by + BH / 2, t, 22, i === 0 || av ? '#fff8d6' : '#3a2412', { fontStyle: 'bold' }).setOrigin(0.5);
+      const zona = this.add.zone(D(bx), D(by), D(BW), D(BH)).setOrigin(0).setInteractive({ useHandCursor: true });
+      zona.on('pointerover', () => { elegido = i; marcar(); });
+      zona.on('pointerdown', () => { elegido = i; aceptar(); });
+      c.add([b, sel, tx, zona]);
+      return sel;
+    });
+    const marcar = () => marcos.forEach((m, i) => m.setVisible(i === elegido));
+    marcar();
+    this.cubre = c;
+
+    const kb = this.input.keyboard!;
+    const cerrar = () => { kb.off('keydown', tecla); c.destroy(); this.time.delayedCall(0, () => { this.cubre = null; }); };
+    const aceptar = () => { if (elegido === 0) { kb.off('keydown', tecla); borrar(); } else cerrar(); };
+    const tecla = (e: KeyboardEvent) => {
+      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'Tab'].includes(e.code)) { elegido = 1 - elegido; marcar(); }
+      else if (['Enter', 'Space', 'KeyF'].includes(e.code)) aceptar();
+      else if (e.code === 'Escape') cerrar();
+    };
+    this.time.delayedCall(0, () => kb.on('keydown', tecla));   // no recoger la misma pulsación que lo abrió
+    velo.on('pointerdown', cerrar);
   }
 
   // Panel con los controles; cualquier tecla o clic lo cierra.
