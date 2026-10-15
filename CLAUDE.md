@@ -21,7 +21,7 @@ cerrados (pueblo + bosque procedural). El juego de antes, estilo Stardew (granja
 - `docs/GDD-mundo.md`: las zonas del modo aventura (pueblo, Bosque Verde, Lago Celeste), cómo se conectan, lo que
   viene (misiones sin diálogo, alfas, mundo continuo) y el arte que falta. Prueba directa de una zona:
   `pv.scene.getScene('title').scene.start('aventura', {mapa: 'lago', desde: 'bosque'})`.
-- `docs/art/ARCANE.md`: el escenario en estilo Arcane (decidido el 2026-10-15), por fases. Se ve con `?set=arcane`
+- `docs/art/ARCANE.md`: el escenario en estilo Arcane (decidido el 2026-10-15), por fases. **Es el estilo por defecto (2026-10-15); `?set=dibujo` vuelve al dibujo solo para comparar**
   (catálogo `lab/assets/elementos_arcane/`, suelo `lab/assets/suelo_arcane/`; lo que falte sale del estilo dibujo).
 - `docs/GDD.md`: diseño del juego de granja (`?modo=granja`).
 - `docs/art/PIPELINE.md`: cómo se hace el arte, estado de cada elemento, herramientas con sus

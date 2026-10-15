@@ -51,7 +51,7 @@ Hace de **referencia de estilo** la escena repintada `assets/gen/ab_lago/escena/
 | **3. Pueblo** | Casas y mobiliario | `casa_grande/cabana/larga/chimenea`, `almacen`, `tienda`, `pozo`, `hoguera`, `valla`, `farola`, `farola_madera`, `camino_c/d/e`, `tablon` (nuevo), ~14 | Pueblo de día y de noche (farolas) |
 | **4. Remate** | Lo que destaque | Contraste de los PMD sobre fondo oscuro (un borde claro sutil si hace falta), HUD con marcos a juego, sombras | Pase completo pueblo → bosque → lago |
 
-Cuando las tres zonas estén hechas, `?set=arcane` pasa a ser el modo por defecto. El dibujo se queda como `?set=klein`.
+**Hecho (2026-10-15): Arcane es el modo por defecto.** El dibujo se ve con `?set=dibujo`.
 
 **Coste estimado:** ~38 piezas × 3 semillas a ~1 min en la 3060 Ti dan ~2 h de máquina, más la elección y el
 recorte. Las casas son lo más delicado: hay que conservar la huella y la puerta, porque `SUELOS` y las colisiones
@@ -156,7 +156,7 @@ Capturas: [pueblo_vista](arcane/pueblo_vista.jpg), [pueblo_dia](arcane/pueblo_di
 - **Catálogo Arcane:** 40 elementos. Las tres zonas están completas con `?set=arcane`.
 
 ### Siguiente: fase 4 (remate)
-- Probar si `?set=arcane` pasa a ser el modo por defecto.
+- ~~Probar si `?set=arcane` pasa a ser el modo por defecto.~~ Hecho: es el de por defecto (`?set=dibujo` para comparar).
 - El agua lisa y la sombra doble de los árboles (pendientes de la fase 1).
 - Las manchas de arena del pueblo se ven como manchas planas.
 - Que los Pokémon se lean bien sobre el fondo oscuro, y los marcos del HUD a juego.

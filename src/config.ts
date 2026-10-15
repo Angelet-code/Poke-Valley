@@ -15,9 +15,10 @@ export const NUEVA = params.has('nueva');
 export const GRANJA = params.get('modo') === 'granja';
 // ?galeria: galería de animaciones de movimientos (scenes/Galeria.ts) en lugar del título.
 export const GALERIA = params.has('galeria');
-// ?set=arcane: el escenario en estilo Arcane (docs/art/ARCANE.md): catálogo lab/assets/elementos_arcane/ (lo que
-// aún no tenga sale del catálogo dibujo), suelo con lab/assets/suelo_arcane/ y PALETA_ARCANE. Sin él, el estilo dibujo.
-export const ARCANE = params.get('set') === 'arcane';
+// El escenario va en estilo Arcane (docs/art/ARCANE.md), el de siempre desde 2026-10-15: catálogo
+// lab/assets/elementos_arcane/ (lo que aún no tenga sale del catálogo dibujo), suelo con lab/assets/suelo_arcane/ y
+// PALETA_ARCANE. ?set=dibujo vuelve al estilo dibujo, solo para comparar.
+export const ARCANE = params.get('set') !== 'dibujo';
 
 // Claves del registro de Phaser donde Boot deja los datos cargados.
 export const REG = { mapa: 'mapa', objs: 'objs', bayas: 'bayas', anims: 'anims', animsAldeanos: 'animsAldeanos', pelipper: 'animsPelipper', dibujo: 'dibujo' } as const;
