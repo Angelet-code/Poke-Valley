@@ -10,7 +10,7 @@ Misiones y alfas: §2.
 ## 1. Zonas de la v1
 
 ```
-  Lago Celeste (nv 5-10) ◄── este ── Bosque Verde (nv 1-7) ◄── camino del sur ── Pueblo
+  Lago Celeste (nv 5-10) ◄── este ── Bosque Verde (nv 1-7) ◄── camino del norte ── Pueblo
 ```
 
 | Zona | Nivel | Qué hay | Especies | Estado |
@@ -37,9 +37,11 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
 
 - **Plaza central** (losas): la hoguera en medio, el tablón de misiones al oeste, el pozo al este y farolas alrededor.
   Apareces al sur de la hoguera.
-- **Avenida** (losas): de la boca sur del pueblo (salida al bosque, con su poste) a la plaza.
+- **Avenida** (losas): de la boca norte del pueblo (salida al bosque, con su poste y dos farolas) a la plaza, entre
+  tu casa y la casa larga. Desde el 2026-10-15 la boca está al norte para que el mundo cuadre: el bosque queda encima
+  del pueblo y su salida al pueblo está abajo. Al sur, una calle de tierra baja de la plaza a los solares.
 - **Calle del norte** (tierra): las casas en fila con la puerta a la calle. De oeste a este: la cabaña, **tu casa**
-  (sobre la plaza) y la casa larga.
+  (al noroeste de la plaza) y la casa larga; entre las dos últimas sube la avenida.
 - **Oeste:**
   - la casa de la chimenea;
   - el **huerto**: 6 parcelas, cada una un corral de valla, sobre una mancha de tierra orgánica. Es el sitio para
@@ -47,7 +49,7 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
   - el estanque al lado para regar.
 - **Este, el mercado:** la tienda y el almacén, unidos a la plaza por una calle.
 - **Solares libres** (`SOLARES`): dos trozos de césped al sur, para edificios futuros.
-- **Borde:** dos filas de árboles, con la boca del sur libre. Junto al huerto y al mercado la fila interior se aparta
+- **Borde:** dos filas de árboles, con la boca del norte libre. Junto al huerto y al mercado la fila interior se aparta
   para no taparlos.
 
 ### Formato de una zona (`MapaAventura`)
@@ -120,6 +122,8 @@ Cómo es (constantes `ALFA_*` en Aventura.ts):
   Rueda arriba o clic en tu zona vuelve a la zona. La miniatura la pinta `Aventura.miniatura` al entrar en cada zona
   (el suelo y el escenario en un canvas de 360 px, sin Pokémon) y se guarda en localStorage
   `pokemon-valley/miniaturas`, por estilo y semilla.
+- **El mundo cuadra**: cada salida está en el lado por el que queda su zona en la cuadrícula. `revisarSalidas`
+  (`data/mundo.ts`) lo comprueba al entrar en cada zona y avisa en la consola si no (o si falta el camino).
 - **Puntos de vuelo**, por hacer: un Pokémon volador en cada zona; F a su lado abre el mapa y el punto que elijas con
   el ratón es a donde te lleva volando.
 

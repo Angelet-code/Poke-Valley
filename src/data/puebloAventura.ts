@@ -1,15 +1,16 @@
 // El pueblo del modo aventura (docs/GDD-mundo.md §1), distribuido por zonas (2026-10-15). El del modo granja sigue en
-// mapaDibujo.ts, sin cambios. Mismo tamaño (42×38 casillas) y la misma boca al sur, por donde se sale al bosque.
+// mapaDibujo.ts, sin cambios. Mismo tamaño (42×38 casillas). La boca está al norte (2026-10-15): el pueblo queda al
+// sur del mundo y el bosque encima (data/mundo.ts), y la salida del bosque al pueblo está abajo.
 //
-//   ┌──────────────────── bosque ────────────────────┐
-//   │  cabaña        TU CASA          casa larga     │   ← calle del norte (tierra), con las puertas
-//   │      ╲            │                  ╱         │
+//   ┌─────────────────── bosque ─────────────────────┐
+//   │  cabaña     TU CASA    avenida     casa larga  │   ← calle del norte (tierra), con las puertas
+//   │      ╲         ╲          │          ╱         │
 //   │ chimenea ── PLAZA (hoguera, tablón, pozo) ── tienda
-//   │      │            │                  │         │
-//   │  HUERTO (6        │     solar          almacén │
-//   │  parcelas)  estanque   avenida                 │
-//   │      solar        │                            │
-//   └─────────────────── salida ─────────────────────┘
+//   │      │                    │              │     │
+//   │  HUERTO (6             calle del sur  almacén  │
+//   │  parcelas)  estanque      │                    │
+//   │      solar                │     solar          │
+//   └────────────────────────────────────────────────┘
 //
 // Suelo: 2 (losas) en la plaza y la avenida principal, 1 (tierra) en las calles y dentro de las parcelas del huerto.
 // Las parcelas son corrales de valla con tierra dentro: el sitio para sembrar bayas cuando el modo aventura las tenga.
@@ -29,16 +30,16 @@ export const PLAZA: P = [504, 470];                 // centro de la plaza
 const R_PLAZA = 78;
 export const TABLON = { x: 440, y: 452 };           // tablón de misiones, al oeste de la hoguera
 export const INICIO: P = [504, 540];                // donde apareces (en la plaza, al sur de la hoguera)
-export const SALIDA_X: [number, number] = [520, 600]; // boca sur del pueblo
+export const SALIDA_X: [number, number] = [520, 600]; // boca norte del pueblo (al bosque)
 // Parcelas del huerto (centro de cada corral) y solares libres para construir.
 export const PARCELAS: P[] = [[150, 640], [222, 640], [294, 640], [150, 712], [222, 712], [294, 712]];
 export const SOLARES: Rect[] = [{ x0: 640, y0: 760, x1: 900, y1: 870 }, { x0: 330, y0: 760, x1: 480, y1: 870 }];
 
 // ---- Calles (polilíneas) ----
-const AVENIDA: P[] = [[560, H + 10], [556, 800], [540, 640], [510, 540]];                                // losas
+const AVENIDA: P[] = [[560, -10], [562, 120], [552, 240], [536, 334], [516, 400]];                        // losas: boca norte → plaza
 const CALLES: P[][] = [
   [[110, 334], [300, 330], [470, 326], [640, 330], [900, 334]],      // calle del norte, delante de las puertas
-  [[504, 392], [500, 334]],                                          // plaza → calle del norte (tu casa)
+  [[510, 540], [540, 640], [556, 780]],                              // calle del sur: plaza → solares
   [[582, 478], [700, 500], [780, 548], [800, 620], [800, 780]],      // plaza → tienda → almacén
   [[426, 478], [330, 520], [262, 560], [222, 600]],                  // plaza → huerto
   [[330, 520], [250, 500], [190, 500]],                              // → casa de la chimenea
@@ -68,14 +69,15 @@ export function terrenoPueblo(): MapData {
     }
     vert.push(fila);
   }
-  return { mw: MW, mh: MH, vert, inicio: INICIO, entrada: [560, H - 20], solares: SOLARES.map(s => [s.x0, s.y0, s.x1, s.y1]) };
+  return { mw: MW, mh: MH, vert, inicio: INICIO, entrada: [560, 20], solares: SOLARES.map(s => [s.x0, s.y0, s.x1, s.y1]) };
 }
 
 // ---- Lo colocado ----
 const EDIFICIOS: Colocado[] = [
   // Calle del norte: las puertas dan a la calle (quedan ~30 px a la izquierda y ~15 por encima del pie de la casa).
-  { id: 'casa_cabana', x: 220, y: 306 },
-  { id: 'casa_grande', x: 530, y: 304, rol: 'casa' },     // tu casa, sobre la plaza
+  // Entre tu casa y la casa larga, la avenida sube a la boca norte.
+  { id: 'casa_cabana', x: 190, y: 306 },
+  { id: 'casa_grande', x: 380, y: 304, rol: 'casa' },     // tu casa, al noroeste de la plaza
   { id: 'casa_larga', x: 800, y: 306 },
   // Oeste: la casa de la chimenea. Este: el mercado.
   { id: 'casa_chimenea', x: 150, y: 486 },
@@ -88,11 +90,11 @@ const PLAZA_COSAS: Colocado[] = [
   // Farolas alrededor de la plaza y a la entrada de cada calle.
   { id: 'farola', x: 436, y: 404 }, { id: 'farola', x: 574, y: 404, flip: true },
   { id: 'farola', x: 432, y: 530 }, { id: 'farola', x: 580, y: 530, flip: true },
-  { id: 'farola_madera', x: 640, y: 352 }, { id: 'farola_madera', x: 360, y: 352, flip: true },
+  { id: 'farola_madera', x: 640, y: 352 }, { id: 'farola_madera', x: 284, y: 352, flip: true },
   { id: 'farola_madera', x: 760, y: 610 }, { id: 'farola_madera', x: 300, y: 560, flip: true },
-  { id: 'farola', x: 520, y: 878 }, { id: 'farola', x: 602, y: 878, flip: true },   // boca del pueblo
+  { id: 'farola', x: 514, y: 176 }, { id: 'farola', x: 606, y: 176, flip: true },   // boca del pueblo
   { id: 'farola', x: 520, y: 700 },
-  { id: 'poste', x: 500, y: H - 40 },
+  { id: 'poste', x: 500, y: 130 },
 ];
 // Huerto: un corral de valla por parcela (con tierra dentro), el estanque para regar y algún detalle.
 const HUERTO: Colocado[] = [
@@ -102,7 +104,7 @@ const HUERTO: Colocado[] = [
 ];
 // Verde: árboles en grupos por los rincones y entre zonas, arbustos junto a las casas, flores a los lados de las calles.
 const VERDE: Colocado[] = [
-  { id: 'arbol_alto', x: 380, y: 250 }, { id: 'arbol_bajo', x: 676, y: 246, flip: true },
+  { id: 'arbol_alto', x: 260, y: 248 }, { id: 'arbol_bajo', x: 676, y: 246, flip: true },
   { id: 'arbol_alto', x: 660, y: 440 }, { id: 'arbol_bajo', x: 690, y: 690, flip: true },
   { id: 'arbol_alto', x: 340, y: 450, flip: true }, { id: 'arbol_bajo', x: 440, y: 800 },
   { id: 'arbusto', x: 300, y: 300 }, { id: 'arbusto', x: 640, y: 296, flip: true }, { id: 'arbusto', x: 940, y: 640 },
@@ -111,14 +113,15 @@ const VERDE: Colocado[] = [
   { id: 'roca_4', x: 720, y: 830 }, { id: 'roca_6', x: 860, y: 860, s: 0.8 }, { id: 'roca_1', x: 380, y: 840, s: 0.8 },
   { id: 'tocon', x: 700, y: 400 },
 ];
-// Borde: dos filas de árboles (y alguna roca) alrededor, con la boca del sur libre.
+// Borde: dos filas de árboles (y alguna roca) alrededor, con la boca del norte libre.
 function borde(): Colocado[] {
   const out: Colocado[] = [];
   let n = 0;
   const id = () => (n++ % 3 === 0 ? 'arbol_bajo' : 'arbol_alto');
   for (let x = 20; x <= W - 10; x += 44) {
-    out.push({ id: id(), x, y: 40 + (n % 2) * 14, flip: n % 2 === 0 }, { id: id(), x: x + 22, y: 96 + (n % 3) * 8 });
-    if (x < SALIDA_X[0] - 70 || x > SALIDA_X[1] + 50) out.push({ id: id(), x, y: H + 10 - (n % 2) * 10, flip: n % 2 === 1 });
+    if (x < SALIDA_X[0] - 70 || x > SALIDA_X[1] + 30) out.push({ id: id(), x, y: 40 + (n % 2) * 14, flip: n % 2 === 0 });
+    if (x + 22 < SALIDA_X[0] - 50 || x + 22 > SALIDA_X[1] + 40) out.push({ id: id(), x: x + 22, y: 96 + (n % 3) * 8 });
+    out.push({ id: id(), x, y: H + 10 - (n % 2) * 10, flip: n % 2 === 1 });
   }
   for (let y = 150; y <= H - 30; y += 46) {
     out.push({ id: id(), x: 24 + (n % 2) * 8, y }, { id: id(), x: W - 20 - (n % 2) * 8, y, flip: true });

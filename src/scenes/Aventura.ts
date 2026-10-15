@@ -10,7 +10,7 @@ import { REG, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, enMacizo } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
-import { guardarMiniatura } from '../data/mundo';
+import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { FORMAS } from '../data/pokedex';
 import type { Mision } from '../combate/misiones';
 import { dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
@@ -136,6 +136,7 @@ export class Aventura extends Phaser.Scene {
     this.red?.presentar(this.partida.estado.semilla);
     this.semillaMapa = this.red?.semilla ?? this.partida.estado.semilla;
     this.mapa = crearMapa(id, this.semillaMapa);
+    for (const aviso of revisarSalidas(this.mapa)) console.warn('Mapa del mundo:', aviso);
     this.partida.guardar();
 
     // Luz: el pipeline cel para los Pokémon con normales y Light2D para todo lo demás (como WorldScene).
@@ -208,7 +209,7 @@ export class Aventura extends Phaser.Scene {
       this.events.emit('zona', { nombre: mapa.nombre, lema: mapa.lema });
       this.aviso(mapa.id !== 'pueblo' ? mapa.bienvenida
         : this.partida.estado.equipo.length > 1 ? 'El pueblo. Pulsa F junto a uno de tus Pokémon para convertirte en él, o junto al tablón de la plaza para ver las misiones.'
-        : 'El pueblo. F junto al tablón de la plaza: misiones. El camino del sur lleva al bosque. Teclas 1-0: tu barra (K para colocar movimientos).');
+        : 'El pueblo. F junto al tablón de la plaza: misiones. El camino del norte lleva al bosque. Teclas 1-0: tu barra (K para colocar movimientos).');
     });
   }
 

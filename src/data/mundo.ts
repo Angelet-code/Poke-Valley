@@ -31,3 +31,20 @@ export function miniaturas(semilla: number): Partial<Record<MapaId, string>> {
 export function guardarMiniatura(semilla: number, id: MapaId, datos: string): void {
   try { localStorage.setItem(CLAVE, JSON.stringify({ clave: claveDe(semilla), zonas: { ...miniaturas(semilla), [id]: datos } })); } catch { /* sin almacenamiento: solo esta sesión */ }
 }
+
+// Cada salida tiene que estar en el lado por el que queda su zona en el mundo (si sales del pueblo por el norte, el
+// bosque está encima y su salida al pueblo, abajo). Aventura lo revisa al montar cada zona y avisa en la consola.
+export function revisarSalidas(m: { id: MapaId; W: number; H: number; salidas: { x0: number; y0: number; x1: number; y1: number; a: MapaId }[] }): string[] {
+  const aqui = ZONAS_MUNDO.find(z => z.id === m.id), mal: string[] = [];
+  if (!aqui) return mal;
+  for (const s of m.salidas) {
+    const alla = ZONAS_MUNDO.find(z => z.id === s.a);
+    if (!alla) continue;
+    const cx = (s.x0 + s.x1) / 2, cy = (s.y0 + s.y1) / 2, d = [cy, m.H - cy, m.W - cx, cx], lado = ['n', 's', 'e', 'o'][d.indexOf(Math.min(...d))];
+    const dc = alla.col - aqui.col, df = alla.fila - aqui.fila;
+    const toca = Math.abs(dc) + Math.abs(df) !== 1 ? null : df === -1 ? 'n' : df === 1 ? 's' : dc === 1 ? 'e' : 'o';
+    if (!CAMINOS.some(([a, b]) => (a === m.id && b === s.a) || (b === m.id && a === s.a))) mal.push(`${m.id} → ${s.a}: falta el camino en data/mundo.ts`);
+    if (toca !== lado) mal.push(`${m.id} → ${s.a}: la salida está al ${lado} pero en el mundo ${s.a} ${toca ? `queda al ${toca}` : 'no es vecina'}`);
+  }
+  return mal;
+}

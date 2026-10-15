@@ -1,6 +1,6 @@
 // Zonas del modo aventura (docs/GDD-mundo.md): mapas en estilo dibujo (elementos Klein, render/Dibujo.ts) unidos por
 // sus bordes. El mundo es fijo: cada zona procedural sale siempre igual con la semilla de la partida.
-// - Pueblo: el de siempre (data/mapaDibujo.ts). Solo estás tú y los Pokémon que has capturado. Por el camino del sur
+// - Pueblo: el de siempre (data/mapaDibujo.ts). Solo estás tú y los Pokémon que has capturado. Por el camino del norte
 //   se sale al bosque.
 // - Bosque Verde (nv 1-7): un borde espeso de árboles lo cierra; dentro, claros unidos por senderos de tierra que
 //   salen de la entrada (abajo, en el centro), árboles sueltos, rocas, arbustos y quizá un estanque. Los salvajes
@@ -48,9 +48,9 @@ export function pueblo(): MapaAventura {
   const datos = terrenoPueblo(), [ix, iy] = datos.inicio ?? [504, 540];
   return {
     id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS_PUEBLO, { id: ARCANE ? 'tablon' : 'valla', x: TABLON.x, y: TABLON.y }], detalles: 40,
-    lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del sur lleva al bosque.',
-    llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: H_PUEBLO - 46, dir: 4 } },
-    salidas: [{ x0: 520, y0: H_PUEBLO - 14, x1: 600, y1: H_PUEBLO, a: 'bosque', texto: 'Al bosque' }],
+    lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del norte lleva al bosque.',
+    llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: 46, dir: 0 } },
+    salidas: [{ x0: 520, y0: 0, x1: 600, y1: 14, a: 'bosque', texto: 'Al bosque' }],
     salvajes: [],
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
