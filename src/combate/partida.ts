@@ -108,6 +108,13 @@ export class Partida {
     const m = p.activo;
     return { nombre: formaDe(m.linea, m.nivel).nombre, nivel: m.nivel, equipo: p.estado.equipo.length, dia: p.estado.dia, usuario: p.estado.usuario };
   }
+  // Cambia el nombre de usuario de la partida guardada (desde el título).
+  static renombrar(usuario: string): void {
+    const p = Partida.cargar();
+    if (!p) return;
+    p.estado.usuario = usuario;
+    p.guardar();
+  }
   guardar(): void { try { localStorage.setItem(CLAVE, JSON.stringify(this.estado)); } catch { /* sin almacenamiento: se juega igual */ } }
 
   // Partidas de antes del nombre de usuario: «Jugador».

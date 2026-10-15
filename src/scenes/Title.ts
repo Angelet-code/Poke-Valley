@@ -72,7 +72,9 @@ export class Title extends Phaser.Scene {
     const nueva = () => hay ? this.confirmarBorrar(detalle, () => empezar(true)) : empezar(true);
     const ops: Opcion[] = res
       ? [{ texto: 'Continuar', detalle, hacer: () => empezar(false) },
-        { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: nueva }, controles]
+        { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: nueva },
+        ...(aventura ? [{ texto: 'Cambiar nombre', detalle: aventura.usuario ?? 'Jugador', hacer: () => this.cambiarNombre(aventura.usuario ?? '') }] : []),
+        controles]
       : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'elige compañero y diez Poké Balls', hacer: () => empezar(true) }, controles];
     if (GRANJA) this.menu(ops); else this.menuAventura(ops);
     if (GRANJA) this.poke('b-Idle', 684, 640, 72, 1600, 0);
@@ -327,6 +329,70 @@ Se perderá para siempre.`, 18, suave, { align: 'center', lineSpacing: D(4) }).s
     };
     this.time.delayedCall(0, () => kb.on('keydown', tecla));   // no recoger la misma pulsación que lo abrió
     velo.on('pointerdown', cerrar);
+  }
+
+  // Cartel para cambiar el nombre de usuario de la partida guardada. Mismas reglas que al crearla
+  // (Eleccion.ts): letras, números, espacio, guion, guion bajo y punto; Intro guarda, Esc cancela.
+  private cambiarNombre(actual: string): void {
+    const MIN = 3, MAX = 20;
+    const W = VW * S, H = VH * S, cx = W / k / 2, pw = 620, ph = 290, px = cx - pw / 2, py = (H / k - ph) / 2;
+    const c = this.add.container(0, 0).setDepth(100);
+    const velo = this.add.rectangle(0, 0, W, H, 0x0a0c1c, 0.7).setOrigin(0).setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(0x0a0c1c).fillRect(D(px + 6), D(py + 6), D(pw), D(ph));
+    g.fillStyle(0x2e1a14).fillRect(D(px), D(py), D(pw), D(ph));
+    g.fillStyle(0xc48830).fillRect(D(px + 4), D(py + 4), D(pw - 8), D(ph - 8));
+    g.fillStyle(0x10142c).fillRect(D(px + 8), D(py + 8), D(pw - 16), D(ph - 16));
+    const bw = 440, bh = 60, bx = cx - bw / 2, by = py + 100;
+    g.fillStyle(0x2e1a14).fillRect(D(bx - 4), D(by - 4), D(bw + 8), D(bh + 8));
+    g.fillStyle(0x1e264e).fillRect(D(bx), D(by), D(bw), D(bh));
+    g.lineStyle(D(4), 0x48c4c4).strokeRect(D(bx - 4), D(by - 4), D(bw + 8), D(bh + 8));
+    const tit = this.texto(cx, py + 50, 'CAMBIAR NOMBRE', 28, '#fae296', { fontStyle: 'bold' }).setOrigin(0.5).setLetterSpacing(D(3));
+    const campo = this.texto(cx, by + bh / 2, '', 28, '#fff8d6', { fontStyle: 'bold' }).setOrigin(0.5);
+    const base = `De ${MIN} a ${MAX} letras o números · Intro: guardar · Esc: cancelar`;
+    const aviso = this.texto(cx, by + bh + 26, base, 15, '#b8bedc').setOrigin(0.5);
+    let nombre = actual.slice(0, MAX), cursor = true;
+    const pintar = () => campo.setText(nombre + (cursor ? '_' : ' '));
+    pintar();
+    const parpadeo = this.time.addEvent({ delay: 450, loop: true, callback: () => { cursor = !cursor; pintar(); } });
+
+    // Botones «Guardar» y «Cancelar».
+    const BW = 200, BH = 52, byb = py + ph - 78;
+    const boton = (t: string, bxb: number, hacer: () => void) => {
+      const b = this.add.graphics();
+      b.fillStyle(0x2e1a14).fillRect(D(bxb), D(byb), D(BW), D(BH));
+      b.fillStyle(0xc48830).fillRect(D(bxb + 4), D(byb + 4), D(BW - 8), D(BH - 8));
+      b.fillStyle(0x30264e).fillRect(D(bxb + 8), D(byb + 8), D(BW - 16), D(BH - 16));
+      const tx = this.texto(bxb + BW / 2, byb + BH / 2, t, 20, '#fff8d6', { fontStyle: 'bold' }).setOrigin(0.5);
+      const z = this.add.zone(D(bxb), D(byb), D(BW), D(BH)).setOrigin(0).setInteractive({ useHandCursor: true });
+      z.on('pointerdown', hacer);
+      return [b, tx, z];
+    };
+    const cerrar = () => {
+      window.removeEventListener('keydown', tecla); parpadeo.remove(); c.destroy();
+      this.time.delayedCall(0, () => { this.cubre = null; });
+    };
+    const guardar = () => {
+      const n = nombre.trim();
+      if (n.length < MIN) { aviso.setText(`Pon al menos ${MIN} letras`).setColor('#ff9a8a'); return; }
+      Partida.renombrar(n);
+      cerrar();
+      this.scene.restart();   // el botón de «Cambiar nombre» y el de «Continuar» enseñan el nombre nuevo
+    };
+    const tecla = (e: KeyboardEvent) => {
+      if (e.repeat && e.key !== 'Backspace') return;
+      if (e.key === 'Enter') { guardar(); return; }
+      if (e.key === 'Escape') { cerrar(); return; }
+      if (e.key === 'Backspace') nombre = nombre.slice(0, -1);
+      else if (e.key.length === 1 && /^[\p{L}\p{N} _.\-]$/u.test(e.key) && nombre.length < MAX && !(e.key === ' ' && (!nombre || nombre.endsWith(' ')))) nombre += e.key;
+      else return;
+      aviso.setText(base).setColor('#b8bedc');
+      cursor = true; pintar();
+    };
+    c.add([velo, g, tit, campo, aviso, ...boton('Guardar', cx - BW - 12, guardar), ...boton('Cancelar', cx + 12, cerrar)]);
+    this.cubre = c;
+    this.time.delayedCall(0, () => window.addEventListener('keydown', tecla));   // la tecla que lo abrió no se escribe
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('keydown', tecla));
   }
 
   // Panel con los controles; cualquier tecla o clic lo cierra.
