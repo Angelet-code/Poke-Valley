@@ -24,8 +24,10 @@ export const NOMBRE_ZONA: Record<MapaId, string> = { pueblo: 'Pueblo', bosque: '
   costa: 'Costa Brisa', cantera: 'Cantera Gris', pantano: 'Pantano Umbrío', ruinas: 'Ruinas Antiguas', volcan: 'Volcán Ascua', nieve: 'Cumbres Heladas', taller: 'Taller', ciudad: 'Ciudad' };
 // Por zona: cuántos derrotar y lo que da cada misión además de la experiencia.
 const AJUSTE: Partial<Record<MapaId, { derrotar: number; items: Record<TipoMision, [string, number][]> }>> = {
-  bosque: { derrotar: 5, items: { derrotar: [['oran', 3]], capturar: [['pokeball', 3]], alfa: [['superball', 2], ['sitrus', 2]] } },
-  lago: { derrotar: 6, items: { derrotar: [['sitrus', 2]], capturar: [['superball', 2]], alfa: [['ultraball', 2], ['sitrus', 3]] } },
+// Acorde al nivel de la zona (combate/botin.ts): en el bosque nada mejor que Poké Balls y Pociones; el alfa del lago
+// (Nv 12) ya da lo del siguiente escalón.
+  bosque: { derrotar: 5, items: { derrotar: [['oran', 3]], capturar: [['pokeball', 3]], alfa: [['pokeball', 5], ['pocion', 3]] } },
+  lago: { derrotar: 6, items: { derrotar: [['pocion', 3]], capturar: [['pokeball', 4]], alfa: [['superball', 2], ['superpocion', 2]] } },
 };
 
 function deZona(m: MapaAventura): Mision[] {

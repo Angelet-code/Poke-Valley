@@ -128,6 +128,7 @@ export class Aventura extends Phaser.Scene {
   private tLuz = 0;
   private vistas = new Map<string, Vista>();
   private balls = new Map<number, Phaser.GameObjects.Image>();
+  private suelo = new Map<number, Phaser.GameObjects.Image>();   // objetos tirados (Mundo.hallazgos): una Poké Ball, como en los juegos
   private siguiendo: Phaser.GameObjects.Sprite | null = null;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private anillo!: Phaser.GameObjects.Ellipse;
@@ -174,7 +175,7 @@ export class Aventura extends Phaser.Scene {
   }
 
   private async montar(data: DatosMapa, n: number): Promise<void> {
-    this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.panel = null; this.asignando = null;
+    this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
     this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
     this.placas.clear();
@@ -721,6 +722,18 @@ export class Aventura extends Phaser.Scene {
     } catch (e) { console.warn('animación', id, e); }
     commit();
   }
+  // Objetos del suelo: se ven como una Poké Ball (no se sabe qué es hasta cogerlo); al cogerlo desaparece.
+  private pintarSuelo(): void {
+    for (const h of this.mundo!.hallazgos) {
+      let img = this.suelo.get(h.i);
+      if (!img) {
+        img = this.add.image(h.x, h.y, 'obj_pokeball').setOrigin(0.5, 0.9).setDepth(h.y);
+        img.resetPipeline();
+        this.suelo.set(h.i, img);
+      }
+      img.setVisible(!!h.item);
+    }
+  }
   // Poké Ball: vuela hasta el salvaje y se mueve hasta que el mundo diga si se queda (`finBall`).
   private lanzarBall(s: Extract<Suceso, { tipo: 'ball' }>): void {
     const key = this.textures.exists('obj_' + s.item) ? 'obj_' + s.item : 'icono_' + s.item;
@@ -1007,6 +1020,7 @@ export class Aventura extends Phaser.Scene {
     this.aclarar(dtMs);
     for (const l of [...mundo.todos(), ...mundo.remotos]) this.dibujar(l, this.vistaDe(l));
     this.pintarPlacas();
+    this.pintarSuelo();
     this.pintarMarca();
     this.pasoTablon();
     this.pasoVuelo();

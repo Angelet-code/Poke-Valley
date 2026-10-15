@@ -40,6 +40,7 @@ export interface Estado {
   semilla: number;                            // del mundo: las zonas procedurales salen siempre igual (data/bosque.ts)
   misiones?: Record<string, { n: number; hecha?: boolean }>;   // aceptadas en el tablón: lo que llevas (combate/misiones.ts)
   alfas?: Record<string, number>;             // por zona: cuándo cayó su alfa (Date.now()); reaparece a los 5 min
+  hallados?: Record<string, { t: number; n: number }>;   // objetos del suelo (`zona:i`): cuándo lo cogiste (Date.now()) y cuántas veces
   hogar?: number;                             // Date.now() desde el que se puede volver a usar la piedra de hogar
   vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
 }

@@ -2,7 +2,7 @@
 // `icono` es la clave de textura (los recolectables usan su propio sprite pixel art;
 // las bayas, el icono de 24×24 de Esmeralda).
 
-export type ItemKind = 'recolectable' | 'baya' | 'pokeball';
+export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina';
 
 export interface ItemDef {
   id: string;
@@ -10,6 +10,7 @@ export interface ItemDef {
   precio: number;      // Pokédólares por unidad en la caja de envío
   tipo: ItemKind;
   icono: string;       // clave de textura de Phaser
+  cura?: number;       // medicinas: PS que devuelve (como en los juegos: Poción 20, Super 60, Hiper 120)
 }
 
 export const BAYAS_SALVAJES = ['oran', 'cheri', 'pecha', 'rawst', 'aspear', 'leppa', 'sitrus', 'razz', 'wiki', 'mago'];
@@ -34,6 +35,10 @@ export const ITEMS: Record<string, ItemDef> = {
   ultraball: { id: 'ultraball', nombre: 'Ultra Ball', precio: 120, tipo: 'pokeball', icono: 'icono_ultraball' },
   masterball: { id: 'masterball', nombre: 'Master Ball', precio: 500, tipo: 'pokeball', icono: 'icono_masterball' },
   honorball: { id: 'honorball', nombre: 'Honor Ball', precio: 60, tipo: 'pokeball', icono: 'icono_honorball' },
+  // Modo aventura: se encuentran por el suelo y las sueltan los salvajes, según el nivel (combate/botin.ts).
+  pocion: { id: 'pocion', nombre: 'Poción', precio: 30, tipo: 'medicina', icono: 'icono_pocion', cura: 20 },
+  superpocion: { id: 'superpocion', nombre: 'Superpoción', precio: 70, tipo: 'medicina', icono: 'icono_superpocion', cura: 60 },
+  hiperpocion: { id: 'hiperpocion', nombre: 'Hiperpoción', precio: 120, tipo: 'medicina', icono: 'icono_hiperpocion', cura: 120 },
 };
 
 // Las bayas del catálogo se registran al cargar bayas.json (una entrada por baya).

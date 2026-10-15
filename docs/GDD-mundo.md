@@ -106,9 +106,24 @@ Cómo es (constantes `ALFA_*` en Aventura.ts):
   y los aros con un Aerodactyl dorado de Klein (`assets/gen/pixel/ui_dragon/final/`).
 - **Golpe anunciado**: cada 8-11 s, si estás a menos de 190 px, se para a cargar y marca un círculo rojo en el suelo
   donde estás; se llena en 1,8 s y, si sigues dentro, te quita el 35 % de la vida. Si sales: "¡Esquivado!".
-- Da el triple de experiencia y suelta siempre una Super Ball (bosque) o Ultra Ball (lago) y una Baya Zidra.
+- Da el triple de experiencia y suelta siempre lo mejor de su nivel ×2: Ball y cura (§2b; Pidgeotto, Poké Ball y
+  Poción; Golduck, Super Ball y Superpoción).
 - **Reaparece a los 5 minutos** de tiempo real: la hora de su caída se guarda en `estado.alfas`, así que cuenta
   aunque cambies de zona.
+
+### 2b. Botín y objetos del suelo, por nivel (2026-10-15)
+Como en los juegos: lo que encuentras va con el nivel. `src/combate/botin.ts` tiene la tabla de pesos por escalón:
+- **Nv < 10** (bosque, lago): Baya Aranja, Poción, Poké Ball. Nunca Super ni Hiper.
+- **Nv 10-17**: entran Superpoción, Baya Zidra y Super Ball (la Poké Ball sigue siendo la Ball más común).
+- **Nv 18+**: Hiperpoción y Ultra Ball; Super Ball y Superpoción pasan a ser lo normal.
+
+- **Salvajes**: uno de cada tres suelta algo, sorteado con **su** nivel. El alfa, siempre lo mejor de su escalón ×2.
+- **Suelo**: 5 por zona (no en el pueblo), cerca de donde rondan los salvajes y lejos de las entradas, siempre en el
+  mismo sitio (semilla de la partida). Se ven como una Poké Ball; qué es se sabe al pisarla (se coge sola). Lo que son
+  sale del nivel de la zona (la mediana de sus salvajes). Vuelve a haber algo a los 10 min reales (`estado.hallados`).
+- **Pociones** (curan PS fijos, como en los juegos): Poción 20, Superpoción 60, Hiperpoción 120. Iconos: la poción
+  de Klein (`assets/gen/recursos/pokeitems/px/pocion_s2.png`) con el tono girado, `tools/iconos_pociones.py`.
+- Misiones (§2) con premios del mismo nivel: el bosque da Poké Balls y Pociones.
 
 ### Mapa y puntos de vuelo (2026-10-15)
 - **Mapa (M)**, hecho: la zona entera desde arriba, a pantalla completa con marco de pergamino. Es una segunda cámara

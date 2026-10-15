@@ -464,7 +464,7 @@ export class HudAventura extends Phaser.Scene {
       const lanza = pf.lanza === 'cast' ? `Lanzamiento ${seg(pf.t)}` : pf.lanza === 'canal' ? `Canalizado ${seg(pf.t)}` : 'Instantáneo';
       const extra = [pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
       txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}`;
-    } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : 'Te cura un poco'}`;
+    } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : ITEMS[a.i]?.cura ? `Te cura ${ITEMS[a.i]!.cura} PS` : 'Te cura un poco'}`;
     this.ficha.setText(txt).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, cx = carta ? carta.x + carta.w / 2 : BX + 4 + i * (CW + HUECO) + CW / 2;
     const x = Math.max(4, Math.min(VW - w - 4, cx - w / 2)), y = carta ? (carta.y - h - 3 >= 4 ? carta.y - h - 3 : carta.y + carta.h + 3) : BY - h - 3;

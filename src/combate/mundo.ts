@@ -14,6 +14,8 @@ import { dentroDe } from '../util';
 import { HOGAR_CARGA, HOGAR_CD, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
+import { MEJOR, nivelZona, sortear, tierDe } from './botin';
+import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
@@ -28,6 +30,9 @@ const ANCHO_NPC = 6;               // el de los demás Pokémon (salvajes y veci
 const CUBO = 64;                   // px de lado de los cubos de colisión
 const TIRO = 150;                  // hasta dónde llega una Poké Ball
 const RESPAWN = 40;                // s hasta que vuelve a salir un salvaje en su sitio
+const HALLAZGOS = 5;               // objetos tirados por el suelo en cada zona (no en el pueblo)
+const HALLAZGO_VUELVE = 10 * 60e3;  // ms (reales) hasta que vuelve a haber algo donde cogiste uno
+const HALLAZGO_COGER = 12;          // px: se coge al pisarlo
 const CORREA = 330;                // px: un salvaje que te persigue más lejos de su sitio se vuelve (y se cura)
 export const CURA_FUERA = 0.05;    // fracción de vida por segundo fuera de combate (6 s sin pegar ni recibir)
 // Alfas (docs/GDD-mundo.md §2): más grandes, con aura, el triple de vida y un golpe anunciado en el suelo.
@@ -206,6 +211,11 @@ export class Mundo {
   private capturadosFuera = new Map<string, number>();   // salvajes que has capturado tú: que no vuelvan con una foto vieja
   private miBall: string | null = null;                  // el salvaje que está en tu Ball (su enBall lo llevas tú)
   private marcasHechas = new Set<number>();
+  // Objetos tirados por el suelo (como en los juegos): siempre en los mismos sitios de la zona (semilla de la partida);
+  // lo que son va con el nivel de la zona (combate/botin.ts). Se cogen al pisarlos y vuelven a los 10 min (reales).
+  hallazgos: { i: number; x: number; y: number; item: string | null }[] = [];
+  private sueloSemilla = 0;
+  private sueloMira = 0;               // cuándo se mira otra vez si ha vuelto algo donde ya cogiste
 
   constructor(o: OpcionesMundo) {
     this.mapa = o.mapa; this.partida = o.partida; this.probShiny = o.probShiny;
@@ -219,6 +229,46 @@ export class Mundo {
     for (const r of this.mapa.salvajes) this.salvajes.push(this.crearSalvaje(r));
     if (this.mapa.id === 'pueblo') this.crearVecinos();
     this.ponerAlfa();
+    this.ponerHallazgos();
+  }
+
+  // ---- Objetos del suelo ----
+  private ponerHallazgos(): void {
+    if (!this.mapa.salvajes.length) return;
+    const semilla = this.partida.estado.semilla ^ [...this.mapa.id].reduce((h, c) => Math.imul(h, 31) + c.charCodeAt(0) | 0, 7);
+    this.sueloSemilla = semilla;
+    const r = rng(semilla), puntos: Punto[] = [], lleg = Object.values(this.mapa.llegada).filter(Boolean) as Punto[];
+    // Cerca de donde rondan los salvajes (así se puede llegar), lejos de las entradas y unos de otros.
+    for (let k = 0; k < 400 && puntos.length < HALLAZGOS; k++) {
+      const s = this.mapa.salvajes[Math.floor(r() * this.mapa.salvajes.length)], a = r() * Math.PI * 2, d = 25 + r() * 50;
+      const q = { x: Math.round(s.x + Math.cos(a) * d), y: Math.round(s.y + Math.sin(a) * d * 0.8) };
+      if (!this.pisable(q) || this.agua(q.x, q.y) || lleg.some(l => Math.hypot(l.x - q.x, l.y - q.y) < 90) || puntos.some(o => Math.hypot(o.x - q.x, o.y - q.y) < 140)) continue;
+      puntos.push(q);
+    }
+    this.hallazgos = puntos.map((q, i) => ({ i, ...q, item: null }));
+    for (const h of this.hallazgos) this.reponerHallazgo(h);
+  }
+  private reponerHallazgo(h: Mundo['hallazgos'][number]): void {
+    const g = this.partida.estado.hallados?.[`${this.mapa.id}:${h.i}`];
+    if (g && Date.now() - g.t < HALLAZGO_VUELVE) return;
+    h.item = sortear(nivelZona(this.mapa), rng(this.sueloSemilla + h.i * 7919 + (g?.n ?? 0) * 104729));
+  }
+  private pasoHallazgos(): void {
+    const p = this.jugador;
+    if (p.muerto || this.cambiando) return;
+    const mira = this.ahora >= this.sueloMira;
+    if (mira) this.sueloMira = this.ahora + 5;
+    for (const h of this.hallazgos) {
+      if (!h.item) { if (mira) this.reponerHallazgo(h); continue; }
+      if (Math.hypot(h.x - p.x, h.y - p.y) > HALLAZGO_COGER) continue;
+      const clave = `${this.mapa.id}:${h.i}`, g = (this.partida.estado.hallados ??= {});
+      this.partida.dar(h.item);
+      this.rotulo(p, ITEMS[h.item].nombre, 'strong', 0);
+      this.aviso(`Has encontrado: ${ITEMS[h.item].nombre}`);
+      g[clave] = { t: Date.now(), n: (g[clave]?.n ?? 0) + 1 };
+      h.item = null;
+      this.guardar();
+    }
   }
 
   todos(): Luchador[] { return [this.jugador, ...this.salvajes, ...this.vecinos]; }
@@ -721,13 +771,13 @@ export class Mundo {
     this.rotulo(this.jugador, `+${exp} exp`, 'strong', 300);
     this.procesar(this.partida.ganarExp(yo, exp));
     const r = this.rnd();
-    if (t.alfa) {   // el alfa suelta siempre algo mejor: una Ball buena y una Baya Zidra
-      const ball = this.mapa.id === 'lago' ? 'ultraball' : 'superball';
-      this.partida.dar(ball); this.partida.dar('sitrus');
-      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} y ${ITEMS.sitrus.nombre}`);
-    } else {
-      const suelta = r < 0.18 ? 'oran' : r < 0.24 ? 'sitrus' : r < 0.32 ? 'pokeball' : r < 0.35 ? 'superball' : null;
-      if (suelta && ITEMS[suelta]) { this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`); }
+    if (t.alfa) {   // el alfa suelta siempre lo mejor de su nivel: dos Balls y dos curas (combate/botin.ts)
+      const { ball, cura } = MEJOR[tierDe(t.nivel)];
+      this.partida.dar(ball, 2); this.partida.dar(cura, 2);
+      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2 y ${ITEMS[cura].nombre} ×2`);
+    } else if (r < 0.35) {   // uno de cada tres, algo acorde a su nivel
+      const suelta = sortear(t.nivel, this.rnd);
+      this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`);
     }
     this.contarMision(t.alfa ? 'alfa' : 'derrotar', t.linea);
     this.guardar();
@@ -884,11 +934,12 @@ export class Mundo {
     if (this.partida.tiene(id) <= 0) { this.aviso(`No te quedan: ${def.nombre}`); return; }
     if (l.gcd > this.ahora || l.lanza) return;
     if (def.tipo === 'pokeball') { this.lanzarBall(id); return; }
-    if (def.tipo === 'baya') {
-      const cura = id === 'sitrus' ? 0.5 : id === 'oran' ? 0.3 : 0.15;
+    if (def.tipo === 'baya' || def.tipo === 'medicina') {
+      // Bayas: una parte de la vida; pociones: PS fijos (Poción 20, Superpoción 60, Hiperpoción 120).
+      const cura = def.cura ?? Math.ceil(l.stats.hp * (id === 'sitrus' ? 0.5 : id === 'oran' ? 0.3 : 0.15));
       if (l.ps >= l.stats.hp && !(id === 'lum' && l.estado)) { this.aviso('Tienes la vida entera'); return; }
       this.partida.gastar(id); l.gcd = this.ahora + (l.gcdDura = GCD);
-      this.curar(l, Math.ceil(l.stats.hp * cura));
+      this.curar(l, cura);
       this.reproducir(l, 'Charge', 0.4);
       return;
     }
@@ -1159,6 +1210,7 @@ export class Mundo {
       if (!l.muerto && l.anim && this.ahora >= l.animHasta) l.anim = null;
     }
     if (this.objetivo && (this.objetivo.muerto || Math.hypot(this.objetivo.x - p.x, this.objetivo.y - p.y) > 400)) this.objetivo = null;
+    this.pasoHallazgos();
     this.pasoMarca();
     this.pasoHogar();
     this.pasoDuelo();
