@@ -13,7 +13,7 @@ import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIS
 import { COLOR_TEMPLE, NOMBRE_TEMPLE, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove } from '../data/movimientos';
 import { ITEMS } from '../data/items';
-import { NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, enfriamiento, expDeNivel, necesitaObjetivo } from '../combate/reglas';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, type Atajo } from '../combate/partida';
 import { clave } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
@@ -78,6 +78,7 @@ export class HudAventura extends Phaser.Scene {
   private hogarCd!: Phaser.GameObjects.Text;
   private castG!: G;
   private castTxt!: Phaser.GameObjects.Text;
+  private objCastTxt!: Phaser.GameObjects.Text;
   private fichaG!: G;
   private fichaTapada = false;           // la ficha la está usando la piedra de hogar
   private ficha!: Phaser.GameObjects.Text;
@@ -143,6 +144,7 @@ export class HudAventura extends Phaser.Scene {
     this.hogarCd = this.sombreado(HX + HW / 2, BY + HW / 2, '', 5.5).setOrigin(0.5).setDepth(4);
     this.castG = this.add.graphics().setDepth(4);
     this.castTxt = this.sombreado(VW / 2, CAST_Y + 4.5, 'Piedra de hogar', 5).setOrigin(0.5).setDepth(5).setVisible(false);
+    this.objCastTxt = this.sombreado(VW / 2, 0, '', 4.5).setOrigin(0.5).setDepth(5).setVisible(false);
     // Ficha del movimiento bajo el ratón.
     this.fichaG = this.add.graphics().setDepth(9);
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(10).setVisible(false);
@@ -455,7 +457,11 @@ export class HudAventura extends Phaser.Scene {
       const datos = [TIPO_ES[m.type], CATEGORIA[m.category]];
       if (m.basePower) datos.push(`Potencia ${m.basePower}`);
       datos.push(m.accuracy === true ? 'No falla' : `Precisión ${m.accuracy}`);
-      txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · se recarga en ${enfriamiento(m)} s`;
+      // Cómo se lanza y cuánto tarda, con la celeridad de tu Pokémon (docs/GDD-combate.md §3.2).
+      const pf = perfil(m), k = this.av.cel(this.av.jugador), seg = (v: number) => `${(Math.round(v / k * 10) / 10).toLocaleString('es')} s`;
+      const lanza = pf.lanza === 'cast' ? `Lanzamiento ${seg(pf.t)}` : pf.lanza === 'canal' ? `Canalizado ${seg(pf.t)}` : 'Instantáneo';
+      const extra = [pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
+      txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}`;
     } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : 'Te cura un poco'}`;
     this.ficha.setText(txt).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, cx = carta ? carta.x + carta.w / 2 : BX + 4 + i * (CW + HUECO) + CW / 2;
@@ -487,16 +493,28 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       this.ficha.setPosition((fx + 4) * S, (fy + 3) * S);
       this.fichaTapada = true;
     } else this.fichaTapada = false;
-    // Barra de lanzamiento.
-    const cg = this.castG, h = av.hogar;
+    // Barra de lanzamiento: la piedra de hogar (azul), un movimiento lanzado (naranja, se llena) o canalizado (verde, se vacía).
+    const cg = this.castG, h = av.hogar, p = av.jugador, ln = p?.lanza, o = av.objetivo;
     cg.clear();
-    this.castTxt.setVisible(!!h);
-    if (!h) return;
-    const f = av.hogarFrac(), cx = Math.round(VW / 2 - CAST_W / 2);
-    marco(cg, cx - 2, CAST_Y - 2, CAST_W + 4, 13, PANEL);
-    rect(cg, 0x2a1a10, 1, cx, CAST_Y, CAST_W, 9);
-    rect(cg, 0x6ec4f0, 1, cx, CAST_Y, Math.round(CAST_W * f), 9);
-    rect(cg, 0xffffff, 0.35, cx, CAST_Y, Math.round(CAST_W * f), 1);
+    this.castTxt.setVisible(!!(h || ln));
+    if (h || ln) {
+      const f = h ? av.hogarFrac() : av.lanzaFrac(p), cx = Math.round(VW / 2 - CAST_W / 2);
+      marco(cg, cx - 2, CAST_Y - 2, CAST_W + 4, 13, PANEL);
+      rect(cg, 0x2a1a10, 1, cx, CAST_Y, CAST_W, 9);
+      rect(cg, h ? 0x6ec4f0 : ln!.canal ? 0x7ad06a : 0xf0a838, 1, cx, CAST_Y, Math.round(CAST_W * f), 9);
+      rect(cg, 0xffffff, 0.35, cx, CAST_Y, Math.round(CAST_W * f), 1);
+      this.castTxt.setText(h ? 'Piedra de hogar' : `${getMove(ln!.id)?.nombre ?? ''}  ${Math.max(0, ln!.t1 - av.ahora).toFixed(1)}`);
+    }
+    // La del objetivo, bajo su marco (y sus bufos): se ve venir lo que lanza para interrumpirlo.
+    const ol = o && !o.muerto ? o.lanza : null;
+    this.objCastTxt.setVisible(!!ol);
+    if (ol) {
+      const w = 100, x = Math.round(VW / 2 - w / 2), y = 4 + (o!.alfa ? ALFA_DY : 0) + 33 + (av.auras(o!).length ? CHIP_H + 2 : 0), f = av.lanzaFrac(o!);
+      marco(cg, x - 2, y - 2, w + 4, 11, PANEL);
+      rect(cg, 0x2a1a10, 1, x, y, w, 7);
+      rect(cg, ol.canal ? 0x7ad06a : 0xf0a838, 1, x, y, Math.round(w * f), 7);
+      this.objCastTxt.setText(getMove(ol.id)?.nombre ?? '').setPosition(VW / 2 * S, (y + 3.5) * S);
+    }
   }
 
   // Ficha de un bufo o debufo (bajo su icono).

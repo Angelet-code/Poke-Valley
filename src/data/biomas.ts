@@ -45,6 +45,29 @@ export function enMacizo(m: { macizo?: Macizo }, x: number, y: number): boolean 
   const i = Math.floor(x / z.cel), j = Math.floor(y / z.cel);
   return i >= 0 && j >= 0 && i < z.cols && j < z.filas && z.datos[j * z.cols + i] === 1;
 }
+// Macizo que no se ve: en su borde, si hay hueco justo encima, solo van piezas bajas (o nada), y esas celdas se veían
+// como suelo sin dejar pasar (muros invisibles). La escena, ya dibujado todo, abre desde lo pisable hacia dentro las
+// celdas que no tapa ningún dibujo (`tapada`): lo que se ve abierto se puede pisar. Devuelve cuántas abrió.
+export function abrirMacizo(m: { macizo?: Macizo }, pisable: (x: number, y: number) => boolean, tapada: (x: number, y: number) => boolean): number {
+  const z = m.macizo;
+  if (!z) return 0;
+  const { cel, cols, filas, datos } = z, pila: number[] = [];
+  const vacia = (k: number) => {   // el centro y cuatro puntos cerca de las esquinas, sin nada dibujado
+    const x = (k % cols + 0.5) * cel, y = (Math.floor(k / cols) + 0.5) * cel, d = cel * 0.35;
+    return !tapada(x, y) && !tapada(x - d, y - d) && !tapada(x + d, y - d) && !tapada(x - d, y + d) && !tapada(x + d, y + d);
+  };
+  for (let k = 0; k < cols * filas; k++) if (!datos[k] && pisable((k % cols + 0.5) * cel, (Math.floor(k / cols) + 0.5) * cel)) pila.push(k);
+  let n = 0;
+  while (pila.length) {
+    const k = pila.pop()!, i = k % cols, j = (k - i) / cols;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const ni = i + di, nj = j + dj, nk = nj * cols + ni;
+      if (ni < 0 || nj < 0 || ni >= cols || nj >= filas || datos[nk] !== 1 || !vacia(nk)) continue;
+      datos[nk] = 0; n++; pila.push(nk);
+    }
+  }
+  return n;
+}
 type Lado = 'n' | 's' | 'e' | 'o';
 type Donde = 'borde' | 'claro' | 'agua' | 'orilla';
 interface Puerta { lado: Lado; t: number; a: MapaId; texto: string }

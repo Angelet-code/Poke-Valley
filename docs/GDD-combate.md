@@ -100,6 +100,67 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   Zidra 50 %.
 - **Debilitarse**: vuelves al pueblo con la vida entera, sin otra penalización.
 
+### 3.2 Balance de movimientos (propuesta, 2026-10-15; sin implementar)
+Estudio: `node tools/balance_movimientos.mjs` clasifica los 389 movimientos y escribe
+[balance-movimientos.md](balance-movimientos.md) (ahora / propuesta, movimiento a movimiento).
+
+**Diagnóstico.** Con el global de 1,1 s, usar Lanzallamas cuando está listo y Ascuas el resto ya rinde más que solo
+Ascuas (≈49 frente a 39 de potencia/s). El problema no es el número sino que **no hay decisión**: todo es instantáneo,
+a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 botón más "pulsa el grande cuando brille".
+
+**Modelo: presupuesto de potencia por segundo.** Cada movimiento "paga" su potencia efectiva
+(potencia × golpes × precisión, +cura de Absorber, −retroceso, +efecto secundario) con tiempo:
+- Un **instantáneo** da gratis 36 de potencia/s (el relleno: Placaje, Ascuas, Pistola Agua).
+- **Lanzar quieto** (barra de lanzamiento; moverse lo cancela) da un 25 % más: 45/s. El tiempo de lanzamiento sale de
+  la potencia (1,5-3 s).
+- Lo que sobra se paga con **enfriamiento**: 6 de potencia por segundo de CD.
+- Resultado: la potencia/s de cualquier rotación queda entre 36 y 50 (ahora 36-59) y cada tipo de movimiento tiene
+  su papel: instantáneos para moverse y rematar, lanzados para quedarse quieto, los de CD para abrir.
+
+**Cómo se lanza cada uno** (de los datos de Showdown, sin escribirlo a mano):
+- **Instantáneo**: contacto (el cuerpo a cuerpo ya paga acercándose), prioridad, los que hacen retroceder y los
+  flojos (≤ 46). Los fuertes de contacto llevan CD: Puño Fuego 6 s.
+- **Lanzado**: los de distancia fuertes. Lanzallamas 2 s, Hidrobomba 1,9 s, Onda Ígnea 1,9 s.
+- **Carga** (`charge`): Rayo Solar 2,6 s.
+- **Canalizado**: multigolpe y drenaje a distancia (Gigadrenado, Megaagotar): daño por tics mientras no te muevas.
+- **Desaparece**: Vuelo, Excavar, Buceo, Golpe Fantasma: 1,5 s invulnerable y cae sobre el objetivo.
+- **Agotado**: Hiperrayo y similares, instantáneo enorme y luego 2 s sin poder actuar.
+
+**Forma (a quién pega)**, de `target`:
+- **Objetivo** (272): como ahora.
+- **Zona** (`allAdjacentFoes`, 19): círculo de ~40 px donde apuntes con el ratón (alcance 150), como Ventisca del WoW.
+- **Cono** (los de viento, 5): delante de ti.
+- **Alrededor** (`allAdjacent` y los de sonido, 13): círculo en torno a ti, instantáneo con CD (Terremoto 10 s).
+- **Trampa** (`foeSide`: Púas, Trampa Rocas): zona que se queda en el suelo.
+- Si un área toca a más de uno, cada golpe ×0,75 (la regla oficial de los dobles).
+
+**Utilidad** (lo que hace además, también de los datos):
+- Prioridad + contacto (Ataque Rápido, Acua Jet): **carga** hasta el objetivo, CD ≥ 6 s.
+- Retroceso (Mordisco, Golpe Cabeza): **interrumpe** un lanzamiento del objetivo.
+- `selfSwitch` (Ida y Vuelta, Voltiocambio): golpea y **salta atrás**.
+- Protección, Detección, Aguante: **escudo** 1,5 s, CD 15.
+- Teletransporte: **salto** de 120 px.
+- Subir Velocidad (Agilidad, Danza Dragón): **más velocidad de movimiento y celeridad** durante el bufo.
+- Dormir: lanzado 1,5 s, CD 20 (control). Curas: lanzadas 1,5 s, CD 20.
+
+**Stats en todo esto**:
+- Ataque / At. Esp. y defensas: ya están en la fórmula de daño.
+- **Velocidad → celeridad** (el *haste* del WoW): acorta el global, los lanzamientos y los CD.
+  `celeridad = 0,8 + 0,4 · min(Vel base, 150) / 150` (Shuckle 0,81, Snorlax 0,88, Pikachu 1,04, Ninjask 1,2),
+  × la etapa de Velocidad, con tope ×1,5.
+- **Velocidad → movimiento**: `84 px/s · (0,9 + 0,2 · Vel base / 150)` × etapa (tope ×1,5).
+- Así el lento pega fuerte y el rápido pega a menudo, como en los juegos.
+- Los salvajes siguen las mismas reglas: lanzan con barra visible y se les puede interrumpir.
+
+**Fases**:
+1. `perfil(m)` en `reglas.ts` con el modelo (lanzamiento, tiempo, CD, forma, extra) y celeridad; el HUD lo enseña en
+   la ficha del movimiento.
+2. Barra de lanzamiento (tuya y del objetivo), moverse cancela, interrumpir, canalizados.
+3. Áreas: retícula con el ratón, alrededor, cono, trampas; IA de los salvajes.
+4. Utilidad: carga, salto atrás, escudo, salto, velocidad.
+5. Hace falta exportar más datos en `tools/datos_combate.mjs` (`volatileStatus`, `sideCondition`, `selfdestruct`)
+   para Drenadoras, Giro Fuego (atrapar) y Autodestrucción.
+
 ## 4. Captura
 - La Poké Ball se lanza al objetivo hasta 150 px. Vuela, el Pokémon entra, la Ball se mueve tres veces y se queda
   dentro o sale.

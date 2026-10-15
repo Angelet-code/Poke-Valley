@@ -8,7 +8,7 @@
 import Phaser from 'phaser';
 import { REG, ROW_FROM_ANGLE, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
-import { PALETAS_BIOMA, enMacizo } from '../data/biomas';
+import { PALETAS_BIOMA, abrirMacizo, enMacizo } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
@@ -125,6 +125,8 @@ export class Aventura extends Phaser.Scene {
   private piezas: Pieza[] = [];
   private luces: Luz[] = [];
   private luzJugador: Phaser.GameObjects.Light | null = null;
+  private luzAhora: [number, number, number] | null = null;   // luz ambiente pintada (va hacia la que toca)
+  private tLuz = 0;
   private vistas = new Map<string, Vista>();
   private balls = new Map<number, Phaser.GameObjects.Image>();
   private siguiendo: Phaser.GameObjects.Sprite | null = null;
@@ -174,7 +176,7 @@ export class Aventura extends Phaser.Scene {
 
   private async montar(data: DatosMapa, n: number): Promise<void> {
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.panel = null; this.asignando = null;
-    this.luzJugador = null; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
+    this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
     this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
     this.placas.clear();
     this.red?.fuente(null);
@@ -211,6 +213,7 @@ export class Aventura extends Phaser.Scene {
     this.mapa.colocados = tiras.colocados;
     despejarPuentes(this.mapa, tiras.pasos);
     const bloques = this.crearEscenario(porId);
+    this.abrirMacizoVacio();
     this.mundo = new Mundo({
       mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => !enRect(tiras.pasos, x, y) && (this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y)),   // el macizo de las zonas de bioma bloquea como el agua
       anatomia: this.anatomia, probShiny: this.probShiny,
@@ -266,6 +269,22 @@ export class Aventura extends Phaser.Scene {
         : this.partida.estado.equipo.length > 1 ? 'El pueblo. Pulsa F junto a uno de tus Pokémon para convertirte en él, o junto al tablón de la plaza para ver las misiones.'
         : 'El pueblo. F junto al tablón de la plaza: misiones. El camino del norte lleva al bosque. Teclas 1-0: tu barra (K para colocar movimientos).');
     });
+  }
+
+  // Macizo sin nada dibujado encima: se abre (biomas.abrirMacizo). Las piezas, por cubos de 64 px según su rectángulo.
+  private abrirMacizoVacio(): void {
+    if (!this.mapa.macizo) return;
+    const C = 64, cubos = new Map<number, Pieza[]>();
+    for (const p of this.piezas) {
+      const b = p.img.getBounds();
+      for (let j = Math.floor(b.top / C); j <= Math.floor(b.bottom / C); j++)
+        for (let i = Math.floor(b.left / C); i <= Math.floor(b.right / C); i++) {
+          const k = j * 4096 + i, l = cubos.get(k);
+          if (l) l.push(p); else cubos.set(k, [p]);
+        }
+    }
+    abrirMacizo(this.mapa, (x, y) => !this.terrain.esAgua(x, y),
+      (x, y) => !!cubos.get(Math.floor(y / C) * 4096 + Math.floor(x / C))?.some(p => tapa(p, x, y, -Infinity)));
   }
 
   // ---- Escenario: elementos Klein con su huella como colisión, farolas, detalles ----
@@ -406,7 +425,12 @@ export class Aventura extends Phaser.Scene {
   }
   private luzDelDia(t: number): void {
     const mundo = this.mundo!, m = this.partida.estado.minuto, [r0, g0, b0] = luzAmbiente(m), k = mundo.clima ? LUZ_CLIMA[mundo.clima.tipo] : [1, 1, 1];
-    const r = Math.min(255, Math.round(r0 * k[0])), g = Math.min(255, Math.round(g0 * k[1])), b = Math.min(255, Math.round(b0 * k[2]));
+    // La luz va hacia la que toca sin saltos: el tinte del clima cambia en unos segundos (como el fx) y el salto de
+    // las 2:00 a las 6:00 se ve como un amanecer rápido. Al entrar en el mapa ya es la que toca.
+    const meta = [r0 * k[0], g0 * k[1], b0 * k[2]], dtLuz = this.tLuz ? Math.min(0.1, (t - this.tLuz) / 1000) : 0, u = 1 - Math.exp(-dtLuz / 1.2);
+    this.tLuz = t;
+    this.luzAhora = this.luzAhora && mundo.ahora > 1.5 ? this.luzAhora.map((v, i) => v + (meta[i] - v) * u) as [number, number, number] : meta as [number, number, number];
+    const [r, g, b] = this.luzAhora.map(v => Math.min(255, Math.round(v)));
     this.lights.setAmbientColor((r << 16) | (g << 8) | b);
     const on = farolas(m);
     for (const l of this.luces) { const f = animarLuz(l.tipo, t / 1000, l.fase) * on; l.luz.setIntensity(l.tipo.intensidad * f); l.halo.setAlpha(l.tipo.halo * f); }
@@ -462,13 +486,14 @@ export class Aventura extends Phaser.Scene {
     const yo = this.vistas.get(mundo.jugador.uid)!.spr;
     if (this.siguiendo !== yo) { this.siguiendo = yo; this.cameras.main.startFollow(yo, true, 1, 1); }
   }
-  // Geometría para las animaciones (px de escenario).
+  // Geometría para las animaciones (px de escenario). Los puntos leen la posición del luchador cada vez: lo que la
+  // animación guarda (el remolino de Gigadrenado, un rayo, un anillo) sigue al Pokémon si se mueve mientras dura.
   private geo(l: Luchador): SlotGeometry {
-    const k = this.stage.k;
+    const st = this.stage, vivo = (dy: () => number) => ({ get x() { return l.x * st.k; }, get y() { return (l.y - dy()) * st.k; } });
     return {
       slot: l.uid, side: l.rol === 'salvaje' ? 'p2' : 'p1',
-      center: { x: l.x * k, y: (l.y - l.alto * 0.45) * k }, feet: { x: l.x * k, y: (l.y - 2) * k }, top: { x: l.x * k, y: (l.y - l.alto) * k },
-      size: Math.max(22, l.alto * 1.45) * k, sprite: this.vistaDe(l).fx,
+      center: vivo(() => l.alto * 0.45), feet: vivo(() => 2), top: vivo(() => l.alto),
+      size: Math.max(22, l.alto * 1.45) * st.k, sprite: this.vistaDe(l).fx,
     };
   }
   // Destello de shiny: unas estrellas que salen del cuerpo y se apagan (como al entrar en combate en los juegos).
@@ -621,6 +646,8 @@ export class Aventura extends Phaser.Scene {
     if (a) this.mundo.usarAtajo(a);
   }
   enfriando(a: { m: string } | { i: string }): number { return this.mundo?.enfriando(a) ?? 0; }
+  lanzaFrac(l: Luchador): number { return this.mundo?.lanzaFrac(l) ?? 0; }
+  cel(l: Luchador): number { return this.mundo?.cel(l) ?? 1; }
   auras(l: Luchador): Aura[] { return this.mundo?.auras(l) ?? []; }
   aceptarMision(m: Mision): void { this.mundo?.aceptarMision(m); }
   entregarMision(m: Mision): void { this.mundo?.entregarMision(m); }
@@ -648,7 +675,7 @@ export class Aventura extends Phaser.Scene {
       case 'ball': this.lanzarBall(s); break;
       case 'ballFin': this.finBall(s); break;
       case 'debilitado': { const v = this.vistas.get(s.uid); if (v) this.tweens.add({ targets: v.fx, alpha: 0, delay: 700, duration: 600 }); break; }
-      case 'clima': this.stage.clima.set(s.clima ? ASPECTO_CLIMA[s.clima] : null); break;
+      case 'clima': this.stage.clima.set(s.clima ? ASPECTO_CLIMA[s.clima] : null, mundo.ahora < 1.5); break;   // al entrar en el mapa ya está; luego entra y sale poco a poco
       case 'evoluciona': void this.evolucionar(s.antes, s.aprende); break;
       case 'ir': this.irA(s.mapa, s.desde); break;
     }
@@ -794,12 +821,17 @@ export class Aventura extends Phaser.Scene {
     g.clear();
     for (const l of [...mundo.salvajes, mundo.jugador, ...mundo.remotos]) {
       const auras = l.muerto || l.enBall ? [] : mundo.auras(l);
-      if (l.muerto || l.enBall || (l.ps >= l.stats.hp && l !== mundo.objetivo && !auras.length)) continue;
+      if (l.muerto || l.enBall || (l.ps >= l.stats.hp && l !== mundo.objetivo && !auras.length && !l.lanza)) continue;
       const w = l.alfa ? 32 : 20, x = l.x - w / 2, y = l.y - l.alto - 6, f = l.ps / l.stats.hp;
       if (l.alfa) g.fillStyle(0xffc04a, 1).fillRect(x - 1.5, y - 1.5, w + 3, 5);   // el alfa, con borde dorado
       if (l.rol === 'salvaje' || l.rol === 'remoto') {
         g.fillStyle(0x2a1a10, 0.75).fillRect(x - 0.5, y - 0.5, w + 1, 3);
         g.fillStyle(f > 0.5 ? 0x8fd36a : f > 0.2 ? 0xffd65a : 0xff6a5a, 1).fillRect(x, y, w * f, 2);
+        // Lo que está lanzando: una barra fina debajo (naranja; verde si canaliza).
+        if (l.lanza) {
+          g.fillStyle(0x2a1a10, 0.75).fillRect(x - 0.5, y + 2.5, w + 1, 2);
+          g.fillStyle(l.lanza.canal ? 0x7ad06a : 0xf0a838, 1).fillRect(x, y + 3, w * mundo.lanzaFrac(l), 1);
+        }
       }
       // Bufos y debufos encima (como en las placas de un MMO): un cuadradito de su color, que se vacía con el tiempo.
       auras.forEach((a, i) => {

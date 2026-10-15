@@ -16,8 +16,8 @@ import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
 import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
-  TURNO, VEL_PARALIZADO, alcance, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, probCaptura, statsDe,
-  type Clima, type Golpe, type Stats,
+  TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
+  velAndar, type Clima, type Golpe, type Perfil, type Stats,
 } from './reglas';
 import type { AnimId } from './sprites';
 
@@ -65,6 +65,10 @@ export interface Anatomia {
 }
 export interface Entrada { vx: number; vy: number }   // hacia dónde andas (-1…1 por eje)
 
+// Un movimiento que se está lanzando (barra de lanzamiento) o canalizando (golpes por tics), docs/GDD-combate.md §3.2.
+export interface Lanza { id: string; obj: Luchador | null; t0: number; t1: number; canal: boolean; tics: number; hechos: number }
+const INTERRUMPIDO = 4;            // s que el movimiento cortado tarda en volver
+
 // Lo que un movimiento cambia en alguien además del daño: stats o un estado.
 interface Efecto { quien: Luchador; boosts?: Boosts; estado?: string }
 
@@ -76,6 +80,8 @@ export interface Luchador {
   estado: string | null; estadoHasta: number; ticEstado: number; toxN: number;
   x: number; y: number; dir: number; anda: boolean; alto: number;
   movs: string[]; cd: Record<string, number>; gcd: number;
+  cdDura: Record<string, number>; gcdDura: number;   // lo que duró cada enfriamiento al ponerse (con la celeridad de entonces)
+  lanza: Lanza | null;
   anim: AnimId | null; animHasta: number; animN: number; quietoHasta: number;   // animN: cuenta las que se ponen
   temple: Temple; modo: 'pasear' | 'huir' | 'pelear' | 'volver'; casa: Punto; meta: Punto | null; espera: number;
   huirHasta: number; ultimoCombate: number; rival: Luchador | null;
@@ -113,6 +119,7 @@ export interface FotoSalvaje {
   u: string; li: string; f?: string; n: number; sh?: boolean; al?: boolean; r: number; c: Punto;   // r: su ronda en el mapa (−1: ninguna)
   x: number; y: number; d: number; an: boolean; ps: number; hp: number; e: string | null; m: boolean; b: boolean;
   te: Temple; mo: Luchador['modo']; ri: string | null; a: AnimId | null; aN: number; aR: number;
+  ln?: [string, number, number, 0 | 1];   // lo que lanza: movimiento, s que le quedan, duración y si es canalizado
 }
 export interface Foto {
   s: FotoSalvaje[];
@@ -292,7 +299,7 @@ export class Mundo {
       uid: fuera ? uid ?? '' : `${rol}-${++this.uid}`, rol, linea, nivel, miembro, dex, nombre: f.nombre, tipos: tiposDe(f.id),
       stats, ps: stats.hp, boosts: {}, boostHasta: {}, estado: null, estadoHasta: 0, ticEstado: 0, toxN: 0,
       x, y, dir: 0, anda: false, alto: Math.min(ALTO_MAX, as * escala),
-      movs: miembro ? miembro.movs : movsHasta(f.id, nivel), cd: {}, gcd: 0, anim: null, animHasta: 0, animN: 0, quietoHasta: 0,
+      movs: miembro ? miembro.movs : movsHasta(f.id, nivel), cd: {}, gcd: 0, cdDura: {}, gcdDura: GCD, lanza: null, anim: null, animHasta: 0, animN: 0, quietoHasta: 0,
       temple: 'agresivo', modo: 'pasear', casa: { x, y }, meta: null, espera: rnd() * 2, huirHasta: 0, ultimoCombate: -99, rival: null,
       muerto: false, enBall: false, ruta: null, rutaA: null, rutaT: -99, atasco: 0, forma, escala, golpeAlfa: 0, shiny: sh,
       sexo: miembro ? miembro.sexo ?? null : tirarSexo(f.id, rnd),
@@ -429,11 +436,20 @@ export class Mundo {
   }
   // Lo que le falta a un atajo para poder usarse ahora (lo pinta el HUD): fracción de enfriamiento que queda.
   enfriando(a: NonNullable<Atajo>): number {
-    const l = this.jugador, g = Math.max(0, l.gcd - this.ahora) / GCD;
+    const l = this.jugador, g = Math.max(0, l.gcd - this.ahora) / l.gcdDura;
     if ('i' in a) return g;
     const m = getMove(a.m);
     if (!m) return 0;
-    return Math.max(g, Math.max(0, (l.cd[a.m] ?? 0) - this.ahora) / enfriamiento(m));
+    return Math.max(g, Math.max(0, (l.cd[a.m] ?? 0) - this.ahora) / (l.cdDura[a.m] ?? enfriamiento(m)));
+  }
+  // Celeridad de un luchador: su Velocidad base y su etapa de Velocidad (reglas.ts).
+  cel(l: Luchador): number { return celeridad(this.formaL(l).base[5], l.boosts.spe ?? 0); }
+  // Lo que lleva lanzado (0…1); en los canalizados, lo que le queda.
+  lanzaFrac(l: Luchador): number {
+    const c = l.lanza;
+    if (!c) return 0;
+    const f = Math.max(0, Math.min(1, (this.ahora - c.t0) / Math.max(0.01, c.t1 - c.t0)));
+    return c.canal ? 1 - f : f;
   }
 
   // ---- Usar un movimiento ----
@@ -441,7 +457,7 @@ export class Mundo {
     const m = getMove(id), yo = l.rol === 'jugador';
     if (!m || l.muerto || l.enBall || this.cambiando) return false;
     if (l.estado === 'slp' || l.estado === 'frz') { if (yo) this.aviso(`${l.nombre} está ${NOMBRE_ESTADO[l.estado].toLowerCase()}`); return false; }
-    if (l.gcd > this.ahora || (l.cd[id] ?? 0) > this.ahora) return false;
+    if (l.lanza || l.gcd > this.ahora || (l.cd[id] ?? 0) > this.ahora) return false;
     const objetivo = necesitaObjetivo(m);
     if (objetivo) {
       if (!obj && yo) obj = this.objetivo = this.salvajes.filter(s => !s.muerto && !s.enBall).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] ?? null;
@@ -451,22 +467,78 @@ export class Mundo {
       if (d > al) { if (yo) this.aviso(`${m.nombre}: demasiado lejos`); return false; }
       this.mirarA(l, obj);
     }
-    l.gcd = this.ahora + GCD;
-    l.cd[id] = this.ahora + enfriamiento(m);
+    const pf = perfil(m), k = this.cel(l), blanco = objetivo ? obj! : l;
+    l.gcd = this.ahora + (l.gcdDura = GCD / k);
+    if (pf.lanza !== 'instant') {
+      // Lanzado o canalizado: se queda quieto (moverse lo corta) y sale al acabar o, canalizado, por tics.
+      const t = pf.t / k;
+      l.lanza = { id, obj: objetivo ? blanco : null, t0: this.ahora, t1: this.ahora + t, canal: pf.lanza === 'canal', tics: pf.tics, hechos: 0 };
+      l.meta = null;
+      if (l.lanza.canal) {
+        l.cd[id] = this.ahora + (l.cdDura[id] = pf.cd / k);
+        if (l.estado === 'par' && this.rnd() < 0.25) { l.lanza = null; this.rotulo(l, '¡Paralizado!', 'bad'); return true; }
+        if (blanco !== l) this.provocar(blanco, l);
+      }
+      this.reproducir(l, 'Charge', t);
+      return true;
+    }
+    this.soltar(l, id, blanco, pf);
+    return true;
+  }
+  // Sale el movimiento (instantáneo, o al acabar de lanzarlo): enfriamiento, animación y el golpe en su fotograma.
+  private soltar(l: Luchador, id: string, blanco: Luchador, pf: Perfil): void {
+    const m = getMove(id)!, k = this.cel(l);
+    l.cd[id] = this.ahora + (l.cdDura[id] = pf.cd / k);
     const anim: AnimId = m.category === 'Status' ? 'Charge' : m.flags.includes('contact') ? 'Attack' : 'Shoot';
     this.reproducir(l, anim);
-    l.quietoHasta = this.ahora + 0.35;
-    if (l.estado === 'par' && this.rnd() < 0.25) { this.rotulo(l, '¡Paralizado!', 'bad'); return true; }
-    const blanco = objetivo ? obj! : l;
-    if (objetivo && blanco !== l) this.provocar(blanco, l);
+    l.quietoHasta = this.ahora + 0.35 + pf.agotado;
+    // Agotado (Hiperrayo): un rato sin poder hacer nada.
+    if (pf.agotado) { l.gcd = Math.max(l.gcd, this.ahora + pf.agotado); l.gcdDura = Math.max(l.gcdDura, pf.agotado); this.despues(0.5, () => this.rotulo(l, 'Agotado', 'weak')); }
+    if (l.estado === 'par' && this.rnd() < 0.25) { this.rotulo(l, '¡Paralizado!', 'bad'); return; }
+    if (blanco !== l) this.provocar(blanco, l);
     // El efecto sale en el fotograma del golpe de la animación (HitFrame), no antes.
     this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => this.lanzarMov(l, id, blanco));
-    return true;
+  }
+  // Cada paso: la barra de lanzamiento avanza; al llenarse sale el movimiento. Los canalizados pegan por tics.
+  private pasoLanza(l: Luchador): void {
+    const c = l.lanza;
+    if (!c) return;
+    if (l.muerto || l.enBall || l.estado === 'slp' || l.estado === 'frz' || this.cambiando) { this.cortarLanza(l); return; }
+    const o = c.obj, m = getMove(c.id)!;
+    if (o && (o.muerto || o.enBall)) { this.cortarLanza(l); return; }
+    if (o) this.mirarA(l, o);
+    const lejos = !!o && Math.hypot(o.x - l.x, o.y - l.y) > alcance(m) + Math.max(8, o.alto * 0.3) + 20;
+    if (c.canal) {
+      if (lejos) { this.cortarLanza(l, l.rol === 'jugador' ? 'Fuera de alcance' : undefined); return; }
+      const paso = (c.t1 - c.t0) / c.tics;
+      while (l.lanza === c && c.hechos < c.tics && this.ahora >= c.t0 + (c.hechos + 1) * paso) {
+        // Cada tic, un golpe con su parte: un golpe del multigolpe o un tercio del drenaje (el efecto secundario, solo en el primero).
+        const parte: MoveData = { ...m, multihit: null, basePower: m.multihit ? m.basePower : m.basePower / c.tics, secondary: c.hechos ? null : m.secondary };
+        c.hechos++;
+        this.reproducir(l, 'Shoot', Math.min(0.35, paso));
+        this.lanzarMov(l, c.id, o ?? l, parte);
+      }
+      if (c.hechos >= c.tics && l.lanza === c) l.lanza = null;
+      else if (l.anim !== 'Charge' && l.anim !== 'Shoot') this.reproducir(l, 'Charge', c.t1 - this.ahora);
+      return;
+    }
+    if (l.anim !== 'Charge') this.reproducir(l, 'Charge', Math.max(0.1, c.t1 - this.ahora));
+    if (this.ahora < c.t1) return;
+    l.lanza = null;
+    if (lejos) { if (l.rol === 'jugador') this.aviso(`${m.nombre}: fuera de alcance`); return; }
+    this.soltar(l, c.id, o ?? l, perfil(m));
+  }
+  // Corta lo que esté lanzando (al moverse, al dormirse, al interrumpirle…).
+  cortarLanza(l: Luchador, txt?: string): void {
+    if (!l.lanza) return;
+    l.lanza = null;
+    if (l.anim === 'Charge') l.animHasta = 0;
+    if (txt) this.rotulo(l, txt, 'bad');
   }
   // Se tira el golpe y sus efectos y se pide la animación; lo tirado se aplica cuando la animación llega al impacto
   // (`impacto`) o, si no llega, a los IMPACTO_MAX s.
-  private lanzarMov(l: Luchador, id: string, t: Luchador): void {
-    const m = getMove(id)!;
+  private lanzarMov(l: Luchador, id: string, t: Luchador, parte?: MoveData): void {
+    const m = parte ?? getMove(id)!;
     if (l.muerto || this.cambiando) return;
     const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(m, l, t, this.clima?.tipo ?? null, this.rnd);
     const ef = this.efectos(m, l, t, r), n = ++this.n;
@@ -514,6 +586,12 @@ export class Mundo {
     if (ajeno) this.salir({ tipo: 'golpe', de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.filter(e => e.quien === t).map(e => ({ boosts: e.boosts, estado: e.estado })) });
     if (r.falla) return;
     if (r.dano > 0) {
+      // Los que hacen retroceder interrumpen: lo cortado tarda INTERRUMPIDO s en volver.
+      if (!ajeno && t.lanza && perfil(m).interrumpe) {
+        const c = t.lanza;
+        if (!c.canal) { t.cd[c.id] = Math.max(t.cd[c.id] ?? 0, this.ahora + INTERRUMPIDO); t.cdDura[c.id] = INTERRUMPIDO; }
+        this.cortarLanza(t, '¡Interrumpido!');
+      }
       if (!ajeno) this.danar(t, r.dano, l);
       if (m.drain) this.curar(l, Math.max(1, Math.floor(r.dano * m.drain[0] / m.drain[1])));
       if (m.recoil) this.danar(l, Math.max(1, Math.floor(r.dano * m.recoil[0] / m.recoil[1])), null);
@@ -672,12 +750,12 @@ export class Mundo {
     const l = this.jugador, def = ITEMS[id];
     if (!def || l.muerto || this.cambiando) return;
     if (this.partida.tiene(id) <= 0) { this.aviso(`No te quedan: ${def.nombre}`); return; }
-    if (l.gcd > this.ahora) return;
+    if (l.gcd > this.ahora || l.lanza) return;
     if (def.tipo === 'pokeball') { this.lanzarBall(id); return; }
     if (def.tipo === 'baya') {
       const cura = id === 'sitrus' ? 0.5 : id === 'oran' ? 0.3 : 0.15;
       if (l.ps >= l.stats.hp && !(id === 'lum' && l.estado)) { this.aviso('Tienes la vida entera'); return; }
-      this.partida.gastar(id); l.gcd = this.ahora + GCD;
+      this.partida.gastar(id); l.gcd = this.ahora + (l.gcdDura = GCD);
       this.curar(l, Math.ceil(l.stats.hp * cura));
       this.reproducir(l, 'Charge', 0.4);
       return;
@@ -692,7 +770,7 @@ export class Mundo {
     if (t.alfa) { this.aviso('Un alfa no se deja capturar: derrótalo'); return; }
     if (Math.hypot(t.x - p.x, t.y - p.y) > TIRO) { this.aviso('Acércate más para lanzar la Poké Ball'); return; }
     this.partida.gastar(id);
-    this.lanzando = true; p.gcd = this.ahora + GCD;
+    this.lanzando = true; p.gcd = this.ahora + (p.gcdDura = GCD);
     this.mirarA(p, t); this.reproducir(p, 'Shoot', 0.35);
     const n = ++this.n;
     this.emitir({ tipo: 'ball', n, item: id, a: t.uid, x0: p.x, y0: p.y - 14, x1: t.x, y1: t.y - 6 });
@@ -733,9 +811,9 @@ export class Mundo {
   private pensar(l: Luchador, dt: number): void {
     if (l.muerto || l.enBall) return;
     const quieto = l.estado === 'slp' || l.estado === 'frz' || l.quietoHasta > this.ahora;
-    const vel = (60 + Math.min(60, (this.formaL(l).base[5]) * 0.3)) * (l.estado === 'par' ? VEL_PARALIZADO : 1);
+    const vel = velAndar(60 + Math.min(60, this.formaL(l).base[5] * 0.3), 75, l.boosts.spe ?? 0) * (l.estado === 'par' ? VEL_PARALIZADO : 1);
     l.anda = false;
-    if (quieto) return;
+    if (quieto || l.lanza) return;   // lanzando, quieto
     const p = this.jugador;
     if (l.modo === 'huir') {
       if (this.ahora > l.huirHasta) { l.modo = 'pasear'; l.casa = { x: l.x, y: l.y }; l.meta = null; return; }
@@ -874,6 +952,7 @@ export class Mundo {
     if (falta > 0) { const n = Math.ceil(falta); this.aviso(`La piedra de hogar aún no está lista (${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')})`); return; }
     const p = this.jugador;
     if (p.estado === 'slp' || p.estado === 'frz') { this.aviso(`${p.nombre} está ${NOMBRE_ESTADO[p.estado].toLowerCase()}`); return; }
+    this.cortarLanza(p);
     this.hogar = { t0: this.ahora, t1: this.ahora + HOGAR_CARGA };
     this.reproducir(p, 'Charge');
   }
@@ -921,7 +1000,8 @@ export class Mundo {
     const p = this.jugador;
     p.anda = false;
     if (!p.muerto && !this.cambiando && p.estado !== 'slp' && p.estado !== 'frz' && p.quietoHasta <= this.ahora && (e.vx || e.vy)) {
-      p.anda = this.mover(p, e.vx, e.vy, VEL * (p.estado === 'par' ? VEL_PARALIZADO : 1), dt);
+      p.anda = this.mover(p, e.vx, e.vy, velAndar(VEL, this.formaL(p).base[5], p.boosts.spe ?? 0) * (p.estado === 'par' ? VEL_PARALIZADO : 1), dt);
+      if (p.anda && p.lanza) this.cortarLanza(p);   // moverse corta lo que estés lanzando
       if (p.anim === 'Attack' || p.anim === 'Shoot' || p.anim === 'Charge') p.animHasta = 0;
     }
     // Salidas del mapa.
@@ -932,7 +1012,7 @@ export class Mundo {
     for (const v of this.vecinos) v.ps = v.stats.hp * v.miembro!.ps;
     for (const l of this.todos()) {
       const reflejo = this.espejo && l.rol === 'salvaje';   // lo lleva el dueño del mapa: aquí solo se mueve hacia su foto
-      if (!reflejo) this.vivir(l, dt);
+      if (!reflejo) { this.vivir(l, dt); this.pasoLanza(l); }
       if (l !== p && !reflejo) this.pensar(l, dt);
       if (!l.muerto && l.anim && this.ahora >= l.animHasta) l.anim = null;
     }
@@ -1009,6 +1089,7 @@ export class Mundo {
         u: l.uid, li: l.linea, f: l.forma, n: l.nivel, sh: l.shiny || undefined, al: l.alfa || undefined, r: l.ronda ? this.mapa.salvajes.indexOf(l.ronda) : -1, c: l.casa,
         x: r1(l.x), y: r1(l.y), d: l.dir, an: l.anda, ps: Math.round(l.ps), hp: l.stats.hp, e: l.estado, m: l.muerto, b: l.enBall,
         te: l.temple, mo: l.modo, ri: l.rival?.uid ?? null, a: l.anim, aN: l.animN, aR: l.anim ? r1(Math.max(0, l.animHasta - this.ahora)) : 0,
+        ln: l.lanza ? [l.lanza.id, r1(l.lanza.t1 - this.ahora), r1(l.lanza.t1 - l.lanza.t0), l.lanza.canal ? 1 : 0] : undefined,
       })),
       clima: this.clima ? { tipo: this.clima.tipo, resta: r1(this.clima.hasta - this.ahora), b: this.clima.base ? 1 : undefined } : null,
       marca: mk ? { id: mk.id ?? 0, x: r1(mk.x), y: r1(mk.y), dura: mk.t1 - mk.t0, resta: r1(mk.t1 - this.ahora), de: mk.de.uid } : null,
@@ -1034,6 +1115,7 @@ export class Mundo {
       const rm = l.remoto ??= { x: s.x, y: s.y, t: this.ahora, animN: s.aN };
       rm.x = s.x; rm.y = s.y; rm.t = this.ahora;
       if (s.aN !== rm.animN) { rm.animN = s.aN; if (s.a) { l.anim = s.a; l.animN++; l.animHasta = this.ahora + s.aR; } }
+      l.lanza = s.ln ? { id: s.ln[0], obj: null, t0: this.ahora + s.ln[1] - s.ln[2], t1: this.ahora + s.ln[1], canal: !!s.ln[3], tics: 1, hechos: 0 } : null;
       l.casa = s.c; l.dir = s.d; l.anda = s.an; l.ps = s.ps; l.stats = { ...l.stats, hp: s.hp }; l.temple = s.te; l.modo = s.mo;
       if (s.e !== l.estado) { l.estado = s.e; l.estadoHasta = this.ahora + (s.e ? DURA_ESTADO[s.e] ?? 1 : 0); }
       if (s.m && !l.muerto) { l.muerto = true; if (this.objetivo === l) this.objetivo = null; }
