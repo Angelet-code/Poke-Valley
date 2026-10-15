@@ -11,6 +11,7 @@ import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, enMacizo } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
+import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
 import { dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
@@ -256,9 +257,9 @@ export class Aventura extends Phaser.Scene {
     const l = puntoLuz(p);
     if (l) this.encender(l[0], l[1], TIPOS_LUZ[c.luz ?? (el.id === 'hoguera' ? 'hoguera' : 'farol')], p.base + 1);
   }
-  // El punto de vuelo: el volador y un farol a su lado, donde diga la zona (`vuelo`) o en el primer hueco libre
-  // alrededor de la llegada por la primera salida (la entrada de la zona), lejos de las salidas. Sus huellas se suman
-  // al mundo.
+  // El punto de vuelo: el volador y un farol a su lado en el rellano de vuelo de la zona (`vuelo`); si la zona no
+  // tiene, en el primer hueco libre y con espacio alrededor cerca de la entrada, lejos de las salidas. Sus huellas se
+  // suman al mundo.
   private ponerVuelo(porId: Map<string, Elemento>, bloques: Bloque[]): void {
     const mapa = this.mapa, mundo = this.mundo!, s0 = mapa.salidas[0], a = mapa.vuelo ?? (s0 && mapa.llegada[s0.a]) ?? mapa.llegada.inicio;
     if (!a) return;
@@ -266,8 +267,9 @@ export class Aventura extends Phaser.Scene {
     const libre = (x: number, y: number) => [[0, 0], [-14, 0], [14, 0], [0, -10], [0, 12], [-FAROL_DX, -2], [-FAROL_DX, 6],
       [0, -30], [0, 30], [36, 0], [-FAROL_DX - 22, 0], [-FAROL_DX, -28], [-FAROL_DX, 28]].every(([dx, dy]) => mundo.pisable({ x: x + dx, y: y + dy }));
     const lejos = (x: number, y: number) => mapa.salidas.every(s => x < s.x0 - 100 || x > s.x1 + 100 || y < s.y0 - 100 || y > s.y1 + 100);
-    let sitio: { x: number; y: number } | null = mapa.vuelo && libre(mapa.vuelo.x, mapa.vuelo.y) ? mapa.vuelo : null;
-    for (let r = mapa.vuelo ? 12 : 90; r <= 300 && !sitio; r += 12) for (let k = 0; k < 24 && !sitio; k++) {
+    // Con rellano (lo reserva el generador de la zona: data/rellano.ts), ahí; si no, el primer hueco que valga.
+    let sitio: { x: number; y: number } | null = mapa.vuelo ?? null;
+    for (let r = 90; r <= 300 && !sitio; r += 12) for (let k = 0; k < 24 && !sitio; k++) {
       const ang = (k / 24) * Math.PI * 2, x = Math.round(a.x + Math.cos(ang) * r), y = Math.round(a.y + Math.sin(ang) * r * 0.75);
       if (x > 50 && y > 70 && x < mapa.W - 50 && y < mapa.H - 40 && libre(x, y) && lejos(x, y)) sitio = { x, y };
     }
@@ -352,7 +354,7 @@ export class Aventura extends Phaser.Scene {
     rnd.sow([this.mapa.id === 'pueblo' ? 'pueblo' : `${this.mapa.id}-${this.partida.estado.semilla}`]);
     for (let i = 0, k = 0; i < this.mapa.detalles * 6 && k < this.mapa.detalles; i++) {
       const x = rnd.between(30, W - 30), y = rnd.between(30, H - 30);
-      if (mundo.enBloque(x, y) || this.terrain.nearWater(x, y, 10) || bloques.some(b => x > b.x - b.w / 2 - 12 && x < b.x + b.w / 2 + 12 && y > b.y - b.h - 40 && y < b.y + 12)) continue;
+      if (mundo.enBloque(x, y) || this.terrain.nearWater(x, y, 10) || enRellano(this.mapa.rellano, x, y, 24) || bloques.some(b => x > b.x - b.w / 2 - 12 && x < b.x + b.w / 2 + 12 && y > b.y - b.h - 40 && y < b.y + 12)) continue;
       const c: Colocado = { id: ids[rnd.between(0, ids.length - 1)], x, y, flip: rnd.frac() < 0.5 };
       dibujar(this, porId.get(c.id)!, c); k++;
     }

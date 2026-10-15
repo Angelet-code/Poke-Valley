@@ -125,9 +125,15 @@ Cómo es (constantes `ALFA_*` en Aventura.ts):
 - **El mundo cuadra**: cada salida está en el lado por el que queda su zona en la cuadrícula. `revisarSalidas`
   (`data/mundo.ts`) lo comprueba al entrar en cada zona y avisa en la consola si no (o si falta el camino).
 - **Puntos de vuelo**, hecho: en cada zona, **Corviknight** (el taxi volador de Galar) con un farol al lado. Encima
-  lleva su nombre, «‹Vuelos›», y el icono del maestro de vuelo del WoW (una bota verde con alas que flota). En el pueblo
-  está junto a la boca norte (`MapaAventura.vuelo`); en las demás zonas, `Aventura.ponerVuelo` busca un hueco libre y
-  con espacio alrededor cerca de la entrada, lejos de las salidas. Te mira cuando te acercas.
+  lleva su nombre, «‹Vuelos›», y el icono del maestro de vuelo del WoW (una bota verde con alas que flota). Te mira
+  cuando te acercas.
+  - **Rellano de vuelo** (`src/data/rellano.ts`): nunca en mitad de un camino. Cada zona tiene un ensanche redondo de
+    losas, apartado y unido al camino por un sendero corto, con el volador y su farol. En el pueblo, a la derecha de la
+    boca norte con una callecita desde la avenida. En las demás lo reserva su generador junto al claro de la entrada
+    (`bosque`, `lago` y `zona` de biomas.ts), sin tirar dados: el resto de la zona sale igual. Alrededor no se ponen
+    árboles ni piezas, y por debajo se apartan más (vista 3/4: la copa taparía las losas); en el macizo, ahí solo
+    piezas bajas. `MapaAventura.rellano` y `.vuelo` dicen dónde está; si una zona no tuviera, `Aventura.ponerVuelo`
+    le busca un hueco con espacio alrededor.
   - **Se descubren hablando con él** (F, como en el WoW): el pie del mapa dice «¡Nuevo punto de vuelo descubierto!».
     El del pueblo (tu hogar) viene descubierto. Se guardan en la partida (`estado.vuelos`: dónde está cada volador).
   - **F a su lado** (fuera de combate) abre el mapa del mundo en modo vuelo, «¿A dónde vuelas?». Las zonas con punto

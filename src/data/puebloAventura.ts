@@ -17,6 +17,7 @@
 // Los solares quedan libres (césped) para edificios futuros.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
+import { enRellano } from './rellano';
 
 export const T = 24;
 export const MW = 42, MH = 38;
@@ -31,6 +32,7 @@ const R_PLAZA = 78;
 export const TABLON = { x: 440, y: 452 };           // tablón de misiones, al oeste de la hoguera
 export const INICIO: P = [504, 540];                // donde apareces (en la plaza, al sur de la hoguera)
 export const SALIDA_X: [number, number] = [520, 600]; // boca norte del pueblo (al bosque)
+export const RELLANO_PUEBLO: P = [724, 150];          // rellano de vuelo, a la derecha de la boca norte (data/rellano.ts)
 // Parcelas del huerto (centro de cada corral) y solares libres para construir.
 export const PARCELAS: P[] = [[150, 640], [222, 640], [294, 640], [150, 712], [222, 712], [294, 712]];
 export const SOLARES: Rect[] = [{ x0: 640, y0: 760, x1: 900, y1: 870 }, { x0: 330, y0: 760, x1: 480, y1: 870 }];
@@ -40,6 +42,7 @@ const AVENIDA: P[] = [[560, -10], [562, 120], [552, 240], [536, 334], [516, 400]
 const CALLES: P[][] = [
   [[110, 334], [300, 330], [470, 326], [640, 330], [900, 334]],      // calle del norte, delante de las puertas
   [[510, 540], [540, 640], [556, 780]],                              // calle del sur: plaza → solares
+  [[566, 168], [640, 160], [680, 154]],                              // avenida → rellano de vuelo
   [[582, 478], [700, 500], [780, 548], [800, 620], [800, 780]],      // plaza → tienda → almacén
   [[426, 478], [330, 520], [262, 560], [222, 600]],                  // plaza → huerto
   [[330, 520], [250, 500], [190, 500]],                              // → casa de la chimenea
@@ -65,7 +68,8 @@ export function terrenoPueblo(): MapData {
       const calle = CALLES.some(l => distLinea(x, y, l) < 17 + o);
       // El huerto: una mancha de tierra orgánica bajo los seis corrales (no casillas rectangulares).
       const parcela = Math.hypot((x - 222) / 140, (y - 664) / 78) < 1 + o * 0.03;
-      fila.push(plaza || avenida ? 2 : calle || parcela ? 1 : 0);
+      const rellano = enRellano({ x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }, x, y, -14 + o);
+      fila.push(plaza || avenida || rellano ? 2 : calle || parcela ? 1 : 0);
     }
     vert.push(fila);
   }
@@ -104,7 +108,7 @@ const HUERTO: Colocado[] = [
 ];
 // Verde: árboles en grupos por los rincones y entre zonas, arbustos junto a las casas, flores a los lados de las calles.
 const VERDE: Colocado[] = [
-  { id: 'arbol_alto', x: 260, y: 248 }, { id: 'arbol_bajo', x: 676, y: 246, flip: true },
+  { id: 'arbol_alto', x: 260, y: 248 }, { id: 'arbusto', x: 652, y: 236, flip: true },   // un árbol aquí taparía el rellano de vuelo
   { id: 'arbol_alto', x: 660, y: 440 }, { id: 'arbol_bajo', x: 690, y: 690, flip: true },
   { id: 'arbol_alto', x: 340, y: 450, flip: true }, { id: 'arbol_bajo', x: 440, y: 800 },
   { id: 'arbusto', x: 300, y: 300 }, { id: 'arbusto', x: 640, y: 296, flip: true }, { id: 'arbusto', x: 940, y: 640 },

@@ -32,6 +32,7 @@ import type { Paleta } from '../render/TerrainCore';
 import type { Colocado } from './mapaDibujo';
 import type { Alfa, ClimaBase, Llegada, MapaAventura, MapaId, Punto, Ronda, Salida } from './bosque';
 import { rng } from '../util';
+import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 
 export type Bioma = 'costa' | 'cantera' | 'pantano' | 'ruinas' | 'volcan' | 'nieve';
 // Lo que no se puede cruzar: 1 en las celdas de macizo. Lo consulta la escena junto con el agua (Aventura → Mundo).
@@ -144,6 +145,22 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     const d = Math.min(...claros.map(o => Math.hypot(o.x - c.x, o.y - c.y) - o.rad));
     if (d > 170 && d < 330 && sitios.every(s => Math.hypot(s.dentro.x - c.x, s.dentro.y - c.y) > 320)) secreto = c;
   }
+  // Rellano de vuelo: a un lado del claro de la entrada, de través al camino que llega de la salida, en tierra firme y
+  // apartado de los demás claros, del secreto y de las otras salidas (sin tirar dados: el resto de la zona sale igual).
+  const secretoR = secreto as Claro | null;
+  const c0 = claros[0], b0 = sitios[0].borde, dl = Math.hypot(c0.x - b0.x, c0.y - b0.y) || 1, ux = (c0.x - b0.x) / dl, uy = (c0.y - b0.y) / dl;
+  // Candidatos alrededor del claro de la entrada: primero de través al camino y cerca; luego girando hacia dentro
+  // (nunca hacia atrás, hacia la salida) y más lejos.
+  const candidatos: Punto[] = [];
+  for (const e of [0, 50, 100, 150, 200]) for (const g of [0, 0.4, 0.8, 1.2]) for (const sl of [1, -1]) {
+    const a = Math.atan2(ux * sl, -uy * sl) + g * -sl, d = c0.rad + 95 + e;   // a: de través; g gira hacia dentro
+    candidatos.push({ x: Math.round(c0.x + Math.cos(a) * d), y: Math.round(c0.y + Math.sin(a) * d * 0.8) });
+  }
+  const cabe = (p: Punto) => p.x > 120 && p.y > 120 && p.x < W - 120 && p.y < H - 120 && !enAgua(p.x, p.y, RELLANO.rx + 50);
+  const rellano: Punto | null = candidatos.find(p => cabe(p)
+    && claros.slice(1).every(o => Math.hypot(o.x - p.x, o.y - p.y) > o.rad + RELLANO.rx + 30)
+    && (!secretoR || Math.hypot(secretoR.x - p.x, secretoR.y - p.y) > secretoR.rad + RELLANO.rx + 40)
+    && sitios.slice(1).every(s => Math.hypot(s.dentro.x - p.x, s.dentro.y - p.y) > 160)) ?? candidatos.find(cabe) ?? null;   // si no, aunque roce otro claro
   // Senderos: desde la entrada, cada claro se une al más cercano de los ya unidos; cada salida, a su claro.
   const unidos = [claros[0]], padre = new Map<Claro, Claro>(), tramoDe = new Map<Claro, Punto[]>();
   const tramos: Punto[][] = sitios.map((s, i) => [s.borde, claros[i]]);
@@ -169,9 +186,10 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   // El secreto, por un sendero estrecho desde el claro más cercano.
   const sec = secreto as Claro | null;
   const ptsSecreto = sec ? muestrear([[claros.reduce((m, c) => Math.hypot(c.x - sec.x, c.y - sec.y) < Math.hypot(m.x - sec.x, m.y - sec.y) ? c : m), sec]]) : [];
+  const ptsRellano = rellano ? muestrear([[c0, rellano]]) : [];   // el sendero corto al rellano
   const dist = (ps: Punto[], x: number, y: number) => { let d = Infinity; for (const p of ps) d = Math.min(d, Math.hypot(p.x - x, p.y - y)); return d; };
-  const aSendero = (x: number, y: number) => Math.min(dist(puntos, x, y), dist(ptsSecreto, x, y));
-  const todosClaros = sec ? [...claros, sec] : claros;
+  const aSendero = (x: number, y: number) => Math.min(dist(puntos, x, y), dist(ptsSecreto, x, y), dist(ptsRellano, x, y));
+  const todosClaros: Claro[] = [...claros, ...(sec ? [sec] : []), ...(rellano ? [{ ...rellano, rad: RELLANO.rx }] : [])];
   const enClaro = (x: number, y: number, m = 0) => todosClaros.some(c => Math.hypot((x - c.x) / (c.rad + m), (y - c.y) / ((c.rad + m) * 0.8)) < 1);
 
   // Bolsas: callejones sin salida a un lado de un camino (algo dentro: un hito local o un salvaje).
@@ -219,6 +237,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   for (const pt of ptsPrincipal) sello(mCamino, pt.x, pt.y, 44);
   for (const pt of puntos) sello(mCamino, pt.x, pt.y, 34);
   for (const pt of ptsSecreto) sello(mCamino, pt.x, pt.y, 22);
+  for (const pt of ptsRellano) sello(mCamino, pt.x, pt.y, 24);
   mPaso.set(mCamino);
   for (const c of [...todosClaros, ...bolsas]) sello(mPaso, c.x, c.y, c.rad + 10, (c.rad + 10) * 0.8);
   for (const f of explanadas) for (const e of f) sello(mPaso, e.x, e.y, e.rx, e.ry);
@@ -282,8 +301,8 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     const fila: number[] = [];
     for (let vx = 0; vx <= MW; vx++) {
       const x = vx * T, y = vy * T;
-      const camino = dist(ptsPrincipal, x, y) < 28 || dist(puntos, x, y) < 19 || dist(ptsSecreto, x, y) < 11;
-      fila.push(enAgua(x, y) ? 3 : camino ? (def.caminoLosas ? 2 : 1) : ruido(x, y) > 0.9 ? 1 : 0);
+      const camino = dist(ptsPrincipal, x, y) < 28 || dist(puntos, x, y) < 19 || dist(ptsSecreto, x, y) < 11 || dist(ptsRellano, x, y) < 13;
+      fila.push(enAgua(x, y) ? 3 : enRellano(rellano, x, y, -14) ? 2 : camino ? (def.caminoLosas ? 2 : 1) : ruido(x, y) > 0.9 ? 1 : 0);
     }
     vert.push(fila);
   }
@@ -292,6 +311,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   const ocupado: (Punto & { r: number })[] = [];
   const libre = (x: number, y: number, rad: number) => ocupado.every(o => Math.hypot(o.x - x, (o.y - y) * 1.3) > o.r + rad);
   const poner = (c: Colocado, rad: number) => { col.push(c); ocupado.push({ x: c.x, y: c.y, r: rad }); };
+  if (rellano) ocupado.push({ ...rellano, r: RELLANO.rx + 6 });   // nada encima del rellano de vuelo
 
   // 5. Hito en el claro más lejano de la entrada, y el alfa delante. Postes junto a las salidas.
   const orden = [...claros].sort((a, b) => Math.hypot(a.x - claros[0].x, a.y - claros[0].y) - Math.hypot(b.x - claros[0].x, b.y - claros[0].y));
@@ -346,7 +366,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     if (!enBorde && r() < 0.35) continue;   // al fondo, algo más claro (lo tapan las copas)
     // Vista 3/4: lo alto crece hacia arriba. Si justo encima (hasta ~80 px) hay hueco, aquí solo algo bajo, o nada:
     // si no, la copa taparía el hueco y se vería más estrecho de lo que es.
-    const huecoArriba = [20, 44, 68].some(d => !enMaz(jx, jy - d) && jy - d > 0);
+    const huecoArriba = [20, 44, 68].some(d => !enMaz(jx, jy - d) && jy - d > 0) || tapaRellano(rellano, jx, jy);
     if (huecoArriba) { if (r() < 0.55) col.push({ id: pick(def.bajo), x: Math.round(jx), y: Math.round(jy), flip: r() < 0.5, s: entre(0.8, 1.05) }); continue; }
     col.push({ id: pick(enBorde ? borde : def.muro), x: Math.round(jx), y: Math.round(jy), flip: r() < 0.5, s: entre(0.9, 1.2) });
   }
@@ -358,7 +378,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
       x = c.x + Math.cos(a) * c.rad * d; y = c.y + Math.sin(a) * c.rad * 0.8 * d;
     }
     if (donde === 'agua' ? !enAgua(x, y, -30) : donde === 'orilla' ? !enAgua(x, y, 40) || enAgua(x, y, 6) : enAgua(x, y, 20)) continue;
-    if (donde !== 'agua' && aSendero(x, y) < 28) continue;
+    if (donde !== 'agua' && (aSendero(x, y) < 28 || enRellano(rellano, x, y, 16))) continue;
     const plano = donde === 'claro' || donde === 'agua';
     if (plano) { col.push({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5 }); k++; continue; }
     if (!libre(x, y, 16)) continue;
@@ -373,7 +393,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     for (let k = 0, i = 0; k < n && i < 400; i++) {
       const e = pick(f), a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.85;
       const x = e.x + Math.cos(a) * e.rx * d, y = e.y + Math.sin(a) * e.ry * d;
-      if (enAgua(x, y, 16) || aSendero(x, y) < 40 || enClaro(x, y, -20) || !libre(x, y, 34)) continue;
+      if (enAgua(x, y, 16) || aSendero(x, y) < 40 || enClaro(x, y, -20) || tapaRellano(rellano, x, y) || !libre(x, y, 34)) continue;
       // a veces un grupito de dos o tres, para que haya rincones donde esconderse
       const g = r() < 0.35 ? 2 + Math.floor(r() * 2) : 1;
       for (let q = 0; q < g; q++) poner({ id: pick(islas), x: Math.round(x + (q ? entre(-22, 22) : 0)), y: Math.round(y + (q ? entre(-14, 14) : 0)), flip: r() < 0.5, s: entre(0.85, 1.15) }, 22);
@@ -414,6 +434,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     datos: { mw: MW, mh: MH, vert, inicio: [Math.round(sitios[0].dentro.x), Math.round(sitios[0].dentro.y)] }, W, H, colocados: col, detalles: 0,
     llegada, salidas: def.puertas.map(p => salida(p, W, H)), salvajes: alcanzables,
     macizo: { cel: CEL, cols: GC, filas: GF, datos: mMacizo },
+    ...(rellano ? { rellano, vuelo: sitioVolador(rellano) } : {}),
   };
 }
 

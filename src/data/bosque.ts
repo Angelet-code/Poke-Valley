@@ -9,10 +9,11 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { ARCANE } from '../config';
 import { esBioma, zonaBioma, type Bioma, type Macizo } from './biomas';
+import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 import type { Clima } from '../combate/reglas';
 
 export const T = 24;
@@ -38,7 +39,8 @@ export interface MapaAventura {
   alfa?: Alfa;
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
-  vuelo?: Punto;                  // dónde va el punto de vuelo; si no, Aventura lo busca junto a la entrada
+  vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
+  rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
   suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo
   macizo?: Macizo;                // zonas de bioma: lo que no se puede cruzar (bosque cerrado, roca…), ver biomas.ts
@@ -56,7 +58,7 @@ export function pueblo(): MapaAventura {
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,
-    vuelo: { x: 742, y: 150 },     // junto a la boca norte, a la derecha de la avenida
+    rellano: { x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }, vuelo: sitioVolador({ x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }),   // junto a la boca norte
     parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };
 }
@@ -80,8 +82,13 @@ export function bosque(semilla: number): MapaAventura {
     const c = { x: entre(170, W - 170), y: entre(150, H - 260), rad: entre(80, 130) };
     if (claros.every(o => Math.hypot(o.x - c.x, o.y - c.y) > o.rad + c.rad + 50)) claros.push(c);
   }
+  // Rellano de vuelo: a un lado del claro de la entrada, apartado de los demás claros (sin tirar dados).
+  const c0 = claros[0];
+  const rellano = [[1, 0], [-1, 0], [1, -1], [-1, -1]].map(([sx, sy]) => ({ x: c0.x + sx * (c0.rad + 100), y: c0.y - 30 + sy * 90 }))
+    .find(p => p.x > 140 && p.x < W - 140 && claros.slice(1).every(o => Math.hypot(o.x - p.x, o.y - p.y) > o.rad + RELLANO.rx + 40)) ?? null;
   // Senderos: cada claro se une al más cercano de los ya unidos (un árbol desde la entrada), con curvas suaves.
   const unidos = [claros[0]], tramos: Punto[][] = [[entrada, claros[0]]];
+  if (rellano) tramos.push([c0, rellano]);   // el sendero corto al rellano
   for (const c of claros.slice(1).sort((a, b) => Math.hypot(a.x - entrada.x, a.y - entrada.y) - Math.hypot(b.x - entrada.x, b.y - entrada.y))) {
     const o = unidos.reduce((m, u) => Math.hypot(u.x - c.x, u.y - c.y) < Math.hypot(m.x - c.x, m.y - c.y) ? u : m);
     const mid = { x: (o.x + c.x) / 2 + entre(-60, 60), y: (o.y + c.y) / 2 + entre(-60, 60) };
@@ -102,13 +109,13 @@ export function bosque(semilla: number): MapaAventura {
     for (let k = 0; k <= n; k++) puntos.push({ x: a.x + (b.x - a.x) * k / n, y: a.y + (b.y - a.y) * k / n });
   }
   const aSendero = (x: number, y: number) => { let d = Infinity; for (const p of puntos) d = Math.min(d, Math.hypot(p.x - x, p.y - y)); return d; };
-  const enClaro = (x: number, y: number, m = 0) => claros.some(c => Math.hypot((x - c.x) / (c.rad + m), (y - c.y) / ((c.rad + m) * 0.8)) < 1);
+  const enClaro = (x: number, y: number, m = 0) => claros.some(c => Math.hypot((x - c.x) / (c.rad + m), (y - c.y) / ((c.rad + m) * 0.8)) < 1) || enRellano(rellano, x, y, m);
 
-  // Suelo: césped, con tierra en los senderos y alguna mancha en los claros.
+  // Suelo: césped, con tierra en los senderos y alguna mancha en los claros; losas en el rellano de vuelo.
   const vert: number[][] = [];
   for (let vy = 0; vy <= MH; vy++) {
     const fila: number[] = [];
-    for (let vx = 0; vx <= MW; vx++) fila.push(aSendero(vx * T, vy * T) < 22 ? 1 : 0);
+    for (let vx = 0; vx <= MW; vx++) fila.push(enRellano(rellano, vx * T, vy * T, -14) ? 2 : aSendero(vx * T, vy * T) < 22 ? 1 : 0);
     vert.push(fila);
   }
 
@@ -116,6 +123,7 @@ export function bosque(semilla: number): MapaAventura {
   const ocupado: (Punto & { r: number })[] = [];
   const libre = (x: number, y: number, rad: number) => ocupado.every(o => Math.hypot(o.x - x, (o.y - y) * 1.3) > o.r + rad);
   const poner = (c: Colocado, rad: number) => { col.push(c); ocupado.push({ x: c.x, y: c.y, r: rad }); };
+  if (rellano) ocupado.push({ ...rellano, r: RELLANO.rx });   // nada encima del rellano de vuelo
   // El árbol viejo: al fondo del claro más lejano de la entrada, detrás del alfa (su guarida). Y un poste junto a cada
   // salida (a la izquierda de la boca de la entrada; arriba de la del este).
   const lejos = claros.reduce((m, c) => Math.hypot(c.x - entrada.x, c.y - entrada.y) > Math.hypot(m.x - entrada.x, m.y - entrada.y) ? c : m);
@@ -134,12 +142,13 @@ export function bosque(semilla: number): MapaAventura {
   for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)]) {
     if (y > H && Math.abs(x - entrada.x) < 70) continue;
     if (y < 80 && Math.abs(x - norte) < 70) continue;   // boca del norte
+    if (tapaRellano(rellano, x, y)) continue;
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
   }
   // Dentro: árboles sueltos donde no hay claro ni sendero.
   for (let i = 0; i < 2500; i++) {
     const x = entre(70, W - 70), y = entre(90, H - 30);
-    if (enClaro(x, y, 25) || aSendero(x, y) < 46 || !libre(x, y, 26)) continue;
+    if (enClaro(x, y, 25) || aSendero(x, y) < 46 || tapaRellano(rellano, x, y) || !libre(x, y, 26)) continue;
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.85, 1.2) }, 20);
   }
   // Rocas, arbustos, tocones, troncos caídos y panales por el borde de los claros; flores, piedras y setas dentro.
@@ -150,7 +159,7 @@ export function bosque(semilla: number): MapaAventura {
     const c = claros[Math.floor(r() * claros.length)], a = r() * Math.PI * 2, d = PLANOS.has(id) ? entre(0, 0.7) : entre(0.75, 1.05);
     const x = c.x + Math.cos(a) * c.rad * d, y = c.y + Math.sin(a) * c.rad * 0.8 * d;
     const plano = PLANOS.has(id);
-    if (aSendero(x, y) < 30 || (!plano && !libre(x, y, 16))) continue;
+    if (aSendero(x, y) < 30 || enRellano(rellano, x, y, 16) || (!plano && !libre(x, y, 16))) continue;
     if (plano) col.push({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5 }); else poner({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: id.startsWith('roca') ? entre(0.6, 0.9) : 1 }, 16);
     k++;
   }
@@ -180,7 +189,7 @@ export function bosque(semilla: number): MapaAventura {
     salidas: [{ x0: entrada.x - 50, y0: H - 12, x1: entrada.x + 50, y1: H, a: 'pueblo', texto: 'Al pueblo' },
       { x0: W - 14, y0: este - 50, x1: W, y1: este + 50, a: 'lago', texto: 'Al lago' },
       { x0: norte - 50, y0: 0, x1: norte + 50, y1: 14, a: 'cantera', texto: 'A la cantera' }],
-    salvajes,
+    salvajes, ...(rellano ? { rellano, vuelo: sitioVolador(rellano) } : {}),
   };
 }
 
@@ -220,6 +229,10 @@ export function lago(semilla: number): MapaAventura {
   const salidaE = { x: W + 10, y: Math.round(H * 0.2) };
   const pE = anillo.reduce((m, p) => Math.hypot(p.x - salidaE.x, p.y - salidaE.y) < Math.hypot(m.x - salidaE.x, m.y - salidaE.y) ? p : m);
   const tramos: Punto[][] = [anillo.concat(anillo[0]), [{ x: -10, y: entrada.y }, { x: (oeste.x) / 2, y: (entrada.y + oeste.y) / 2 + entre(-20, 20) }, oeste], [pE, salidaE]];
+  // Rellano de vuelo: junto a la entrada, por encima o por debajo del camino, en tierra firme (sin tirar dados).
+  const rellano = [[170, -125], [170, 125], [250, -140], [250, 140]].map(([dx, dy]) => ({ x: dx, y: entrada.y + dy }))
+    .find(p => p.y > 130 && p.y < H - 110 && !enAgua(p.x, p.y, RELLANO.rx + 60)) ?? null;
+  if (rellano) tramos.push([{ x: rellano.x - 40, y: entrada.y }, rellano]);
   const puntos: Punto[] = [];
   for (const t of tramos) for (let i = 0; i < t.length - 1; i++) {
     const a = t[i], b = t[i + 1], n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 8);
@@ -233,7 +246,7 @@ export function lago(semilla: number): MapaAventura {
     const fila: number[] = [];
     for (let vx = 0; vx <= LW; vx++) {
       const x = vx * T, y = vy * T, playa = enAgua(x, y, 30) && Math.sin(x * 0.011 + y * 0.017 + semilla % 7) > -0.2;
-      fila.push(enAgua(x, y) ? 3 : playa || aSendero(x, y) < 20 ? 1 : 0);
+      fila.push(enAgua(x, y) ? 3 : enRellano(rellano, x, y, -14) ? 2 : playa || aSendero(x, y) < 20 ? 1 : 0);
     }
     vert.push(fila);
   }
@@ -243,6 +256,7 @@ export function lago(semilla: number): MapaAventura {
   const libre = (x: number, y: number, rad: number) => ocupado.every(o => Math.hypot(o.x - x, (o.y - y) * 1.3) > o.r + rad);
   const poner = (c: Colocado, rad: number) => { col.push(c); ocupado.push({ x: c.x, y: c.y, r: rad }); };
   const arbol = () => (r() < 0.4 ? 'arbol_alto' : 'arbol_bajo');
+  if (rellano) ocupado.push({ ...rellano, r: RELLANO.rx + 10 });   // nada encima del rellano de vuelo
   // Borde de árboles, con la boca del oeste libre.
   for (let y = 10; y < H + 40; y += 30) for (const x of [entre(-6, 14), entre(30, 50), W - entre(-6, 14), W - entre(30, 50)]) {
     if (x < W / 2 && Math.abs(y - entrada.y) < 64) continue;
@@ -261,13 +275,13 @@ export function lago(semilla: number): MapaAventura {
   // Sauces: por fuera del camino que rodea el lago, cerca del agua.
   for (let k = 0, i = 0; k < 4 && i < 800; i++) {
     const x = entre(90, W - 90), y = entre(120, H - 60);
-    if (!enAgua(x, y, 150) || enAgua(x, y, 100) || aSendero(x, y) < 40 || !libre(x, y, 40)) continue;
+    if (!enAgua(x, y, 150) || enAgua(x, y, 100) || aSendero(x, y) < 40 || tapaRellano(rellano, x, y) || !libre(x, y, 40)) continue;
     poner({ id: 'sauce', x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.1) }, 34); k++;
   }
   // Árboles sueltos por tierra firme, lejos del agua y del camino (más claro que el bosque).
   for (let i = 0; i < 900; i++) {
     const x = entre(70, W - 70), y = entre(90, H - 30);
-    if (enAgua(x, y, 60) || aSendero(x, y) < 44 || !libre(x, y, 34)) continue;
+    if (enAgua(x, y, 60) || aSendero(x, y) < 44 || tapaRellano(rellano, x, y) || !libre(x, y, 34)) continue;
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.85, 1.15) }, 24);
   }
   // Orilla: juncos pegados al agua (alguno con el pie dentro), rocas y algún arbusto. Flores y piedras por el césped.
@@ -286,7 +300,7 @@ export function lago(semilla: number): MapaAventura {
   }
   for (const [id, n] of [['flores', 10], ['piedras_0', 4]] as [string, number][]) for (let k = 0, i = 0; k < n && i < 400; i++) {
     const x = entre(80, W - 80), y = entre(100, H - 60);
-    if (enAgua(x, y, 20) || aSendero(x, y) < 28) continue;
+    if (enAgua(x, y, 20) || aSendero(x, y) < 28 || enRellano(rellano, x, y, 16)) continue;
     col.push({ id, x: Math.round(x), y: Math.round(y), flip: r() < 0.5 }); k++;
   }
 
@@ -311,7 +325,7 @@ export function lago(semilla: number): MapaAventura {
     llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 }, costa: { x: W - 40, y: salidaE.y, dir: 6 } },
     salidas: [{ x0: 0, y0: entrada.y - 50, x1: 14, y1: entrada.y + 50, a: 'bosque', texto: 'Al bosque' },
       { x0: W - 14, y0: salidaE.y - 50, x1: W, y1: salidaE.y + 50, a: 'costa', texto: 'A la costa' }],
-    salvajes,
+    salvajes, ...(rellano ? { rellano, vuelo: sitioVolador(rellano) } : {}),
   };
 }
 
