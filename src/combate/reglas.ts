@@ -105,6 +105,8 @@ export const COLOR_ESTADO: Record<string, number> = { slp: 0x8a93a8, frz: 0x7cc8
 // con nieve o granizo. Síntesis, Luz Lunar y Sol Matinal curan 2/3 con sol y 1/4 con otro clima.
 export type Clima = 'lluvia' | 'sol' | 'arena' | 'nieve' | 'granizo';
 export const DURA_CLIMA = 40;
+// Clima de base de una zona (MapaAventura.clima): cada CLIMA_TRAMO s se sortea si lo hace o no. No daña por turnos.
+export const CLIMA_TRAMO = 60;
 export const CLIMA_DE: Record<string, Clima> = { raindance: 'lluvia', sunnyday: 'sol', sandstorm: 'arena', snowscape: 'nieve', hail: 'granizo' };
 export const NOMBRE_CLIMA: Record<Clima, string> = { lluvia: 'Lluvia', sol: 'Sol intenso', arena: 'Tormenta de arena', nieve: 'Nieve', granizo: 'Granizo' };
 export const FIN_CLIMA: Record<Clima, string> = { lluvia: 'Ha dejado de llover', sol: 'El sol vuelve a ser normal', arena: 'La tormenta de arena amaina', nieve: 'Ha dejado de nevar', granizo: 'Ha dejado de granizar' };

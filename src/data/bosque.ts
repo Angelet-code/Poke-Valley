@@ -12,7 +12,8 @@ import type { Colocado } from './mapaDibujo';
 import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { ARCANE } from '../config';
-import { esBioma, zonaBioma, type Bioma } from './biomas';
+import { esBioma, zonaBioma, type Bioma, type Macizo } from './biomas';
+import type { Clima } from '../combate/reglas';
 
 export const T = 24;
 export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma;
@@ -22,6 +23,9 @@ export interface Salida { x0: number; y0: number; x1: number; y1: number; a: Map
 export interface Ronda { linea: string; nivel: number; x: number; y: number }
 // El alfa (élite) de una zona: una forma concreta (Pidgeotto a nivel 9, aunque Pidgey evolucione a los 18) en un sitio fijo.
 export interface Alfa extends Ronda { forma: string }
+// Clima de base de una zona: cada tramo de CLIMA_TRAMO s hay `prob` de que haga este clima (0,8 = el 80 % del tiempo).
+export interface ClimaBase { tipo: Clima; prob: number }
+
 export interface MapaAventura {
   id: MapaId; nombre: string; datos: MapData; W: number; H: number;
   lema: string;                   // lo que dice el rótulo al entrar, bajo el nombre (nivel y tipos)
@@ -32,9 +36,11 @@ export interface MapaAventura {
   salidas: Salida[];
   salvajes: Ronda[];
   alfa?: Alfa;
+  clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
-  parcelas?: Punto[];
-  suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
+  parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
+  suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo
+  macizo?: Macizo;                // zonas de bioma: lo que no se puede cruzar (bosque cerrado, roca…), ver biomas.ts
 }
 
 

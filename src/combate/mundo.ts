@@ -15,7 +15,7 @@ import { HOGAR_CARGA, HOGAR_CD, Partida, movsHasta, tirarSexo, type Atajo, type 
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
 import {
-  CLIMA_DE, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
+  CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
   TURNO, VEL_PARALIZADO, alcance, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, probCaptura, statsDe,
   type Clima, type Golpe, type Stats,
 } from './reglas';
@@ -108,7 +108,7 @@ export interface FotoSalvaje {
 }
 export interface Foto {
   s: FotoSalvaje[];
-  clima: { tipo: Clima; resta: number } | null;
+  clima: { tipo: Clima; resta: number; b?: 1 } | null;
   marca: { id: number; x: number; y: number; dura: number; resta: number; de: string } | null;
 }
 
@@ -148,7 +148,8 @@ export class Mundo {
   ahora = 0;
   cambiando = false;                   // te vas del mapa (salida, debilitado o piedra de hogar)
   // Clima del mapa (Danza Lluvia, Día Soleado…): hasta cuándo dura; daña por turnos a quien no aguanta la arena o el granizo.
-  clima: { tipo: Clima; hasta: number } | null = null;
+  // `base`: es el de la zona (MapaAventura.clima), que no daña; un movimiento de clima lo tapa mientras dura.
+  clima: { tipo: Clima; hasta: number; base?: boolean } | null = null;
   // Golpe anunciado de un alfa: el círculo del suelo que se llena; al llenarse, daña a quien siga dentro.
   marca: { x: number; y: number; t0: number; t1: number; de: Luchador; id?: number } | null = null;
   // Piedra de hogar canalizándose (s de juego): la barra de lanzamiento la pinta el HUD.
@@ -162,6 +163,7 @@ export class Mundo {
   private n = 0;                       // numera movimientos y Balls en vuelo
   private lanzando = false;
   private climaTic = 0;
+  private climaSorteo = 0;             // cuándo se vuelve a sortear el clima de la zona
   private sucesos: Suceso[] = [];
   private relojes: { t: number; fn: () => void }[] = [];
   private pendientes = new Map<number, { l: Luchador; id: string; t: Luchador; r: Golpe; ef: Efecto[]; hasta: number }>();
@@ -819,16 +821,28 @@ export class Mundo {
   }
   private pasoClima(): void {
     const c = this.clima;
-    if (!c) return;
-    if (this.ahora > c.hasta) {
-      this.clima = null;
-      this.emitir({ tipo: 'clima', clima: null });
-      this.aviso(FIN_CLIMA[c.tipo]);
-      return;
-    }
-    if (this.ahora < this.climaTic) return;
+    if (c ? this.ahora > c.hasta : this.ahora >= this.climaSorteo) { this.sortearClima(c); return; }
+    if (!c || c.base || this.ahora < this.climaTic) return;
     this.climaTic = this.ahora + TURNO;
     for (const l of [this.jugador, ...(this.espejo ? [] : this.salvajes)]) if (!l.muerto && !l.enBall && danaClima(c.tipo, l.tipos)) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 16)), null);
+  }
+
+  // Clima de la zona: al entrar, cada CLIMA_TRAMO s y al acabar el de un movimiento se sortea si lo hace (prob) o no.
+  // Si sigue el mismo, no se avisa; al entrar al mapa tampoco (ya lo dice la bienvenida y se ve).
+  private sortearClima(antes: { tipo: Clima } | null): void {
+    const z = this.espejo ? undefined : this.mapa.clima, avisar = this.ahora > 1;
+    this.climaSorteo = this.ahora + CLIMA_TRAMO;
+    if (z && this.rnd() < z.prob) {
+      this.clima = { tipo: z.tipo, hasta: this.climaSorteo, base: true };
+      if (antes?.tipo === z.tipo) return;
+      this.emitir({ tipo: 'clima', clima: z.tipo });
+      if (avisar) this.aviso(NOMBRE_CLIMA[z.tipo]);
+    } else {
+      this.clima = null;
+      if (!antes) return;
+      this.emitir({ tipo: 'clima', clima: null });
+      if (avisar) this.aviso(FIN_CLIMA[antes.tipo]);
+    }
   }
 
   // ---- Piedra de hogar (H) ----
@@ -978,7 +992,7 @@ export class Mundo {
         x: r1(l.x), y: r1(l.y), d: l.dir, an: l.anda, ps: Math.round(l.ps), hp: l.stats.hp, e: l.estado, m: l.muerto, b: l.enBall,
         te: l.temple, mo: l.modo, ri: l.rival?.uid ?? null, a: l.anim, aN: l.animN, aR: l.anim ? r1(Math.max(0, l.animHasta - this.ahora)) : 0,
       })),
-      clima: this.clima ? { tipo: this.clima.tipo, resta: r1(this.clima.hasta - this.ahora) } : null,
+      clima: this.clima ? { tipo: this.clima.tipo, resta: r1(this.clima.hasta - this.ahora), b: this.clima.base ? 1 : undefined } : null,
       marca: mk ? { id: mk.id ?? 0, x: r1(mk.x), y: r1(mk.y), dura: mk.t1 - mk.t0, resta: r1(mk.t1 - this.ahora), de: mk.de.uid } : null,
     };
   }
@@ -1011,8 +1025,8 @@ export class Mundo {
     for (const l of [...this.salvajes]) if (!hay.has(l.uid)) this.quitar(l);
     // Clima del mapa y golpe anunciado del alfa.
     if (f.clima) {
-      if (this.clima?.tipo !== f.clima.tipo) { this.emitir({ tipo: 'clima', clima: f.clima.tipo }); this.aviso(`${NOMBRE_CLIMA[f.clima.tipo]} durante ${Math.round(f.clima.resta)} s`); }
-      this.clima = { tipo: f.clima.tipo, hasta: this.ahora + f.clima.resta };
+      if (this.clima?.tipo !== f.clima.tipo) { this.emitir({ tipo: 'clima', clima: f.clima.tipo }); this.aviso(f.clima.b ? NOMBRE_CLIMA[f.clima.tipo] : `${NOMBRE_CLIMA[f.clima.tipo]} durante ${Math.round(f.clima.resta)} s`); }
+      this.clima = { tipo: f.clima.tipo, hasta: this.ahora + f.clima.resta, base: !!f.clima.b };
     } else if (this.clima) { this.emitir({ tipo: 'clima', clima: null }); this.clima = null; }
     const mk = f.marca, de = mk && this.luchador(mk.de);
     if (mk && de && !this.marcasHechas.has(mk.id)) this.marca = { x: mk.x, y: mk.y, t0: this.ahora + mk.resta - mk.dura, t1: this.ahora + mk.resta, de, id: mk.id };

@@ -296,13 +296,13 @@ export class HudAventura extends Phaser.Scene {
     // Reloj.
     const min = Math.floor(av.partida.estado.minuto) % (24 * 60), h = Math.floor(min / 60), mm = Math.floor(min % 60 / 10) * 10;
     this.reloj.setText(`${av.mapa.nombre}\n${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).setLineSpacing(-1 * S);
-    // Clima activo (Danza Lluvia, Día Soleado…), con lo que le queda.
+    // Clima activo (Danza Lluvia, Día Soleado…), con lo que le queda; el de la zona, solo el nombre.
     const cl = av.clima, tq = cl ? Math.max(0, Math.ceil(cl.hasta - av.ahora)) : 0;
     this.climaG.clear();
     this.climaTxt.setVisible(!!cl);
     if (cl) {
       marco(this.climaG, VW - 4 - 74, 28, 74, 13, PANEL);
-      this.climaTxt.setText(`${NOMBRE_CLIMA[cl.tipo]} · ${tq} s`);
+      this.climaTxt.setText(cl.base ? NOMBRE_CLIMA[cl.tipo] : `${NOMBRE_CLIMA[cl.tipo]} · ${tq} s`);
     }
 
     // Barra.

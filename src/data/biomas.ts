@@ -13,6 +13,12 @@
 // 6. Relleno suelto fuera de claros y senderos; piezas sueltas por el borde de los claros, en los claros o en el agua.
 // 7. Salvajes: 2-3 por claro, con nivel de `niveles[0]` (el de la entrada) a `niveles[1]` (el del fondo).
 //
+// Macizo (2026-10-15, tras ver que las zonas eran "un lienzo en blanco decorado"): lo transitable se EXCAVA. Solo se
+// anda por los claros, los pasillos (el principal más ancho), unas bolsas sin salida a un lado del camino y el sendero
+// estrecho del secreto; todo lo demás es macizo (`Macizo`, rejilla de 8 px): no se cruza y se llena de piezas de muro y
+// relleno para que se lea como bosque cerrado o roca. Un río (`rio`) parte la zona entre la entrada y el hito y solo se
+// cruza por los vados de los caminos (piedras); las lagunas también dejan paso al camino.
+//
 // Diseño (docs/GDD-mundo.md §5, de lo investigado sobre diseño de zonas; `diseno` de cada bioma):
 // - Hito global al fondo, enmarcado por una pareja de piezas (`marco`) que hace de puerta hacia él.
 // - Camino principal (entrada → hito) más ancho que los demás, con migas (`miga`) a los lados: se sigue sin flechas.
@@ -21,17 +27,26 @@
 // - Rincón secreto: un claro pequeño apartado, por un sendero estrecho, con una especie rara de más nivel (`rara`).
 import type { Paleta } from '../render/TerrainCore';
 import type { Colocado } from './mapaDibujo';
-import type { Alfa, Llegada, MapaAventura, MapaId, Punto, Ronda, Salida } from './bosque';
+import type { Alfa, ClimaBase, Llegada, MapaAventura, MapaId, Punto, Ronda, Salida } from './bosque';
 import { rng } from '../util';
 
 export type Bioma = 'costa' | 'cantera' | 'pantano' | 'ruinas' | 'volcan' | 'nieve';
+// Lo que no se puede cruzar: 1 en las celdas de macizo. Lo consulta la escena junto con el agua (Aventura → Mundo).
+export interface Macizo { cel: number; cols: number; filas: number; datos: Uint8Array }
+export function enMacizo(m: { macizo?: Macizo }, x: number, y: number): boolean {
+  const z = m.macizo;
+  if (!z) return false;
+  const i = Math.floor(x / z.cel), j = Math.floor(y / z.cel);
+  return i >= 0 && j >= 0 && i < z.cols && j < z.filas && z.datos[j * z.cols + i] === 1;
+}
 type Lado = 'n' | 's' | 'e' | 'o';
 type Donde = 'borde' | 'claro' | 'agua' | 'orilla';
 interface Puerta { lado: Lado; t: number; a: MapaId; texto: string }
 interface DefZona {
   id: MapaId; bioma: Bioma; nombre: string; lema: string; bienvenida: string; sal: number;
   puertas: Puerta[];                  // la primera es la entrada: de ahí sube el nivel
-  muro: string[]; relleno: string[]; densidad: number;
+  muro: string[]; relleno: string[];   // macizo: muro al fondo, muro y relleno en el borde con lo transitable
+  rio?: boolean;                      // un río (del agua del bioma) entre la entrada y el hito, con vados
   claros: number;
   agua?: { tipo: 'mar'; lado: Lado } | { tipo: 'lagunas'; n: number };
   extras: [string, number, Donde][];
@@ -40,6 +55,7 @@ interface DefZona {
   caminoLosas?: boolean;              // ruinas: los senderos son losas (vértice 2)
   diseno: { puntos: string[]; marco: string; miga: string; descanso: string[]; rara: { linea: string; nivel: number } };
   hitoEscala?: number; alrededorHito?: [string, number];   // hito pequeño: más grande y con piezas alrededor
+  clima?: ClimaBase;                  // clima de base de la zona
 }
 
 const T = 24, MW = 56, MH = 44;
@@ -102,7 +118,10 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     if (ag.lado === 'n') return H * 0.3 + olaX - y;
     return y - (H * 0.7 + olaX);
   };
-  const enAgua = (x: number, y: number, m = 0) => costa(x, y) > -m || lagunas.some(l => ((x - l.x) / (l.rx + m)) ** 2 + ((y - l.y) / (l.ry + m)) ** 2 < 1);
+  // El río y los vados (donde un camino cruza agua que no es el mar) se definen cuando hay caminos.
+  let enRio = (_x: number, _y: number, _m: number) => false, vado = (_x: number, _y: number) => false;
+  const enAgua = (x: number, y: number, m = 0) => costa(x, y) > -m
+    || (!(m <= 0 && vado(x, y)) && (lagunas.some(l => ((x - l.x) / (l.rx + m)) ** 2 + ((y - l.y) / (l.ry + m)) ** 2 < 1) || enRio(x, y, m)));
 
   // 2. Claros: uno junto a cada salida y más por el interior, en tierra firme.
   const claros: (Punto & { rad: number })[] = sitios.map(s => ({ x: Math.min(W - 130, Math.max(130, s.dentro.x)), y: Math.min(H - 130, Math.max(130, s.dentro.y)), rad: 80 }));
@@ -150,6 +169,58 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   const todosClaros = sec ? [...claros, sec] : claros;
   const enClaro = (x: number, y: number, m = 0) => todosClaros.some(c => Math.hypot((x - c.x) / (c.rad + m), (y - c.y) / ((c.rad + m) * 0.8)) < 1);
 
+  // Bolsas: callejones sin salida a un lado de un camino (algo dentro: un hito local o un salvaje).
+  const bolsas: Claro[] = [];
+  for (let i = 0; i < 200 && bolsas.length < 4; i++) {
+    const k = 4 + Math.floor(r() * Math.max(1, puntos.length - 8)), p = puntos[k], q = puntos[Math.min(puntos.length - 1, k + 2)];
+    const dx = q.x - p.x, dy = q.y - p.y, l = Math.hypot(dx, dy) || 1, lado = r() < 0.5 ? -1 : 1, d = entre(80, 110);
+    const b = { x: p.x - dy / l * d * lado, y: p.y + dx / l * d * lado, rad: entre(42, 56) };
+    if (b.x < 120 || b.y < 120 || b.x > W - 120 || b.y > H - 120 || enAgua(b.x, b.y, b.rad + 20) || enClaro(b.x, b.y, b.rad + 30)) continue;
+    if (bolsas.some(o => Math.hypot(o.x - b.x, o.y - b.y) < o.rad + b.rad + 80)) continue;
+    bolsas.push(b);
+  }
+  // Mallas de 8 px: caminos (para los vados) y todo lo transitable.
+  const CEL = 8, GC = Math.ceil(W / CEL), GF = Math.ceil(H / CEL);
+  const mCamino = new Uint8Array(GC * GF), mPaso = new Uint8Array(GC * GF);
+  const sello = (m: Uint8Array, x: number, y: number, rx: number, ry = rx) => {
+    for (let j = Math.max(0, Math.floor((y - ry) / CEL)); j <= Math.min(GF - 1, Math.floor((y + ry) / CEL)); j++)
+      for (let i = Math.max(0, Math.floor((x - rx) / CEL)); i <= Math.min(GC - 1, Math.floor((x + rx) / CEL)); i++) {
+        const cx = (i + 0.5) * CEL, cy = (j + 0.5) * CEL;
+        if (((cx - x) / rx) ** 2 + ((cy - y) / ry) ** 2 < 1) m[j * GC + i] = 1;
+      }
+  };
+  for (const pt of ptsPrincipal) sello(mCamino, pt.x, pt.y, 44);
+  for (const pt of puntos) sello(mCamino, pt.x, pt.y, 34);
+  for (const pt of ptsSecreto) sello(mCamino, pt.x, pt.y, 22);
+  mPaso.set(mCamino);
+  for (const c of [...todosClaros, ...bolsas]) sello(mPaso, c.x, c.y, c.rad + 10, (c.rad + 10) * 0.8);
+  for (const st of sitios) sello(mPaso, st.dentro.x, st.dentro.y, 60);
+  const celda = (m: Uint8Array, x: number, y: number) => {
+    const i = Math.floor(x / CEL), j = Math.floor(y / CEL);
+    return i >= 0 && j >= 0 && i < GC && j < GF && m[j * GC + i] === 1;
+  };
+  vado = (x, y) => celda(mCamino, x, y);
+  // Río: cruza la zona de lado a lado, perpendicular a la línea entrada → hito, a mitad de camino.
+  const ptsRio: Punto[] = [];
+  if (def.rio) {
+    const ent = claros[0], ex = lejos.x - ent.x, ey = lejos.y - ent.y, L = Math.hypot(ex, ey) || 1, dx = ex / L, dy = ey / L, f = entre(0.42, 0.58);
+    const mx = ent.x + ex * f, my = ent.y + ey * f;
+    for (let t = -1900; t <= 1900; t += 12) {
+      const w = Math.sin(t * 0.006 + fase) * 70 + Math.sin(t * 0.017 + fase) * 22, x = mx - dy * t + dx * w, y = my + dx * t + dy * w;
+      if (x > -60 && y > -60 && x < W + 60 && y < H + 60) ptsRio.push({ x, y });
+    }
+    enRio = (x, y, m) => (m > 0 || !enClaro(x, y)) && dist(ptsRio, x, y) < 30 + m;
+  }
+  // Macizo: lo que no es transitable ni agua.
+  const mMacizo = new Uint8Array(GC * GF);
+  for (let j = 0; j < GF; j++) for (let i = 0; i < GC; i++) {
+    const x = (i + 0.5) * CEL, y = (j + 0.5) * CEL;
+    if (!mPaso[j * GC + i] && !enAgua(x, y)) mMacizo[j * GC + i] = 1;
+  }
+  const enMaz = (x: number, y: number) => celda(mMacizo, Math.min(W - 1, Math.max(0, x)), Math.min(H - 1, Math.max(0, y)));
+  // ¿Hay algo transitable cerca? (para poner en el borde del macizo las piezas que se ven, y más juntas)
+  const bordeDe = (x: number, y: number) => { for (const [ox, oy] of [[-24, 0], [24, 0], [0, -24], [0, 24]]) if (!enMaz(x + ox, y + oy)) return true; return false; };
+
   // 3. Suelo: agua, senderos, y manchas lentas de la textura B para que no sea liso.
   const vert: number[][] = [], ruido = (x: number, y: number) => Math.sin(x * 0.009 + fase) * Math.sin(y * 0.011 - fase) + Math.sin((x + y) * 0.004) * 0.5;
   for (let vy = 0; vy <= MH; vy++) {
@@ -166,7 +237,6 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   const ocupado: (Punto & { r: number })[] = [];
   const libre = (x: number, y: number, rad: number) => ocupado.every(o => Math.hypot(o.x - x, (o.y - y) * 1.3) > o.r + rad);
   const poner = (c: Colocado, rad: number) => { col.push(c); ocupado.push({ x: c.x, y: c.y, r: rad }); };
-  const hueco = (x: number, y: number) => sitios.some(s => Math.hypot(s.borde.x - x, s.borde.y - y) < 80);
 
   // 5. Hito en el claro más lejano de la entrada, y el alfa delante. Postes junto a las salidas.
   const orden = [...claros].sort((a, b) => Math.hypot(a.x - claros[0].x, a.y - claros[0].y) - Math.hypot(b.x - claros[0].x, b.y - claros[0].y));
@@ -195,35 +265,31 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     const x = p.x - dy / l * 34 * lado, y = p.y + dx / l * 34 * lado;
     if (!enAgua(x, y, 8) && !enClaro(x, y)) col.push({ id: D.miga, x: Math.round(x), y: Math.round(y), flip: lado > 0 });
   }
+  // Vados: piedras donde un camino cruza el río.
+  if (ptsRio.length) {
+    const vados: Punto[] = [];
+    for (const pt of [...puntos, ...ptsSecreto]) if (dist(ptsRio, pt.x, pt.y) < 24 && vados.every(v => Math.hypot(v.x - pt.x, v.y - pt.y) > 90)) vados.push(pt);
+    for (const v of vados) col.push({ id: 'piedras_0', x: Math.round(v.x), y: Math.round(v.y) });
+  }
+  // Bolsas: un hito local al fondo y, en la mitad de ellas, un salvaje (ver los salvajes).
+  bolsas.forEach((b, i) => poner({ id: D.puntos[(i + 2) % D.puntos.length], x: Math.round(b.x), y: Math.round(b.y - b.rad * 0.35), flip: r() < 0.5 }, 20));
   // Secreto: dos hitos locales y, en medio, la especie rara (ver los salvajes).
   if (sec) for (let k = 0; k < 2; k++) poner({ id: D.puntos[(k + 1) % D.puntos.length], x: Math.round(sec.x + (k ? 30 : -34)), y: Math.round(sec.y - 22 + k * 6), flip: k > 0 }, 18);
-  // Y un anillo de muro alrededor, abierto solo por donde llega su sendero: que no se vea desde los claros.
-  if (sec && ptsSecreto.length) {
-    const boca = Math.atan2(ptsSecreto[0].y - sec.y, ptsSecreto[0].x - sec.x);
-    for (let k = 0; k < 14; k++) {
-      const a = k / 14 * Math.PI * 2, da = Math.abs(Math.atan2(Math.sin(a - boca), Math.cos(a - boca)));
-      const x = sec.x + Math.cos(a) * (sec.rad + 26), y = sec.y + Math.sin(a) * (sec.rad + 26) * 0.8;
-      if (da > 0.5 && !enAgua(x, y, 10) && libre(x, y, 12)) poner({ id: pick(def.muro), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.95, 1.15) }, 16);
-    }
-  }
+  // (El macizo ya lo rodea: solo se llega por su sendero estrecho.)
   sitios.forEach((s, i) => {
     const p = def.puertas[i], hor = p.lado === 'n' || p.lado === 's';
     poner({ id: 'poste', x: Math.round(s.dentro.x + (hor ? -64 : 0)), y: Math.round(s.dentro.y + (hor ? 0 : -48)), flip: p.lado === 'e' }, 12);
   });
 
-  // 4. Borde: dos filas de muro, salvo en los huecos de las salidas y en el lado del mar.
-  const muro = () => pick(def.muro);
-  const seco = (x: number, y: number) => !enAgua(x, y, 10);
-  for (let y = 10; y < H + 40; y += 30) for (const x of [entre(-6, 14), entre(30, 50), W - entre(-6, 14), W - entre(30, 50)])
-    if (!hueco(x, y) && seco(x, y)) poner({ id: muro(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
-  for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)])
-    if (!hueco(x, y) && seco(x, y)) poner({ id: muro(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
-
-  // 6. Relleno suelto y piezas sueltas.
-  for (let i = 0; i < def.densidad; i++) {
-    const x = entre(70, W - 70), y = entre(90, H - 30);
-    if (enClaro(x, y, 25) || aSendero(x, y) < 46 || enAgua(x, y, 40) || !libre(x, y, 26)) continue;
-    poner({ id: pick(def.relleno), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.85, 1.15) }, 22);
+  // 4 y 6. El macizo, lleno: en el borde con lo transitable, muro y relleno más juntos; al fondo, solo muro. Una fila
+  // más por fuera del mapa por abajo, para que el borde de abajo no se vea vacío.
+  const borde = [...def.muro, ...def.relleno];
+  for (let y = 6; y < H + 30; y += 24) for (let x = 6; x < W + 10; x += 26) {
+    const jx = x + entre(-7, 7) + ((y / 24) % 2) * 13, jy = y + entre(-6, 6);
+    if (!enMaz(jx, Math.min(H - 4, jy))) continue;
+    const enBorde = bordeDe(jx, Math.min(H - 4, jy));
+    if (!enBorde && r() < 0.35) continue;   // al fondo, algo más claro (lo tapan las copas)
+    col.push({ id: pick(enBorde ? borde : def.muro), x: Math.round(jx), y: Math.round(jy), flip: r() < 0.5, s: entre(0.9, 1.2) });
   }
   for (const [id, n, donde] of def.extras) for (let k = 0, i = 0; k < n && i < 600; i++) {
     let x: number, y: number;
@@ -253,13 +319,15 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     }
   });
   if (sec) salvajes.push({ linea: D.rara.linea, nivel: D.rara.nivel, x: Math.round(sec.x), y: Math.round(sec.y + 10) });
+  bolsas.forEach((b, i) => { if (i % 2 === 0) salvajes.push({ linea: pick(especies), nivel: Math.round((def.niveles[0] + def.niveles[1]) / 2 + 1), x: Math.round(b.x), y: Math.round(b.y + 8) }); });
 
   const llegada: Partial<Record<MapaId | 'inicio', Llegada>> = { inicio: { ...sitios[0].dentro, dir: sitios[0].dir } };
   def.puertas.forEach((p, i) => { llegada[p.a] = { x: Math.round(sitios[i].dentro.x), y: Math.round(sitios[i].dentro.y), dir: sitios[i].dir }; });
   return {
-    id: def.id, nombre: def.nombre, lema: def.lema, bienvenida: def.bienvenida, alfa, suelo: def.bioma,
+    id: def.id, nombre: def.nombre, lema: def.lema, bienvenida: def.bienvenida, alfa, suelo: def.bioma, clima: def.clima,
     datos: { mw: MW, mh: MH, vert, inicio: [Math.round(sitios[0].dentro.x), Math.round(sitios[0].dentro.y)] }, W, H, colocados: col, detalles: 0,
     llegada, salidas: def.puertas.map(p => salida(p, W, H)), salvajes,
+    macizo: { cel: CEL, cols: GC, filas: GF, datos: mMacizo },
   };
 }
 
@@ -270,59 +338,64 @@ const DEFS: Record<Bioma, DefZona> = {
     nombre: 'Costa Brisa', lema: 'Nivel 8-14 · Agua y Volador', sal: 0x0c05a1,
     bienvenida: 'La costa. Arena, mar y viento. Al fondo, el faro.',
     puertas: [{ lado: 'o', t: 0.5, a: 'lago', texto: 'Al lago' }],
-    agua: { tipo: 'mar', lado: 'e' }, muro: ['palmera', 'roca_costa', 'palmera'], relleno: ['palmera', 'hierba_duna', 'roca_costa'], densidad: 260, claros: 5,
+    agua: { tipo: 'mar', lado: 'e' }, muro: ['palmera', 'roca_costa', 'palmera'], relleno: ['palmera', 'hierba_duna', 'roca_costa'], claros: 5,
     extras: [['madera_deriva', 5, 'borde'], ['barca', 2, 'orilla'], ['red_pesca', 3, 'borde'], ['poza_marea', 3, 'claro'], ['conchas', 10, 'claro'], ['hierba_duna', 14, 'borde'], ['roca_costa', 8, 'orilla']],
     hito: 'faro', alfa: { linea: 'wailmer', forma: 'wailord', nivel: 16 },
+    clima: { tipo: 'lluvia', prob: 0.3 },
     especies: ['magikarp', 'wailmer', 'pidgey', 'rookidee', 'pachirisu', 'psyduck', 'marill'], niveles: [8, 14],
   },
   cantera: {
-    id: 'cantera', bioma: 'cantera', diseno: { puntos: ['vagoneta', 'andamio', 'cristal_acero', 'roca_mineral'], marco: 'cristal_acero', miga: 'grava', descanso: ['hoguera', 'tronco_caido'], rara: { linea: 'larvitar', nivel: 18 } },
+    id: 'cantera', bioma: 'cantera', rio: true, diseno: { puntos: ['vagoneta', 'andamio', 'cristal_acero', 'roca_mineral'], marco: 'cristal_acero', miga: 'grava', descanso: ['hoguera', 'tronco_caido'], rara: { linea: 'larvitar', nivel: 18 } },
     nombre: 'Cantera Gris', lema: 'Nivel 10-16 · Roca, Tierra, Lucha y Acero', sal: 0xca7e2a,
     bienvenida: 'La cantera. Vagonetas, andamios y mineral en la roca. Al fondo, la boca de la cueva.',
     puertas: [{ lado: 's', t: 0.5, a: 'bosque', texto: 'Al bosque' }, { lado: 'e', t: 0.3, a: 'pantano', texto: 'Al pantano' }],
-    muro: ['aguja_roca', 'pino_seco', 'roca_mineral', 'aguja_roca'], relleno: ['pino_seco', 'aguja_roca', 'roca_mineral', 'arbusto_seco'], densidad: 620, claros: 6,
+    muro: ['aguja_roca', 'pino_seco', 'roca_mineral', 'aguja_roca'], relleno: ['pino_seco', 'aguja_roca', 'roca_mineral', 'arbusto_seco'], claros: 6,
     extras: [['vagoneta', 3, 'borde'], ['andamio', 3, 'borde'], ['cristal_acero', 5, 'borde'], ['roca_mineral', 6, 'borde'], ['grava', 8, 'claro'], ['arbusto_seco', 8, 'borde']],
     hito: 'entrada_cueva', alfa: { linea: 'onix', forma: 'onix', nivel: 18 },
+    clima: { tipo: 'arena', prob: 0.3 },
     especies: ['geodude', 'onix', 'larvitar', 'sudowoodo', 'diglett', 'drilbur', 'mudbray', 'rhyhorn', 'machop', 'timburr', 'makuhita', 'aron', 'magnemite'], niveles: [10, 16],
   },
   pantano: {
-    id: 'pantano', bioma: 'pantano', diseno: { puntos: ['tronco_podrido', 'cerca_rota', 'farol_fuego_fatuo', 'roca_musgo'], marco: 'farol_fuego_fatuo', miga: 'seta_toxica', descanso: ['hoguera', 'tronco_podrido'], rara: { linea: 'misdreavus', nivel: 20 } },
+    id: 'pantano', bioma: 'pantano', rio: true, diseno: { puntos: ['tronco_podrido', 'cerca_rota', 'farol_fuego_fatuo', 'roca_musgo'], marco: 'farol_fuego_fatuo', miga: 'seta_toxica', descanso: ['hoguera', 'tronco_podrido'], rara: { linea: 'misdreavus', nivel: 20 } },
     nombre: 'Pantano Umbrío', lema: 'Nivel 12-18 · Veneno, Fantasma y Siniestro', sal: 0x9a7a40,
     bienvenida: 'El pantano. Lodo tóxico, lápidas y faroles de fuego fatuo. No pises los charcos morados.',
     puertas: [{ lado: 'o', t: 0.3, a: 'cantera', texto: 'A la cantera' }, { lado: 'n', t: 0.6, a: 'ruinas', texto: 'A las ruinas' }],
-    agua: { tipo: 'lagunas', n: 3 }, muro: ['arbol_muerto', 'arbol_muerto', 'roca_musgo'], relleno: ['arbol_muerto', 'juncos_secos', 'roca_musgo', 'tronco_podrido'], densidad: 780, claros: 6,
+    agua: { tipo: 'lagunas', n: 3 }, muro: ['arbol_muerto', 'arbol_muerto', 'roca_musgo'], relleno: ['arbol_muerto', 'juncos_secos', 'roca_musgo', 'tronco_podrido'], claros: 6,
     extras: [['lapida', 10, 'borde'], ['farol_fuego_fatuo', 6, 'borde'], ['seta_toxica', 10, 'claro'], ['charco_toxico', 3, 'claro'], ['cerca_rota', 4, 'borde'], ['juncos_secos', 12, 'orilla']],
     hito: 'lapida', hitoEscala: 1.8, alrededorHito: ['lapida', 7], alfa: { linea: 'gastly', forma: 'haunter', nivel: 20 },
+    clima: { tipo: 'lluvia', prob: 0.5 },
     especies: ['grimer', 'trubbish', 'zubat', 'gastly', 'litwick', 'misdreavus', 'poochyena', 'sableye', 'murkrow', 'spinarak'], niveles: [12, 18],
   },
   ruinas: {
-    id: 'ruinas', bioma: 'ruinas', diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'muro_roto'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
+    id: 'ruinas', bioma: 'ruinas', rio: true, diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'muro_roto'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
     nombre: 'Ruinas Antiguas', lema: 'Nivel 14-20 · Psíquico y Hada', sal: 0x2a1b5e, caminoLosas: true,
     bienvenida: 'Las ruinas. Columnas rotas, cristales que brillan y un arco al fondo.',
     puertas: [{ lado: 's', t: 0.6, a: 'pantano', texto: 'Al pantano' }, { lado: 'o', t: 0.4, a: 'volcan', texto: 'Al volcán' }, { lado: 'e', t: 0.4, a: 'nieve', texto: 'A las cumbres' }],
-    muro: ['arbol_flores', 'arbol_flores', 'columna_rota'], relleno: ['arbol_flores', 'arbol_flores', 'columna_rota'], densidad: 420, claros: 6,
+    muro: ['arbol_flores', 'arbol_flores', 'columna_rota'], relleno: ['arbol_flores', 'arbol_flores', 'columna_rota'], claros: 6,
     extras: [['muro_roto', 6, 'borde'], ['estatua', 4, 'borde'], ['altar', 2, 'claro'], ['cristal_psiquico', 6, 'borde'], ['losas_ruina', 6, 'claro'], ['flores_hada', 14, 'claro'], ['columna_rota', 6, 'borde']],
     hito: 'arco_ruinas', alfa: { linea: 'ralts', forma: 'kirlia', nivel: 22 },
     especies: ['abra', 'ralts', 'natu', 'clefairy', 'togepi', 'flabebe'], niveles: [14, 20],
   },
   volcan: {
-    id: 'volcan', bioma: 'volcan', diseno: { puntos: ['cristal_fuego', 'roca_magma', 'obsidiana', 'roca_basalto'], marco: 'cristal_fuego', miga: 'ceniza', descanso: ['hoguera', 'roca_basalto'], rara: { linea: 'dratini', nivel: 26 } },
+    id: 'volcan', bioma: 'volcan', rio: true, diseno: { puntos: ['cristal_fuego', 'roca_magma', 'obsidiana', 'roca_basalto'], marco: 'cristal_fuego', miga: 'ceniza', descanso: ['hoguera', 'roca_basalto'], rara: { linea: 'dratini', nivel: 26 } },
     nombre: 'Volcán Ascua', lema: 'Nivel 18-24 · Fuego y Dragón', sal: 0x701ca0,
     bienvenida: 'El volcán. Ríos de lava, fumarolas y el fósil de un dragón. La lava no se cruza.',
     puertas: [{ lado: 'e', t: 0.4, a: 'ruinas', texto: 'A las ruinas' }],
-    agua: { tipo: 'lagunas', n: 4 }, muro: ['roca_basalto', 'roca_magma', 'arbol_quemado'], relleno: ['arbol_quemado', 'roca_basalto', 'obsidiana', 'roca_magma'], densidad: 700, claros: 6,
+    agua: { tipo: 'lagunas', n: 4 }, muro: ['roca_basalto', 'roca_magma', 'arbol_quemado'], relleno: ['arbol_quemado', 'roca_basalto', 'obsidiana', 'roca_magma'], claros: 6,
     extras: [['fumarola', 8, 'claro'], ['cristal_fuego', 6, 'borde'], ['obsidiana', 6, 'borde'], ['ceniza', 8, 'claro'], ['charco_lava', 3, 'claro']],
     hito: 'fosil_dragon', alfa: { linea: 'growlithe', forma: 'arcanine', nivel: 26 },
+    clima: { tipo: 'sol', prob: 0.6 },
     especies: ['growlithe', 'slugma', 'torkoal', 'gible', 'axew', 'dratini', 'druddigon'], niveles: [18, 24],
   },
   nieve: {
-    id: 'nieve', bioma: 'nieve', diseno: { puntos: ['cristal_hielo', 'carambanos', 'tronco_nevado', 'monton_nieve'], marco: 'cristal_hielo', miga: 'arbusto_nevado', descanso: ['hoguera', 'tronco_nevado'], rara: { linea: 'beldum', nivel: 28 } },
+    id: 'nieve', bioma: 'nieve', rio: true, diseno: { puntos: ['cristal_hielo', 'carambanos', 'tronco_nevado', 'monton_nieve'], marco: 'cristal_hielo', miga: 'arbusto_nevado', descanso: ['hoguera', 'tronco_nevado'], rara: { linea: 'beldum', nivel: 28 } },
     nombre: 'Cumbres Heladas', lema: 'Nivel 20-26 · Hielo', sal: 0x5a0e17,
     bienvenida: 'Las cumbres. Nieve, pinos y cristales de hielo. Al fondo, el estanque helado.',
     puertas: [{ lado: 'o', t: 0.4, a: 'ruinas', texto: 'A las ruinas' }],
-    agua: { tipo: 'lagunas', n: 2 }, muro: ['pino_nevado', 'pino_nevado', 'roca_nevada'], relleno: ['pino_nevado', 'roca_nevada', 'monton_nieve', 'arbusto_nevado'], densidad: 680, claros: 6,
+    agua: { tipo: 'lagunas', n: 2 }, muro: ['pino_nevado', 'pino_nevado', 'roca_nevada'], relleno: ['pino_nevado', 'roca_nevada', 'monton_nieve', 'arbusto_nevado'], claros: 6,
     extras: [['carambanos', 6, 'borde'], ['cristal_hielo', 6, 'borde'], ['tronco_nevado', 5, 'borde'], ['monton_nieve', 6, 'borde'], ['arbusto_nevado', 8, 'borde']],
     hito: 'estanque_helado', alfa: { linea: 'snorunt', forma: 'glalie', nivel: 28 },
+    clima: { tipo: 'granizo', prob: 0.8 },
     especies: ['vanillite', 'snorunt', 'swinub', 'bergmite', 'beldum'], niveles: [20, 26],
   },
 };

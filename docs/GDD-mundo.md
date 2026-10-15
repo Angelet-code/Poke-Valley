@@ -208,6 +208,11 @@ Orden propuesto en el mundo: Bosque → Lago → **Costa** (sale del lago) y **C
 - volcán: ceniza y roca volcánica;
 - cumbres: nieve y hielo.
 
+**Clima de base** (`clima` de cada zona en `src/data/biomas.ts`): cada 60 s (`CLIMA_TRAMO`) se sortea si lo hace o
+no. Cumbres: granizo el 80 % del tiempo; volcán: sol 60 %; pantano: lluvia 50 %; costa: lluvia 30 %; cantera: arena
+30 %; ruinas, bosque y lago: nada. Cuenta para los movimientos (Ventisca acierta siempre, Fuego/Agua ×1,5…) pero no
+daña por turnos; un movimiento de clima lo tapa mientras dura y al acabar se vuelve a sortear.
+
 El agua de cada zona sale de la paleta, igual que en el lago. La lava y el lodo tóxico van como piezas planas, igual
 que el estanque: `charco_lava`, `charco_toxico`.
 
