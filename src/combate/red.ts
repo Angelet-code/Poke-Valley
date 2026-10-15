@@ -23,6 +23,7 @@ export class Red {
   private espera = 2000;   // ms antes de reintentar (se dobla en cada fallo, hasta 30 s)
   private yo: (() => EstadoRemoto | null) | null = null;
   private manejadores = new Map<string, (m: Mensaje) => void>();
+  private pendientes: string[] = [];   // mensajes fiables mandados sin conexión
 
   constructor(readonly url: string) {
     this.abrir();
@@ -39,8 +40,12 @@ export class Red {
   }
   // Qué hacer con los mensajes de un tipo (uno por tipo; el último manda).
   on(t: string, fn: (m: Mensaje) => void): void { this.manejadores.set(t, fn); }
-  enviar(m: { t: string } & Record<string, unknown>): void {
-    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ ...m, uid: this.uid }));
+  // `fiable`: si no hay conexión, se guarda y se manda al reconectar (el comercio no puede perder mensajes); lo demás
+  // (estado, fotos) se descarta, que el siguiente ya lo pisa.
+  enviar(m: { t: string } & Record<string, unknown>, fiable = false): void {
+    const txt = JSON.stringify({ ...m, uid: this.uid });
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(txt);
+    else if (fiable) this.pendientes.push(txt);
   }
   // Puesto en la sala (0 = el primero); los que no están en la lista, al final.
   orden(uid: string): number { const i = this.jugadores.indexOf(uid); return i < 0 ? 1e9 : i; }
@@ -55,7 +60,8 @@ export class Red {
   private hola(): void { if (this.miSemilla !== null) this.enviar({ t: 'hola', semilla: this.miSemilla }); }
   private abrir(): void {
     const ws = this.ws = new WebSocket(this.url);
-    ws.onopen = () => { this.conectado = true; this.espera = 2000; console.log(`Multijugador: conectado a ${this.url} como ${this.uid}`); this.hola(); };
+    ws.onopen = () => { this.conectado = true; this.espera = 2000; console.log(`Multijugador: conectado a ${this.url} como ${this.uid}`); this.hola();
+      for (const txt of this.pendientes.splice(0)) ws.send(txt); };
     ws.onmessage = ev => {
       let m: Mensaje;
       try { m = JSON.parse(String(ev.data)); } catch { return; }

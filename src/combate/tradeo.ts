@@ -198,8 +198,8 @@ export class Tradeo {
         this.manda('hecho', de, { a: m.a, b: m.b });
         this.cambiar();
         return;
-      case 'hecho':
-        if (this.coordino && tr.cerrando && m.a === tr.suya.v && m.b === tr.mia.v) this.cambiar();
+      case 'hecho':   // devuelve las versiones de tu «cierra»: a = la tuya, b = la suya
+        if (this.coordino && tr.cerrando && m.a === tr.mia.v && m.b === tr.suya.v) this.cambiar();
         return;
     }
   }
@@ -241,8 +241,8 @@ export class Tradeo {
     const tr = this.trato;
     if (!tr) return;
     if (!cerca(tr.con) && !tr.cerrando) { this.cerrar('Comercio cancelado: estáis demasiado lejos'); return; }
-    if (tr.cerrando) {   // sin «hecho» en 5 s (se ha cortado): se deshace el cierre
-      if (this.t - this.cierreT > 5) { tr.cerrando = false; tr.listoYo = null; tr.listoEl = null; this.manda('nolisto', tr.con); }
+    if (tr.cerrando) {   // sin «hecho» en 30 s (se ha cortado del todo): se deshace el cierre
+      if (this.t - this.cierreT > 30) { tr.cerrando = false; tr.listoYo = null; tr.listoEl = null; this.manda('nolisto', tr.con); }
       return;
     }
     const pa = this.partida();

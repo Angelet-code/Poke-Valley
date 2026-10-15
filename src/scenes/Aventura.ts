@@ -282,7 +282,7 @@ export class Aventura extends Phaser.Scene {
     if (this.red) {
       mundo.miRed = this.red.uid;
       this.llegada = performance.now(); this.dueno = this.red.uid; this.fotoT = 0; this.ajenos.clear(); this.compartir = [];
-      this.tradeo ??= new Tradeo(this.red.uid, () => this.partida, m => this.red!.enviar(m), txt => this.aviso(txt), (r, d) => this.tratoHecho(r, d));
+      this.tradeo ??= new Tradeo(this.red.uid, () => this.partida, m => this.red!.enviar(m, true), txt => this.aviso(txt), (r, d) => this.tratoHecho(r, d));
       this.tradeo.cerrar('Comercio cancelado: has cambiado de zona');
       this.escucharRed();
       this.red.fuente(() => {
