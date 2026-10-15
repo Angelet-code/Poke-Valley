@@ -1,6 +1,7 @@
 // Pantalla de carga (Preload): el claro Arcane del título en penumbra, el logo y, abajo, un Pokémon en su primera
 // forma (al azar, lo elige Boot) que camina hacia la derecha encima de una barra de progreso: la barra se va
 // llenando detrás de él, como si la pintase al andar. Estilo del título: azul noche, ribete de oro y turquesa.
+// La misma pantalla tapa el montaje de cada mapa del modo aventura (escena CargaMapa, encima de Aventura y del HUD).
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { FUENTE } from './UIScene';
@@ -20,7 +21,12 @@ export class PantallaCarga {
   private x0: number; private x1: number; private y: number; private h: number;
   private fin: (() => void) | null = null;
 
-  constructor(scene: Phaser.Scene) {
+  private texto: string;
+  private rapidez: number;              // fracción de la barra por segundo como mucho
+
+  // `cargador`: el progreso sale del cargador de la escena (Preload); si no, lo va diciendo `progreso` (CargaMapa).
+  constructor(scene: Phaser.Scene, op: { texto?: string; vel?: number; cargador?: boolean } = {}) {
+    this.texto = op.texto ?? 'Cargando el valle…'; this.rapidez = op.vel ?? VEL;
     const W = VW * S, H = VH * S;
     if (scene.textures.exists('tit-fondo')) {
       scene.textures.get('tit-fondo').setFilter(Phaser.Textures.FilterMode.LINEAR);
@@ -38,7 +44,7 @@ export class PantallaCarga {
     g.fillStyle(0xc48830).fillRect(this.x0 - b, this.y - b, w + 2 * b, this.h + 2 * b);
     g.fillStyle(0x10142c).fillRect(this.x0, this.y, w, this.h);
     this.relleno = scene.add.graphics();
-    this.txt = scene.add.text(W / 2, this.y + this.h + D(34), 'Cargando el valle… 0 %', { fontFamily: `"Pixelify Sans", ${FUENTE}`, fontSize: `${D(20)}px`, color: '#e8e2cc' }).setOrigin(0.5);
+    this.txt = scene.add.text(W / 2, this.y + this.h + D(34), `${this.texto} 0 %`, { fontFamily: `"Pixelify Sans", ${FUENTE}`, fontSize: `${D(20)}px`, color: '#e8e2cc' }).setOrigin(0.5);
 
     const reg = scene.registry.get(REG_CARGA) as { dex: string; nombre: string } | undefined;
     if (reg && scene.anims.exists(`${TEX_CARGA}-der`)) {
@@ -49,8 +55,11 @@ export class PantallaCarga {
     }
     scene.events.on(Phaser.Scenes.Events.UPDATE, this.paso, this);
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, this.paso, this));
-    scene.load.on('progress', (p: number) => { this.real = p; });
+    if (op.cargador !== false) scene.load.on('progress', (p: number) => { this.real = p; });
   }
+
+  // Progreso dicho a mano (0-1); nunca vuelve atrás.
+  progreso(p: number): void { this.real = Math.max(this.real, Math.min(1, p)); }
 
   // Al acabar la carga: espera a que el Pokémon llegue al final de la barra.
   alTerminar(f: () => void): void {
@@ -63,7 +72,7 @@ export class PantallaCarga {
 
   private paso(_t: number, dt: number): void {
     const antes = this.visto;
-    this.visto = Math.min(this.real, this.visto + VEL * dt / 1000);
+    this.visto = Math.min(this.real, this.visto + this.rapidez * dt / 1000);
     const x = this.x0 + (this.x1 - this.x0) * this.visto, b = D(4);
     const v = dt > 0 ? (this.visto - antes) * (this.x1 - this.x0) * 1000 / dt : 0;
     this.vel += (v - this.vel) * Math.min(1, dt / 150);
@@ -84,9 +93,34 @@ export class PantallaCarga {
       if (anda && this.poke.anims.isPaused) this.poke.anims.resume();
       else if (!anda && this.poke.anims.isPlaying) this.poke.anims.pause();
     }
-    this.txt.setText(`Cargando el valle… ${Math.round(this.visto * 100)} %`);
+    this.txt.setText(`${this.texto} ${Math.round(this.visto * 100)} %`);
     if (this.fin && this.visto >= 1) { const f = this.fin; this.fin = null; f(); }
   }
+}
+
+// Pantalla de carga al cambiar de mapa (Aventura.montar): se lanza encima y se va con un fundido cuando el Pokémon
+// llega al final. Más rápida que la del arranque (el montaje de un mapa dura poco).
+export class CargaMapa extends Phaser.Scene {
+  private pantalla: PantallaCarga | null = null;
+  private pendiente = 0;
+  private acabar = false;
+  constructor() { super('cargaMapa'); }
+
+  create(): void {
+    this.pantalla = new PantallaCarga(this, { texto: 'Preparando el mapa…', vel: 1.6, cargador: false });
+    this.pantalla.progreso(this.pendiente);
+    if (this.acabar) this.terminar();
+  }
+  // Puede llegar antes de que la escena se haya creado (se lanza en el mismo paso): se guarda para entonces.
+  progreso(p: number): void { this.pendiente = Math.max(this.pendiente, p); this.pantalla?.progreso(p); }
+  terminar(): void {
+    this.acabar = true;
+    this.pantalla?.alTerminar(() => {
+      this.tweens.add({ targets: this.cameras.main, alpha: 0, duration: 250, onComplete: () => this.scene.stop() });
+    });
+  }
+  // Para relanzarla limpia (otro cambio de mapa).
+  reiniciar(): void { this.pendiente = 0; this.acabar = false; this.pantalla = null; }
 }
 
 // Fila más baja con algún píxel opaco de un fotograma (los de PMD traen margen transparente).

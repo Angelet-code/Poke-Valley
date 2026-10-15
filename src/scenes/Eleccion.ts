@@ -1,6 +1,7 @@
 // Elección del Pokémon con el que empiezas una partida del modo aventura. Salen 9 al azar, de 9 tipos distintos,
 // todos en su primera forma y ninguno ultra raro; siempre hay al menos 2 iniciales (de cualquier generación).
-// Solo se ven sus siluetas: se sabe cuál es al elegirlo, y la elección no tiene vuelta atrás.
+// Solo se ven sus siluetas: se sabe cuál es al elegirlo, y la elección no tiene vuelta atrás. Después se pide el nombre
+// de usuario (el que ven los demás en el multijugador) y empieza la aventura.
 // Estilo de la pantalla de título (diseño de Claude Design): azul noche, ribete de oro y turquesa para lo elegido.
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
@@ -20,6 +21,7 @@ const CW = 250, CH = 160, GAP = 22, TOP = 124, ABAJO = TOP + 3 * CH + 2 * GAP;
 const ULTRA_RAROS = ['lapras', 'larvitar', 'misdreavus', 'togepi', 'dratini', 'beldum', 'gible', 'munchlax', 'aron',
   ...Object.values(APARICION).flatMap(t => t.raras.slice(4))];
 const ELEMENTALES: Tipo[] = ['planta', 'fuego', 'agua'];
+const MIN_NOMBRE = 3, MAX_NOMBRE = 20;
 
 function barajar<T>(xs: T[], rnd: () => number): T[] {
   const a = [...xs];
@@ -56,7 +58,7 @@ export class Eleccion extends Phaser.Scene {
   constructor() { super('eleccion'); }
 
   create(): void {
-    this.cartas = []; this.sel = 0; this.elegido = false; this.empezando = false; this.textos = []; this.ayuda = null;
+    this.cartas = []; this.sel = 0; this.elegido = false; this.empezando = false; this.nombrando = false; this.nombre = ''; this.textos = []; this.ayuda = null;
     const W = VW * S, H = VH * S, cx = W / k / 2;
     if (this.textures.exists('tit-fondo')) {
       const im = this.add.image(W / 2, H / 2, 'tit-fondo');
@@ -131,7 +133,8 @@ export class Eleccion extends Phaser.Scene {
   // Elegido: las demás cartas se apagan y la suya se ilumina; la silueta se llena de color y se dice quién es.
   private aceptar(): void {
     if (!this.cartas.length) return;
-    if (this.elegido) { if (this.puedeEmpezar) this.empezar(); return; }
+    if (this.nombrando) return;
+    if (this.elegido) { if (this.puedeEmpezar) this.pedirNombre(); return; }
     this.elegido = true; this.puedeEmpezar = false;
     this.time.delayedCall(700, () => { this.puedeEmpezar = true; });
     const c = this.cartas[this.sel], l = LINEAS[c.id], f = l.formas[0];
@@ -150,17 +153,75 @@ export class Eleccion extends Phaser.Scene {
     g.fillStyle(0xc48830).fillRect(D(cx - pw / 2 + 4), D(y + 4), D(pw - 8), D(ph - 8));
     g.fillStyle(0x10142c).fillRect(D(cx - pw / 2 + 8), D(y + 8), D(pw - 16), D(ph - 16));
     const t1 = this.texto(cx, y + 32, `¡Es ${f.nombre}!`, 28, '#fff8d6', { fontStyle: 'bold' }).setOrigin(0.5).setAlpha(0);
-    const t2 = this.texto(cx, y + 62, `${tipos} · Intro o clic para empezar la aventura`, 16, '#b0f6ec').setOrigin(0.5).setAlpha(0);
+    const t2 = this.texto(cx, y + 62, `${tipos} · Intro o clic para seguir`, 16, '#b0f6ec').setOrigin(0.5).setAlpha(0);
     this.tweens.add({ targets: [g, t1, t2], alpha: 1, delay: 350, duration: 300 });
     // El clic con el que se eligió no cuenta: se espera a que se vea quién es.
-    this.time.delayedCall(700, () => this.input.once('pointerdown', () => this.empezar()));
+    this.time.delayedCall(700, () => this.input.once('pointerdown', () => this.pedirNombre()));
   }
 
   private empezando = false;
   private puedeEmpezar = false;
-  private empezar(): void {
+  private nombrando = false;
+  private nombre = '';
+
+  // Nombre de usuario: un cartel encima de todo con lo que se va escribiendo (sin <input>: se lee el teclado).
+  // Letras, números, espacio, guion, guion bajo y punto; de MIN_NOMBRE a MAX_NOMBRE. Intro (o el botón) empieza.
+  private pedirNombre(): void {
+    if (this.nombrando || !this.elegido) return;
+    this.nombrando = true;
+    const W = VW * S, H = VH * S, cx = W / k / 2, cy = H / k / 2, pw = 620, ph = 300, px = cx - pw / 2, py = cy - ph / 2;
+    this.add.rectangle(0, 0, W, H, 0x0a0c1c, 0.7).setOrigin(0).setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(0x0a0c1c).fillRect(D(px + 6), D(py + 6), D(pw), D(ph));
+    g.fillStyle(0x2e1a14).fillRect(D(px), D(py), D(pw), D(ph));
+    g.fillStyle(0xc48830).fillRect(D(px + 4), D(py + 4), D(pw - 8), D(ph - 8));
+    g.fillStyle(0x10142c).fillRect(D(px + 8), D(py + 8), D(pw - 16), D(ph - 16));
+    this.texto(cx, py + 50, '¿CÓMO TE LLAMAS?', 28, '#fae296', { fontStyle: 'bold' }).setOrigin(0.5).setLetterSpacing(D(3));
+    this.texto(cx, py + 86, 'Es tu nombre de usuario: así te verán los demás jugadores.', 16, '#b8bedc').setOrigin(0.5);
+    // Casilla: fondo claro de lo que se escribe, con un cursor que parpadea.
+    const bw = 440, bh = 60, bx = cx - bw / 2, by = py + 116;
+    g.fillStyle(0x2e1a14).fillRect(D(bx - 4), D(by - 4), D(bw + 8), D(bh + 8));
+    g.fillStyle(0x1e264e).fillRect(D(bx), D(by), D(bw), D(bh));
+    g.lineStyle(D(4), 0x48c4c4).strokeRect(D(bx - 4), D(by - 4), D(bw + 8), D(bh + 8));
+    const campo = this.texto(cx, by + bh / 2, '', 28, '#fff8d6', { fontStyle: 'bold' }).setOrigin(0.5);
+    const aviso = this.texto(cx, by + bh + 26, `De ${MIN_NOMBRE} a ${MAX_NOMBRE} letras o números`, 15, '#b8bedc').setOrigin(0.5);
+    let cursor = true;
+    const pintar = () => campo.setText(this.nombre + (cursor ? '_' : ' '));
+    pintar();
+    this.time.addEvent({ delay: 450, loop: true, callback: () => { cursor = !cursor; pintar(); } });
+
+    // Botón «Empezar», como los del título.
+    const btw = 260, bth = 56, btx = cx - btw / 2, bty = py + ph - 80, bt = this.add.graphics();
+    bt.fillStyle(0x0a0c1c).fillRect(D(btx + 4), D(bty + 4), D(btw), D(bth));
+    bt.fillStyle(0x2e1a14).fillRect(D(btx), D(bty), D(btw), D(bth));
+    bt.fillStyle(0xc48830).fillRect(D(btx + 4), D(bty + 4), D(btw - 8), D(bth - 8));
+    bt.fillStyle(0x30264e).fillRect(D(btx + 8), D(bty + 8), D(btw - 16), D(bth - 16));
+    this.texto(cx, bty + bth / 2, 'Empezar la aventura', 20, '#fff8d6', { fontStyle: 'bold' }).setOrigin(0.5);
+    const zona = this.add.zone(D(btx), D(bty), D(btw), D(bth)).setOrigin(0).setInteractive({ useHandCursor: true });
+
+    const listo = () => {
+      const n = this.nombre.trim();
+      if (n.length < MIN_NOMBRE) { aviso.setText(`Pon al menos ${MIN_NOMBRE} letras`).setColor('#ff9a8a'); return; }
+      this.empezar(n);
+    };
+    zona.on('pointerdown', listo);
+    // Las teclas, del navegador directamente: la cola del teclado de Phaser repetía letras al escribir deprisa.
+    const tecla = (e: KeyboardEvent) => {
+      if (e.repeat && e.key !== 'Backspace') return;
+      if (e.key === 'Enter') { listo(); return; }
+      if (e.key === 'Backspace') this.nombre = this.nombre.slice(0, -1);
+      else if (e.key.length === 1 && /^[\p{L}\p{N} _.\-]$/u.test(e.key) && this.nombre.length < MAX_NOMBRE && !(e.key === ' ' && (!this.nombre || this.nombre.endsWith(' ')))) this.nombre += e.key;
+      else return;
+      aviso.setText(`De ${MIN_NOMBRE} a ${MAX_NOMBRE} letras o números`).setColor('#b8bedc');
+      cursor = true; pintar();
+    };
+    this.time.delayedCall(0, () => window.addEventListener('keydown', tecla));   // la tecla con la que se llegó aquí no se escribe
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('keydown', tecla));
+  }
+
+  private empezar(usuario: string): void {
     if (this.empezando || !this.elegido) return;
     this.empezando = true;
-    this.scene.start('aventura', { nueva: true, inicial: this.cartas[this.sel].id });
+    this.scene.start('aventura', { nueva: true, inicial: this.cartas[this.sel].id, usuario });
   }
 }

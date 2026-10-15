@@ -34,6 +34,7 @@ export interface Miembro {
 }
 export interface Estado {
   version: number; uid: number;
+  usuario?: string;                           // nombre de usuario (se pide al crear la partida; el multijugador lo enseña)
   equipo: Miembro[]; activo: number;          // uid del que manejas
   items: Record<string, number>;
   dia: number; minuto: number;
@@ -61,9 +62,9 @@ export class Partida {
   estado: Estado;
   constructor(e: Estado) { this.estado = e; }
 
-  // `inicial`: la línea elegida en scenes/Eleccion.ts (Bulbasaur si no se dice).
-  static nueva(inicial = 'bulbasaur'): Partida {
-    const p = new Partida({ version: VERSION, uid: 1, equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
+  // `inicial`: la línea elegida en scenes/Eleccion.ts (Bulbasaur si no se dice); `usuario`: el nombre que se pide después.
+  static nueva(inicial = 'bulbasaur', usuario?: string): Partida {
+    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
     const b = p.crear(LINEAS[inicial] ? inicial : 'bulbasaur', 1);
     p.estado.activo = b.uid;
     return p;
@@ -79,14 +80,16 @@ export class Partida {
   }
   static borrar(): void { try { localStorage.removeItem(CLAVE); } catch { /* nada */ } }
   // Para el título: el que manejas, su nivel, cuántos tienes y el día.
-  static resumen(): { nombre: string; nivel: number; equipo: number; dia: number } | null {
+  static resumen(): { nombre: string; nivel: number; equipo: number; dia: number; usuario?: string } | null {
     const p = Partida.cargar();
     if (!p) return null;
     const m = p.activo;
-    return { nombre: formaDe(m.linea, m.nivel).nombre, nivel: m.nivel, equipo: p.estado.equipo.length, dia: p.estado.dia };
+    return { nombre: formaDe(m.linea, m.nivel).nombre, nivel: m.nivel, equipo: p.estado.equipo.length, dia: p.estado.dia, usuario: p.estado.usuario };
   }
   guardar(): void { try { localStorage.setItem(CLAVE, JSON.stringify(this.estado)); } catch { /* sin almacenamiento: se juega igual */ } }
 
+  // Partidas de antes del nombre de usuario: «Jugador».
+  get usuario(): string { return this.estado.usuario ?? 'Jugador'; }
   get activo(): Miembro { return this.estado.equipo.find(m => m.uid === this.estado.activo) ?? this.estado.equipo[0]; }
   forma(m: Miembro) { return formaDe(m.linea, m.nivel); }
 

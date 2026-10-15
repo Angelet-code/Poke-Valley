@@ -66,7 +66,7 @@ export class Title extends Phaser.Scene {
       else this.scene.start('aventura', { nueva: false });
     };
     const controles: Opcion = { texto: 'Controles', detalle: GRANJA ? 'WASD, F, B, M…' : 'WASD, 1-0, Tab, K…', hacer: () => this.verControles() };
-    const detalle = !res ? '' : aventura ? `${aventura.nombre} Nv ${aventura.nivel} · ${aventura.equipo} Pokémon`
+    const detalle = !res ? '' : aventura ? `${aventura.usuario ? aventura.usuario + ' · ' : ''}${aventura.nombre} Nv ${aventura.nivel} · ${aventura.equipo} Pokémon`
       : `Día ${res.dia} · ${res.aldeanos} ${res.aldeanos === 1 ? 'aldeano' : 'aldeanos'}`;
     // Nueva partida con una guardada: antes se pregunta, porque borra la anterior.
     const nueva = () => hay ? this.confirmarBorrar(detalle, () => empezar(true)) : empezar(true);

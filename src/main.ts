@@ -10,6 +10,7 @@ import { HudAventura } from './scenes/HudAventura';
 import { Galeria } from './scenes/Galeria';
 import { Evolucion } from './scenes/Evolucion';
 import { Eleccion } from './scenes/Eleccion';
+import { CargaMapa } from './scenes/carga';
 import { MapaZona } from './scenes/MapaZona';
 
 const game = new Phaser.Game({
@@ -21,7 +22,7 @@ const game = new Phaser.Game({
   roundPixels: true,
   backgroundColor: '#151a12',
   render: { maxLights: 16 },   // Light2D del mapa dibujo: farolas y hoguera a la vista a la vez
-  scene: [Boot, Preload, Title, WorldScene, UIScene, Aventura, HudAventura, Galeria, Evolucion, MapaZona, Eleccion],
+  scene: [Boot, Preload, Title, WorldScene, UIScene, Aventura, HudAventura, Galeria, Evolucion, MapaZona, Eleccion, CargaMapa],
 });
 
 // Prototipo: no pausar el juego cuando la pestaña queda oculta (Phaser lo hace por defecto).

@@ -88,6 +88,7 @@ export interface Luchador {
   uid: string; rol: 'jugador' | 'salvaje' | 'vecino' | 'remoto';   // remoto: otro jugador (multijugador)
   linea: string; nivel: number; miembro?: Miembro; ronda?: Ronda;
   dex: string; nombre: string; tipos: TypeName[];       // dex: el de su sprite (con `s` si es shiny)
+  usuario?: string;                                    // remoto: el nombre de usuario de ese jugador
   stats: Stats; ps: number; boosts: Boosts; boostHasta: Partial<Record<Stat6, number>>;
   estado: string | null; estadoHasta: number; ticEstado: number; toxN: number;
   semilla?: { de: string; hasta: number; tic: number };   // Drenadoras: quién la sembró (le cura), hasta cuándo y el próximo turno
@@ -112,6 +113,7 @@ export interface Luchador {
 // Lo que manda cada jugador por la red (scenes/Aventura.ts) para que los demás lo vean.
 export interface EstadoRemoto {
   uid: string; mapa: MapaId; x: number; y: number; dir: number; anda: boolean; dex: string; nombre: string; nivel: number;
+  usuario?: string;                                            // su nombre de usuario (el que eligió al crear la partida)
   anim?: AnimId | null; animN?: number; animResta?: number;   // la animación de acción (golpe, disparo…): cuenta y lo que le queda (s)
   estado?: string | null;                                      // estado alterado (para su tinte y su ráfaga)
   semilla?: number;                                            // la de tu partida (la sala usa la del primero que entró)
@@ -1277,7 +1279,7 @@ export class Mundo {
       // Si ya estaba (ha evolucionado o subido de nivel), se cambia en el sitio: los salvajes que le persiguen lo siguen.
       if (l) Object.assign(l, { ...nuevo, x: l.x, y: l.y, remoto: l.remoto, animN: l.animN }); else this.remotos.push(l = nuevo);
     }
-    l.nombre = e.nombre; l.dir = e.dir; l.anda = e.anda; l.estado = e.estado ?? null; l.ps = (e.vida ?? 1) * l.stats.hp;
+    l.nombre = e.nombre; l.usuario = e.usuario; l.dir = e.dir; l.anda = e.anda; l.estado = e.estado ?? null; l.ps = (e.vida ?? 1) * l.stats.hp;
     // Una animación nueva (su cuenta ha cambiado): se pone aquí con lo que le quedaba allí.
     const animN = e.animN ?? 0;
     if (l.remoto && animN !== l.remoto.animN && e.anim) { l.anim = e.anim; l.animN++; l.animHasta = ahora + (e.animResta ?? 0.4); }

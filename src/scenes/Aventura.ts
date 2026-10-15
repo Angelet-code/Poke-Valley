@@ -6,6 +6,7 @@
 // de hogar) lo lleva la simulación de src/combate/mundo.ts, que le pasa sucesos para animar.
 // Reglas en src/combate/reglas.ts; partida (equipo, mochila, hora) en src/combate/partida.ts; HUD en HudAventura.ts.
 import Phaser from 'phaser';
+import type { CargaMapa } from './carga';
 import { REG, ROW_FROM_ANGLE, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, abrirMacizo, enMacizo } from '../data/biomas';
@@ -82,7 +83,7 @@ function texturaPixel(scene: Phaser.Scene, clave: string, filas: string[]): void
   filas.forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COL_VUELO[ch]; g.fillRect(i, j, 1, 1); } }));
   c.refresh();
 }
-type DatosMapa = { nueva?: boolean; inicial?: string; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
+type DatosMapa = { nueva?: boolean; inicial?: string; usuario?: string; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
 
 // Mapa (M): la zona entera desde arriba, con una segunda cámara encajada en este hueco (px de pantalla). La escena
 // MapaZona pinta el marco alrededor y las marcas encima (tú, salidas, tablón).
@@ -170,18 +171,23 @@ export class Aventura extends Phaser.Scene {
 
   create(data: DatosMapa): void {
     this.listo = false;
-    const espera = this.add.text(VW * S / 2, VH * S / 2, 'Preparando el mapa…', { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${7 * S}px`, color: '#e4ecd8' }).setOrigin(0.5).setScrollFactor(0);
+    // Pantalla de carga (scenes/carga.ts) encima de todo mientras se monta el mapa; se va sola al acabar.
+    const carga = this.scene.get('cargaMapa') as CargaMapa;
+    carga.reiniciar();
+    this.scene.launch('cargaMapa');
+    this.scene.bringToTop('cargaMapa');
     const n = ++this.montaje;
-    this.montar(data, n).catch(e => console.error(e)).finally(() => espera.destroy());
+    this.montar(data, n, carga).catch(e => console.error(e)).finally(() => { if (n === this.montaje) carga.terminar(); });
   }
 
-  private async montar(data: DatosMapa, n: number): Promise<void> {
+  private async montar(data: DatosMapa, n: number, carga?: CargaMapa): Promise<void> {
+    carga?.progreso(0.08);
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
     this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
     this.placas.clear();
     this.red?.fuente(null);
-    if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial);
+    if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial, data.usuario);
     const id = data.mapa ?? 'pueblo';
     this.red?.presentar(this.partida.estado.semilla);
     this.semillaMapa = this.red?.semilla ?? this.partida.estado.semilla;
@@ -207,7 +213,15 @@ export class Aventura extends Phaser.Scene {
     formas.push(DEX_VUELO);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
-    await Promise.all([this.terrain.calcular(this), cargar(this, formas)]);
+    // Progreso: los sprites van en dos pasadas del cargador (AnimData.xml y luego las hojas); el suelo, aparte.
+    let pasada = 0, suelo = false;
+    const avance = (p: number) => carga?.progreso(0.1 + 0.3 * pasada + 0.3 * p + (suelo ? 0.1 : 0));
+    const fin = () => { pasada = Math.min(2, pasada + 1); avance(0); };
+    this.load.on('progress', avance); this.load.on('complete', fin);
+    try {
+      await Promise.all([this.terrain.calcular(this).then(() => { suelo = true; avance(0); }), cargar(this, formas)]);
+    } finally { this.load.off('progress', avance); this.load.off('complete', fin); }
+    carga?.progreso(0.85);
     if (n !== this.montaje || !this.sys.isActive()) return;
     this.terrain.build(this);
     const cat = this.registry.get(REG.dibujo) as { elementos: Elemento[] }, porId = new Map(cat.elementos.map(e => [e.id, e]));
@@ -236,7 +250,7 @@ export class Aventura extends Phaser.Scene {
       this.red.fuente(() => {
         if (this.mundo !== mundo || !this.listo) return null;
         const p = mundo.jugador, m = this.partida.activo, r1 = (v: number) => Math.round(v * 10) / 10;
-        return { uid: this.red!.uid, mapa: this.mapa.id, x: r1(p.x), y: r1(p.y), dir: p.dir, anda: p.anda, dex: p.dex, nombre: p.nombre, nivel: m.nivel,
+        return { uid: this.red!.uid, mapa: this.mapa.id, x: r1(p.x), y: r1(p.y), dir: p.dir, anda: p.anda, dex: p.dex, nombre: p.nombre, usuario: this.partida.usuario, nivel: m.nivel,
           anim: p.anim, animN: p.animN, animResta: p.anim ? Math.max(0, Math.round((p.animHasta - mundo.ahora) * 100) / 100) : 0, estado: p.estado,
           vida: p.muerto ? 0 : Math.round(p.ps / p.stats.hp * 100) / 100, enMapa: r1((performance.now() - this.llegada) / 1000), semilla: this.partida.estado.semilla };
       });
@@ -989,13 +1003,14 @@ export class Aventura extends Phaser.Scene {
       default: return s;
     }
   }
-  // El nombre y el nivel sobre cada uno de los demás jugadores.
+  // El nombre de usuario, y debajo su Pokémon y su nivel, sobre cada uno de los demás jugadores.
   private pintarPlacas(): void {
     for (const l of this.mundo!.remotos) {
       let t = this.placas.get(l.uid);
-      const txt = `${l.nombre} Nv.${l.nivel}`;
+      const txt = `${l.usuario ?? 'Jugador'}
+${l.nombre} Nv.${l.nivel}`;
       if (!t) {
-        t = this.add.text(0, 0, txt, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${6 * S}px`, fontStyle: 'bold', color: '#bfe4ff', stroke: '#13263a', strokeThickness: 2 * S })
+        t = this.add.text(0, 0, txt, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${6 * S}px`, fontStyle: 'bold', color: '#bfe4ff', stroke: '#13263a', strokeThickness: 2 * S, align: 'center' })
           .setOrigin(0.5, 1).setScale(1 / S);
         t.resetPipeline();
         this.placas.set(l.uid, t);
