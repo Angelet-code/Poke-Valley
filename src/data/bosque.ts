@@ -38,6 +38,7 @@ export interface MapaAventura {
   alfa?: Alfa;
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
+  vuelo?: Punto;                  // dónde va el punto de vuelo; si no, Aventura lo busca junto a la entrada
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
   suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo
   macizo?: Macizo;                // zonas de bioma: lo que no se puede cruzar (bosque cerrado, roca…), ver biomas.ts
@@ -55,6 +56,7 @@ export function pueblo(): MapaAventura {
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,
+    vuelo: { x: 742, y: 150 },     // junto a la boca norte, a la derecha de la avenida
     parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };
 }

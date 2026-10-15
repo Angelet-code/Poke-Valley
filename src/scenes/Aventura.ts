@@ -6,13 +6,13 @@
 // de hogar) lo lleva la simulación de src/combate/mundo.ts, que le pasa sucesos para animar.
 // Reglas en src/combate/reglas.ts; partida (equipo, mochila, hora) en src/combate/partida.ts; HUD en HudAventura.ts.
 import Phaser from 'phaser';
-import { REG, S, VH, VW } from '../config';
+import { REG, ROW_FROM_ANGLE, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, enMacizo } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { FORMAS } from '../data/pokedex';
-import type { Mision } from '../combate/misiones';
+import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
 import { dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
 import { pipelineCel } from '../render/CelPipeline';
@@ -37,6 +37,23 @@ import type { DatosEvolucion } from './Evolucion';
 export type { Aura, Luchador, Temple };
 const TABLON_CERCA = 44;           // px para abrir el tablón con F
 const MINI_ANCHO = 360;            // px de la miniatura de cada zona (mapa del mundo)
+// Punto de vuelo (docs/GDD-mundo.md): Corviknight, el taxi volador de Galar, junto a la entrada de cada zona con un
+// farol al lado. Encima, el icono del maestro de vuelo del WoW: una bota verde con alas (pixel art, '.' = transparente).
+export const DEX_VUELO = '0823', NOMBRE_VUELO = 'Corviknight';
+const VUELO_CERCA = 40, FAROL_DX = 30;
+const ICONO_VUELO = [
+  'ww.......ww',
+  'wWw.....wWw',
+  '.wWw...wWw.',
+  '..wWkkkWw..',
+  '...kggk....',
+  '...kggk....',
+  '...kgggk...',
+  '...kggggk..',
+  '...kkkkkk..',
+];
+const COL_VUELO: Record<string, string> = { w: '#dff7d0', W: '#ffffff', k: '#1d4a16', g: '#5fd34a' };
+type DatosMapa = { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
 
 // Mapa (M): la zona entera desde arriba, con una segunda cámara encajada en este hueco (px de pantalla). La escena
 // MapaZona pinta el marco alrededor y las marcas encima (tú, salidas, tablón).
@@ -69,6 +86,9 @@ export class Aventura extends Phaser.Scene {
   probShiny = PROB_SHINY;             // de cada salvaje que aparece (en la consola se puede subir para probar)
   stage!: Stage;
   verMapa = false;                    // mapa abierto (M)
+  modoVuelo = false;                  // abierto desde el volador: para elegir a dónde volar
+  vueloNuevo = false;                 // el punto de vuelo de aquí se acaba de descubrir (al abrir el mapa de vuelo)
+  vuelo: { x: number; y: number; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
   panel: 'movs' | 'misiones' | null = null;   // panel abierto (K movimientos, F en el tablón): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
@@ -118,17 +138,17 @@ export class Aventura extends Phaser.Scene {
   get hogar() { return this.mundo?.hogar ?? null; }
   get ahora(): number { return this.mundo?.ahora ?? 0; }
 
-  create(data: { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number } }): void {
+  create(data: DatosMapa): void {
     this.listo = false;
     const espera = this.add.text(VW * S / 2, VH * S / 2, 'Preparando el mapa…', { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${7 * S}px`, color: '#e4ecd8' }).setOrigin(0.5).setScrollFactor(0);
     const n = ++this.montaje;
     this.montar(data, n).catch(e => console.error(e)).finally(() => espera.destroy());
   }
 
-  private async montar(data: { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number } }, n: number): Promise<void> {
+  private async montar(data: DatosMapa, n: number): Promise<void> {
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
-    this.verMapa = false; this.camMapa = null;
+    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
     this.placas.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva();
@@ -151,6 +171,7 @@ export class Aventura extends Phaser.Scene {
     // Sprites de quien sale en este mapa (en paralelo al suelo).
     const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
     for (const r of this.mapa.salvajes) formas.push(formaDe(r.linea, r.nivel).dex);
+    formas.push(DEX_VUELO);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
     await Promise.all([this.terrain.calcular(this), cargar(this, formas)]);
@@ -162,9 +183,11 @@ export class Aventura extends Phaser.Scene {
       mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y),   // el macizo de las zonas de bioma bloquea como el agua
       anatomia: this.anatomia, probShiny: this.probShiny,
     });
+    this.ponerVuelo(porId, bloques);
     this.ponerDetalles(cat.elementos, porId, bloques);
     const mundo = this.mundo;
     if (data.pos) { mundo.jugador.x = data.pos.x; mundo.jugador.y = data.pos.y; }
+    if (data.vuelo) { const q = this.aterrizaje(data.vuelo.x, data.vuelo.y + 30); mundo.jugador.x = q.x; mundo.jugador.y = q.y; mundo.jugador.dir = 4; }
     if (this.red) {
       mundo.miRed = this.red.uid;
       this.llegada = performance.now(); this.dueno = this.red.uid; this.fotoT = 0; this.ajenos.clear(); this.compartir = [];
@@ -207,7 +230,7 @@ export class Aventura extends Phaser.Scene {
     this.time.delayedCall(250, () => {
       if (this.mapa !== mapa) return;
       this.events.emit('zona', { nombre: mapa.nombre, lema: mapa.lema });
-      this.aviso(mapa.id !== 'pueblo' ? mapa.bienvenida
+      this.aviso(data.vuelo ? `${NOMBRE_VUELO} te deja en ${mapa.nombre}.` : mapa.id !== 'pueblo' ? mapa.bienvenida
         : this.partida.estado.equipo.length > 1 ? 'El pueblo. Pulsa F junto a uno de tus Pokémon para convertirte en él, o junto al tablón de la plaza para ver las misiones.'
         : 'El pueblo. F junto al tablón de la plaza: misiones. El camino del norte lleva al bosque. Teclas 1-0: tu barra (K para colocar movimientos).');
     });
@@ -218,17 +241,109 @@ export class Aventura extends Phaser.Scene {
     const bloques: Bloque[] = [];
     for (const c of this.mapa.colocados) {
       const el = porId.get(c.id);
-      if (!el) continue;
-      const p = dibujar(this, el, c);
-      if (!p.plano) this.piezas.push(p);
-      if (p.suelo) for (const poli of p.suelo) {
-        const xs = poli.map(q => q[0]), ys = poli.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-        bloques.push({ x: (x0 + x1) / 2, y: y1, w: x1 - x0, h: y1 - y0, poli });
-      } else if (p.huella) { const h = p.huella; bloques.push({ x: (h.x0 + h.x1) / 2, y: h.y1, w: h.x1 - h.x0, h: h.y1 - h.y0, rombo: el.tipo === 'estanque' }); }
-      const l = puntoLuz(p);
-      if (l) this.encender(l[0], l[1], TIPOS_LUZ[c.luz ?? (el.id === 'hoguera' ? 'hoguera' : 'farol')], p.base + 1);
+      if (el) this.ponerElemento(c, el, bloques);
     }
     return bloques;
+  }
+  // Un elemento del catálogo: su dibujo, su huella como colisión y su luz, si tiene.
+  private ponerElemento(c: Colocado, el: Elemento, bloques: Bloque[]): void {
+    const p = dibujar(this, el, c);
+    if (!p.plano) this.piezas.push(p);
+    if (p.suelo) for (const poli of p.suelo) {
+      const xs = poli.map(q => q[0]), ys = poli.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      bloques.push({ x: (x0 + x1) / 2, y: y1, w: x1 - x0, h: y1 - y0, poli });
+    } else if (p.huella) { const h = p.huella; bloques.push({ x: (h.x0 + h.x1) / 2, y: h.y1, w: h.x1 - h.x0, h: h.y1 - h.y0, rombo: el.tipo === 'estanque' }); }
+    const l = puntoLuz(p);
+    if (l) this.encender(l[0], l[1], TIPOS_LUZ[c.luz ?? (el.id === 'hoguera' ? 'hoguera' : 'farol')], p.base + 1);
+  }
+  // El punto de vuelo: el volador y un farol a su lado, donde diga la zona (`vuelo`) o en el primer hueco libre
+  // alrededor de la llegada por la primera salida (la entrada de la zona), lejos de las salidas. Sus huellas se suman
+  // al mundo.
+  private ponerVuelo(porId: Map<string, Elemento>, bloques: Bloque[]): void {
+    const mapa = this.mapa, mundo = this.mundo!, s0 = mapa.salidas[0], a = mapa.vuelo ?? (s0 && mapa.llegada[s0.a]) ?? mapa.llegada.inicio;
+    if (!a) return;
+    // Libre su sitio y el del farol, y con hueco alrededor (por arriba, abajo y a los lados) para no tapar un pasillo.
+    const libre = (x: number, y: number) => [[0, 0], [-14, 0], [14, 0], [0, -10], [0, 12], [-FAROL_DX, -2], [-FAROL_DX, 6],
+      [0, -30], [0, 30], [36, 0], [-FAROL_DX - 22, 0], [-FAROL_DX, -28], [-FAROL_DX, 28]].every(([dx, dy]) => mundo.pisable({ x: x + dx, y: y + dy }));
+    const lejos = (x: number, y: number) => mapa.salidas.every(s => x < s.x0 - 100 || x > s.x1 + 100 || y < s.y0 - 100 || y > s.y1 + 100);
+    let sitio: { x: number; y: number } | null = mapa.vuelo && libre(mapa.vuelo.x, mapa.vuelo.y) ? mapa.vuelo : null;
+    for (let r = mapa.vuelo ? 12 : 90; r <= 300 && !sitio; r += 12) for (let k = 0; k < 24 && !sitio; k++) {
+      const ang = (k / 24) * Math.PI * 2, x = Math.round(a.x + Math.cos(ang) * r), y = Math.round(a.y + Math.sin(ang) * r * 0.75);
+      if (x > 50 && y > 70 && x < mapa.W - 50 && y < mapa.H - 40 && libre(x, y) && lejos(x, y)) sitio = { x, y };
+    }
+    if (!sitio) return;
+    const { x, y } = sitio, nuevos: Bloque[] = [];
+    const farol = porId.get(mapa.id === 'pueblo' ? 'farola' : 'farola_madera') ?? porId.get('farola');
+    if (farol) this.ponerElemento({ id: farol.id, x: x - FAROL_DX, y: y - 2 }, farol, nuevos);
+    nuevos.push({ x, y: y + 3, w: 24, h: 10, rombo: true });
+    mundo.anadirBloques(nuevos);
+    bloques.push(...nuevos);
+    const an = ancla(DEX_VUELO), alto = Math.min(56, an.alto), ancho = Math.max(10, Math.min(34, an.ancho * 0.75));
+    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
+    poner(spr, DEX_VUELO, 'Idle', 0);
+    const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
+    const placa = this.add.text(x, y - alto - 2, `${NOMBRE_VUELO}\n‹Vuelos›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#9be38a', stroke: '#16301a', strokeThickness: 2 * S, align: 'center' })
+      .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
+    if (!this.textures.exists('icono_vuelo')) {
+      const c = this.textures.createCanvas('icono_vuelo', ICONO_VUELO[0].length, ICONO_VUELO.length)!, g = c.getContext();
+      ICONO_VUELO.forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COL_VUELO[ch]; g.fillRect(i, j, 1, 1); } }));
+      c.refresh();
+    }
+    const icono = this.add.image(x, placa.y - 16, 'icono_vuelo').setOrigin(0.5, 1).setDepth(1e5);
+    for (const o of [sombra, placa, icono]) o.resetPipeline();
+    this.vuelo = { x, y, spr, sombra, placa, icono, fila: 0 };
+    // El del pueblo (tu hogar) viene descubierto; de los demás, se apunta dónde está por si ha cambiado.
+    const vs = this.partida.estado.vuelos ??= {};
+    if (mapa.id === 'pueblo' || vs[mapa.id]) vs[mapa.id] = { x, y, u: x / mapa.W, v: y / mapa.H };
+  }
+  // Puntos de vuelo descubiertos (por zona, dónde está su volador). Se descubren hablando con él (F).
+  get vuelosConocidos(): Record<string, { x: number; y: number; u: number; v: number }> { return this.partida.estado.vuelos ?? {}; }
+  // Quieto, el volador mira hacia ti cuando te acercas; el icono flota.
+  private pasoVuelo(): void {
+    const v = this.vuelo, p = this.mundo!.jugador;
+    if (!v) return;
+    v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2.5)) * 3);
+    const fila = Math.hypot(p.x - v.x, p.y - v.y) < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
+    if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_VUELO, 'Idle', fila); }
+  }
+  // Un sitio donde aterrizar cerca de (x, y) (junto al volador): el punto pisable más cercano, lejos de las salidas.
+  private aterrizaje(x: number, y: number): { x: number; y: number } {
+    const m = this.mundo!, { W, H, salidas } = this.mapa;
+    const ok = (q: { x: number; y: number }) => q.x > 24 && q.y > 30 && q.x < W - 24 && q.y < H - 24
+      && salidas.every(s => q.x < s.x0 - 30 || q.x > s.x1 + 30 || q.y < s.y0 - 30 || q.y > s.y1 + 30)
+      && m.pisable(q) && m.pisable({ x: q.x - 10, y: q.y }) && m.pisable({ x: q.x + 10, y: q.y });
+    for (let r = 0; r <= 300; r += 6) for (let k = 0, n = r ? Math.ceil(r / 4) : 1; k < n; k++) {
+      const a = (k / n) * Math.PI * 2, q = { x: Math.round(x + Math.cos(a) * r), y: Math.round(y + Math.sin(a) * r) };
+      if (ok(q)) return q;
+    }
+    return { x: m.jugador.x, y: m.jugador.y };
+  }
+  // Vuelo a otro punto de vuelo descubierto: el volador viene a por ti, subís los dos mientras se funde a negro y
+  // apareces junto al volador de esa zona (se monta su mapa con `vuelo`).
+  volar(d: { mapa: MapaId }): void {
+    const mundo = this.mundo, ave = this.vuelo, dest = this.vuelosConocidos[d.mapa];
+    if (!this.listo || !mundo || !ave || !dest || d.mapa === this.mapa.id) return;
+    this.mostrarMapa(false);
+    this.listo = false; this.objetivo = null; mundo.cortarHogar(); this.guardar(); this.stage.settle();
+    const p = mundo.jugador, yo = this.vistaDe(p), cam = this.cameras.main;
+    this.aviso(`${NOMBRE_VUELO} te lleva volando a ${NOMBRE_ZONA[d.mapa]}`);
+    const fila = ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - ave.y, p.x - ave.x) / (Math.PI / 4)) + 8) % 8];
+    poner(ave.spr, DEX_VUELO, 'Walk', fila);
+    ave.placa.setVisible(false); ave.icono.setVisible(false);
+    this.tweens.add({
+      targets: ave.spr, x: p.x, y: p.y + 1, duration: 450, ease: 'Sine.easeInOut',
+      onUpdate: () => ave.sombra.setPosition(ave.spr.x, ave.spr.y - 1),
+      onComplete: () => {
+        ave.spr.setDepth(p.y + 1);
+        poner(ave.spr, DEX_VUELO, 'Walk', 4);
+        this.tweens.add({ targets: [ave.sombra, yo.sombra], alpha: 0, scale: 0.3, duration: 900 });
+        cam.fadeOut(1000, 0, 0, 0);
+        this.tweens.add({ targets: [ave.spr, yo.spr], y: '-=150', alpha: 0, duration: 1000, ease: 'Cubic.easeIn', onComplete: () => {
+          this.tweens.killTweensOf([ave.spr, yo.spr, ave.sombra, yo.sombra]);
+          this.scene.restart({ mapa: d.mapa, desde: 'inicio', vuelo: dest });
+        } });
+      },
+    });
   }
   // Detalles por el césped libre (semilla fija por mapa).
   private ponerDetalles(elementos: Elemento[], porId: Map<string, Elemento>, bloques: Bloque[]): void {
@@ -409,8 +524,10 @@ export class Aventura extends Phaser.Scene {
 
   // Abre o cierra el mapa: la cámara del mapa se hace la primera vez (sin las barras de vida ni el anillo del
   // objetivo); mientras está abierto no se pinta la cámara del juego ni los canvas de efectos, y no te mueves.
-  mostrarMapa(v: boolean): void {
+  mostrarMapa(v: boolean, vuelo = false): void {
     if (v && (!this.listo || this.evolucionando)) return;
+    if (v && this.verMapa) return;
+    this.modoVuelo = v && vuelo;
     if (v && !this.textures.exists('mini_' + this.mapa.id)) this.miniatura();   // recién llegado: aún no estaba
     this.verMapa = v;
     if (v && !this.camMapa) {
@@ -439,9 +556,21 @@ export class Aventura extends Phaser.Scene {
   // F / espacio: junto al tablón, las misiones; junto a uno de tus Pokémon del pueblo, convertirte en él.
   private interactuar(): void {
     const mundo = this.mundo;
-    if (!this.listo || !mundo || mundo.jugador.muerto) return;
+    if (!this.listo || !mundo || mundo.jugador.muerto || this.verMapa) return;
     mundo.cortarHogar();
     const p = mundo.jugador, t = this.mapa.tablon;
+    const v = this.vuelo;
+    if (v && Math.hypot(v.x - p.x, v.y - p.y) < VUELO_CERCA) {
+      if (mundo.salvajes.some(s => s.modo === 'pelear' && s.rival === p && !s.muerto)) { this.aviso('No se puede volar en pleno combate'); return; }
+      const vs = this.partida.estado.vuelos ??= {};
+      if (!vs[this.mapa.id]) {   // descubierto (como en el WoW: «Nueva ruta de vuelo»)
+        vs[this.mapa.id] = { x: v.x, y: v.y, u: v.x / this.mapa.W, v: v.y / this.mapa.H };
+        this.guardar();
+        this.vueloNuevo = true;   // lo anuncia el mapa de vuelo
+      }
+      this.mostrarMapa(true, true);   // MapaZona lee y apaga vueloNuevo al crearse
+      return;
+    }
     if (t && Math.hypot(t.x - p.x, t.y - p.y) < TABLON_CERCA) { this.panel = this.panel === 'misiones' ? null : 'misiones'; this.asignando = null; return; }
     mundo.interactuar();
   }
@@ -796,6 +925,7 @@ export class Aventura extends Phaser.Scene {
     this.pintarPlacas();
     this.pintarMarca();
     this.pasoTablon();
+    this.pasoVuelo();
     this.pintarHogar();
     this.dibujarBarras();
     this.stage.actualizar(t, dtMs);

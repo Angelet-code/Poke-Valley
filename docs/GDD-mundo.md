@@ -124,8 +124,18 @@ Cómo es (constantes `ALFA_*` en Aventura.ts):
   `pokemon-valley/miniaturas`, por estilo y semilla.
 - **El mundo cuadra**: cada salida está en el lado por el que queda su zona en la cuadrícula. `revisarSalidas`
   (`data/mundo.ts`) lo comprueba al entrar en cada zona y avisa en la consola si no (o si falta el camino).
-- **Puntos de vuelo**, por hacer: un Pokémon volador en cada zona; F a su lado abre el mapa y el punto que elijas con
-  el ratón es a donde te lleva volando.
+- **Puntos de vuelo**, hecho: en cada zona, **Corviknight** (el taxi volador de Galar) con un farol al lado. Encima
+  lleva su nombre, «‹Vuelos›», y el icono del maestro de vuelo del WoW (una bota verde con alas que flota). En el pueblo
+  está junto a la boca norte (`MapaAventura.vuelo`); en las demás zonas, `Aventura.ponerVuelo` busca un hueco libre y
+  con espacio alrededor cerca de la entrada, lejos de las salidas. Te mira cuando te acercas.
+  - **Se descubren hablando con él** (F, como en el WoW): el pie del mapa dice «¡Nuevo punto de vuelo descubierto!».
+    El del pueblo (tu hogar) viene descubierto. Se guardan en la partida (`estado.vuelos`: dónde está cada volador).
+  - **F a su lado** (fuera de combate) abre el mapa del mundo en modo vuelo, «¿A dónde vuelas?». Las zonas con punto
+    descubierto llevan el icono del volador; clic en una y te lleva allí. Las demás no se pueden elegir (el pie dice
+    que hay que ir a hablar con su volador). El icono también sale en el mapa del mundo normal (M).
+  - **El viaje**: Corviknight va a por ti, subís los dos mientras se funde a negro y apareces delante del volador de
+    la zona de destino (`Aventura.aterrizaje` busca el sitio libre más cercano).
+  - Por hacer: una animación de aterrizaje y, quizá, un coste en Pokécoins.
 
 ### Mundo continuo (v2)
 Hoy el suelo de cada zona es un único canvas a resolución de pantalla. Un mundo de 3 zonas a zoom 4 ocuparía unos

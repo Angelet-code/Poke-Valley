@@ -178,10 +178,7 @@ export class Mundo {
   constructor(o: OpcionesMundo) {
     this.mapa = o.mapa; this.partida = o.partida; this.probShiny = o.probShiny;
     this.rnd = o.rnd ?? Math.random; this.anatomia = o.anatomia; this.agua = o.agua;
-    for (const b of o.bloques) for (let j = Math.floor((b.y - b.h) / CUBO); j <= Math.floor(b.y / CUBO); j++) for (let i = Math.floor((b.x - b.w / 2) / CUBO); i <= Math.floor((b.x + b.w / 2) / CUBO); i++) {
-      const k = j * 4096 + i, c = this.cubos.get(k);
-      if (c) c.push(b); else this.cubos.set(k, [b]);
-    }
+    for (const b of o.bloques) this.meterBloque(b);
     this.nav = new Rejilla(this.mapa.W, this.mapa.H, (x, y) => this.pisable({ x, y }));
     const lleg = this.mapa.llegada[o.desde] ?? this.mapa.llegada.inicio!, act = this.partida.activo;
     this.jugador = this.crearLuchador('jugador', act.linea, act.nivel, lleg.x, lleg.y, act);
@@ -202,6 +199,18 @@ export class Mundo {
   private despues(s: number, fn: () => void): void { this.relojes.push({ t: this.ahora + s, fn }); }
 
   // ---- Colisiones ----
+  private meterBloque(b: Bloque): void {
+    for (let j = Math.floor((b.y - b.h) / CUBO); j <= Math.floor(b.y / CUBO); j++) for (let i = Math.floor((b.x - b.w / 2) / CUBO); i <= Math.floor((b.x + b.w / 2) / CUBO); i++) {
+      const k = j * 4096 + i, c = this.cubos.get(k);
+      if (c) c.push(b); else this.cubos.set(k, [b]);
+    }
+  }
+  // Bloques que la escena pone después de hacer el mundo (el punto de vuelo y su farol, que buscan sitio con
+  // `pisable`): a las colisiones y a la rejilla de caminos, que se rehace.
+  anadirBloques(bs: Bloque[]): void {
+    for (const b of bs) this.meterBloque(b);
+    this.nav = new Rejilla(this.mapa.W, this.mapa.H, (x, y) => this.pisable({ x, y }));
+  }
   enBloque(x: number, y: number): boolean {
     const c = this.cubos.get(Math.floor(y / CUBO) * 4096 + Math.floor(x / CUBO));
     return !!c && c.some(b => {
