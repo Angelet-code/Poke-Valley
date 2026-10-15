@@ -440,6 +440,10 @@ Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
   Al acabar se quitan los estados y bufos del duelo. Sin experiencia ni premio, de momento.
 - **Animaciones.** Cada uno reenvía a los demás los rótulos, los destellos, los movimientos, las Balls y las caídas,
   con los uids traducidos (`traducir`).
+- **Chat** (`src/ui/chat.ts`, HTML sobre el lienzo). Intro abre la línea de escribir, Intro manda y Esc cierra sin
+  mandar; mientras escribes, el teclado del juego está apagado. El mensaje va a toda la sala (`t: 'chat'`), sale en el
+  registro de abajo a la izquierda (las líneas se desvanecen a los 12 s con el chat cerrado) y en un bocadillo sobre la
+  cabeza de quien habla si está en tu mapa. Sin red, solo lo ves tú.
 
 Falta: probar el golpe del alfa y el clima con dos jugadores, un indicador en el HUD de quién lleva el mapa, ver a
 los vecinos del pueblo de los demás y entrar en la sala desde el título.

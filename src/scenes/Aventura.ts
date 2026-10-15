@@ -34,6 +34,7 @@ import { NOMBRE_ESTADO, NOMBRE_STAT, formaDe, statsDe, type Clima } from '../com
 import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
+import { chatDeLaPagina } from '../ui/chat';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
 import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
@@ -143,6 +144,9 @@ export class Aventura extends Phaser.Scene {
   private readonly red = redDeLaPagina();
   private cargandoRed = new Set<string>();
   private placas = new Map<string, Phaser.GameObjects.Text>();
+  // Chat (Intro): bocadillo sobre la cabeza de quien habla (uid del mundo), hasta performance.now() = hasta.
+  private readonly chat = chatDeLaPagina();
+  private bocadillos = new Map<string, { t: Phaser.GameObjects.Text; hasta: number }>();
   private semillaMapa = 0;             // con la que se ha hecho este mapa (la de la sala, si hay)
   private llegada = 0;                 // performance.now() al montar el mapa: el que lleva más tiempo en él es su dueño
   private dueno = '';                  // uid de red del que lleva a los salvajes de este mapa
@@ -185,7 +189,7 @@ export class Aventura extends Phaser.Scene {
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
     this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
-    this.placas.clear();
+    this.placas.clear(); this.bocadillos.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial, data.usuario);
     const id = data.mapa ?? 'pueblo';
@@ -243,6 +247,8 @@ export class Aventura extends Phaser.Scene {
     const mundo = this.mundo;
     if (data.pos) { mundo.jugador.x = data.pos.x; mundo.jugador.y = data.pos.y; }
     if (data.vuelo) { const q = this.aterrizaje(data.vuelo.x, data.vuelo.y + 30); mundo.jugador.x = q.x; mundo.jugador.y = q.y; mundo.jugador.dir = 4; }
+    this.chat.activar(this, this.red, this.partida.usuario);
+    this.chat.alDecir = (uid, texto) => this.decir(uid ? `remoto-${uid}` : mundo.jugador.uid, texto);
     if (this.red) {
       mundo.miRed = this.red.uid;
       this.llegada = performance.now(); this.dueno = this.red.uid; this.fotoT = 0; this.ajenos.clear(); this.compartir = [];
@@ -1019,6 +1025,26 @@ ${l.nombre} Nv.${l.nivel}`;
     }
   }
 
+  // Lo que alguien dice por el chat, en un bocadillo sobre su cabeza durante unos segundos (si está en este mapa).
+  private decir(uid: string, texto: string): void {
+    const viejo = this.bocadillos.get(uid);
+    viejo?.t.destroy();
+    const t = this.add.text(0, 0, texto, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${6 * S}px`, fontStyle: 'bold', color: '#fff8e6',
+      stroke: '#2a2016', strokeThickness: 2 * S, align: 'center', wordWrap: { width: 90 * S } }).setOrigin(0.5, 1).setScale(1 / S).setVisible(false);
+    t.resetPipeline();
+    this.bocadillos.set(uid, { t, hasta: performance.now() + 3000 + texto.length * 60 });
+  }
+  private pintarBocadillos(): void {
+    const mundo = this.mundo!, ahora = performance.now();
+    for (const [uid, b] of this.bocadillos) {
+      const l = mundo.luchador(uid);
+      if (ahora > b.hasta || (!l && !uid.startsWith('remoto-'))) { b.t.destroy(); this.bocadillos.delete(uid); continue; }
+      if (!l) { b.t.setVisible(false); continue; }
+      const sobre = this.placas.get(uid), y = sobre ? sobre.y - sobre.displayHeight - 2 : l.y - l.alto - (l.ps < l.stats.hp || l.estado ? 12 : 3);
+      b.t.setPosition(l.x, y).setDepth(1e5 + 1).setVisible(true).setAlpha(Math.min(1, (b.hasta - ahora) / 400));
+    }
+  }
+
   // ---- Cambiar de mapa ----
   irA(mapa: MapaId, desde: MapaId | 'inicio'): void {
     this.mostrarMapa(false);
@@ -1046,6 +1072,7 @@ ${l.nombre} Nv.${l.nivel}`;
     this.aclarar(dtMs);
     for (const l of [...mundo.todos(), ...mundo.remotos]) this.dibujar(l, this.vistaDe(l));
     this.pintarPlacas();
+    this.pintarBocadillos();
     this.pintarSuelo();
     this.pintarMarca();
     this.pasoTablon();
