@@ -6,6 +6,7 @@
 import { ROW_FROM_ANGLE } from '../config';
 import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
 import { FORMAS } from '../data/pokedex';
+import { APARICION, RAREZA_AVISO, tirarEspecie } from '../data/aparicion';
 import { ESPECIES } from '../data/especies';
 import { BALL, ITEMS } from '../data/items';
 import { alturaDe, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
@@ -378,6 +379,9 @@ export class Mundo {
     l.ronda = r;
     l.natu = this.natuForzada ?? IDS_NATURALEZA[Math.floor(this.rnd() * IDS_NATURALEZA.length)];
     l.tabla = tablaDe(l.natu, this.rnd);
+    // Uno de los rarísimos de la tabla de la zona (data/aparicion.ts): se avisa, que es todo un acontecimiento.
+    const rz = r.fija ? -1 : APARICION[this.mapa.id]?.raras.indexOf(r.linea) ?? -1;
+    if (rz >= RAREZA_AVISO) this.aviso(rz === RAREZA_AVISO ? `Un ${l.nombre} muy raro ronda por aquí` : `¡Un ${l.nombre} rarísimo ronda por aquí!`);
     return l;
   }
   // El alfa de la zona: la forma fija, ×1,4, con aura y el triple de vida. Siempre peleón. Si cayó hace menos de
@@ -762,8 +766,12 @@ export class Mundo {
       this.ponerAlfa();
     } else this.reaparecer(t.ronda);
   }
+  // En su sitio vuelve a salir otro de la tabla de la zona (la rareza del rincón secreto, siempre la misma).
   private reaparecer(r?: Ronda): void {
-    if (r) this.despues(RESPAWN, () => this.salvajes.push(this.crearSalvaje(r)));
+    if (r) this.despues(RESPAWN, () => {
+      if (!r.fija) r.linea = tirarEspecie(this.mapa.id, this.rnd)?.linea ?? r.linea;
+      this.salvajes.push(this.crearSalvaje(r));
+    });
   }
   // Experiencia para el que manejas y, a veces, algo que suelta (bayas, alguna Ball).
   private recompensa(t: Pick<Luchador, 'linea' | 'nivel' | 'alfa' | 'nombre'>): void {

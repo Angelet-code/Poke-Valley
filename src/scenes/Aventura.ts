@@ -13,6 +13,7 @@ import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
+import { lineasDe } from '../data/aparicion';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
 import { despejarPuentes, tirasDeBorde, vestirMacizo } from '../data/bordes';
 import { dibujar, enRect, ponerTinteSombra, expandirTiras, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
@@ -199,7 +200,10 @@ export class Aventura extends Phaser.Scene {
     this.terrain = new Terrain(this.mapa.datos, S, su ? { paleta: PALETAS_BIOMA[su], decals: false, claves: { cesped: `suelo_${su}_a`, tierra: `suelo_${su}_b` } } : { paleta: PALETA_DIBUJO, decals: false });
     // Sprites de quien sale en este mapa (en paralelo al suelo).
     const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
+    // Los salvajes y todo lo que puede salir cuando reaparecen (la tabla de la zona, a los niveles que hay).
+    const niveles = new Set(this.mapa.salvajes.map(r => r.nivel)), tabla = lineasDe(this.mapa.id);
     for (const r of this.mapa.salvajes) formas.push(formaDe(r.linea, r.nivel).dex);
+    for (const nv of niveles) for (const l of tabla) formas.push(formaDe(l, nv).dex);
     formas.push(DEX_VUELO);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)

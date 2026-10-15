@@ -324,6 +324,27 @@ Capturas: [costa](img/zona_costa.jpg), [cantera](img/zona_cantera.jpg), [pantano
   suelo, pero así Aventura no las reparte por el césped de otras zonas: nada de fumarolas en el pueblo.
 - **Pendiente:** las misiones del tablón solo tienen el bosque y el lago (`ZONAS_MISION` en `combate/misiones.ts`).
 
+### 4c. Qué sale en cada zona y con qué probabilidad (2026-10-15)
+
+`src/data/aparicion.ts`. Cada zona (bosque, lago y las seis de bioma) tiene **14 líneas, todas de su bioma**:
+
+- **7 comunes**, que salen igual de a menudo (11,5 % cada una);
+- **7 raras**, cada una menos que la anterior: 6 %, 4,5 %, 3,5 %, 2,5 %, 1,5 %, 1 % y **0,5 %** la rarísima. Las
+  últimas son las que valen la pena: pseudolegendarios (Larvitar, Gible, Bagon, Goomy, Dreepy, Frigibax), Feebas,
+  Larvesta, Riolu, Munchlax…
+- Se tira con la semilla del mapa al generarlo y con la del mundo **cada vez que un salvaje reaparece**: el raro puede
+  salir en cualquier momento, no solo al entrar.
+- Si sale una de las dos últimas raras (1 % o 0,5 %), se avisa: «Un Riolu muy raro ronda por aquí» / «¡Un Larvitar
+  rarísimo ronda por aquí!».
+- Aparte, la **rareza del rincón secreto** de cada bioma (`diseno.rara` en `biomas.ts`) sigue siempre ahí y no está en
+  la tabla (`Ronda.fija`). La de la cantera pasó de Larvitar a Aron: Larvitar salía demasiado y ahora es la rarísima de
+  la cantera.
+- Los iniciales no salen como salvajes. Las tres últimas raras de cada tabla no se ofrecen como compañero al empezar
+  (`ULTRA_RAROS` en `scenes/Eleccion.ts`).
+- Para estas tablas se añadieron 48 líneas a la Pokédex (stats y tipos del Showdown de Colleja; normales con
+  `tools/normales_pokemon.py`; hojas y paletas shiny de SpriteCollab con `tools/shiny_paletas.py`, comparativa en
+  `assets/gen/shiny/nuevas_shiny.png`).
+
 ## 5. Diseño de zonas: lo investigado y cómo se aplica (2026-10-15)
 | Principio | De dónde | En el generador (`diseno` de cada bioma) |
 |---|---|---|

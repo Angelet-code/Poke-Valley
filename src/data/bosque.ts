@@ -11,6 +11,7 @@ import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
 import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
+import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
 import { esBioma, zonaBioma, type Bioma, type Macizo } from './biomas';
 import { taller } from './taller';
@@ -26,7 +27,9 @@ export interface Pavimento { tex: string; x: number; y: number; w: number; h: nu
 export interface Punto { x: number; y: number }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
-export interface Ronda { linea: string; nivel: number; x: number; y: number }
+// Un salvaje en su sitio. `fija`: siempre la misma especie (la rareza del rincón secreto); si no, al reaparecer se
+// vuelve a tirar de la tabla de la zona (data/aparicion.ts).
+export interface Ronda { linea: string; nivel: number; x: number; y: number; fija?: boolean }
 // El alfa (élite) de una zona: una forma concreta (Pidgeotto a nivel 9, aunque Pidgey evolucione a los 18) en un sitio fijo.
 export interface Alfa extends Ronda { forma: string }
 // Clima de base de una zona: cada tramo de CLIMA_TRAMO s hay `prob` de que haga este clima (0,8 = el 80 % del tiempo).
@@ -68,10 +71,6 @@ export function pueblo(): MapaAventura {
     parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };
 }
-
-// Especies del bosque (líneas de data/pokedex.ts). En cada bosque salen unas cuantas, por nivel en su forma.
-export const ESPECIES_BOSQUE = ['caterpie', 'pidgey', 'oddish', 'bidoof', 'hoothoot', 'spinarak', 'zubat', 'pikachu', 'sunkern', 'combee',
-  'bounsweet', 'poochyena', 'murkrow', 'flabebe', 'wooloo', 'natu', 'rookidee', 'growlithe', 'psyduck', 'gastly', 'clefairy', 'diglett', 'machop', 'ralts'];
 
 const MW = 56, MH = 44;
 
@@ -172,14 +171,13 @@ export function bosque(semilla: number): MapaAventura {
 
   // Salvajes: 2-3 por claro, de nivel según el orden de lejanía del claro: 1-2 en el de la entrada (empiezas a nivel 1)
   // y uno más por cada claro, hasta 7-8 en el del fondo.
-  const especies = [...ESPECIES_BOSQUE].sort(() => r() - 0.5).slice(0, 7);
   const salvajes: Ronda[] = [];
   const orden = [...claros].sort((a, b) => Math.hypot(a.x - entrada.x, a.y - entrada.y) - Math.hypot(b.x - entrada.x, b.y - entrada.y));
   orden.forEach((c, i) => {
     const n = 2 + (r() < 0.5 ? 1 : 0);
     for (let k = 0; k < n; k++) {
       const a = r() * Math.PI * 2, rr = r() * c.rad * 0.6, nv = Math.max(1, i + 1 + (r() < 0.4 ? 1 : 0));
-      salvajes.push({ linea: especies[Math.floor(r() * especies.length)], nivel: nv, x: Math.round(c.x + Math.cos(a) * rr), y: Math.round(c.y + Math.sin(a) * rr * 0.8) });
+      salvajes.push({ linea: tirarEspecie('bosque', r)!.linea, nivel: nv, x: Math.round(c.x + Math.cos(a) * rr), y: Math.round(c.y + Math.sin(a) * rr * 0.8) });
     }
   });
 
@@ -199,8 +197,6 @@ export function bosque(semilla: number): MapaAventura {
   };
 }
 
-// Especies del lago: Agua y lo que ronda por las orillas.
-export const ESPECIES_LAGO = ['psyduck', 'marill', 'magikarp', 'pachirisu', 'pikachu', 'flabebe', 'ralts', 'natu', 'hoothoot', 'murkrow', 'wooloo', 'poochyena'];
 
 const LW = 52, LH = 44;
 
@@ -311,14 +307,13 @@ export function lago(semilla: number): MapaAventura {
   }
 
   // Salvajes: 18 cerca del agua, de nivel 5 a 10 según lo lejos que estén de la entrada.
-  const especies = [...ESPECIES_LAGO].sort(() => r() - 0.5).slice(0, 7);
   const salvajes: Ronda[] = [];
   const dmax = Math.hypot(W, H) * 0.75;
   for (let i = 0; i < 2000 && salvajes.length < 18; i++) {
     const x = entre(100, W - 100), y = entre(120, H - 80);
     if (!enAgua(x, y, 150) || enAgua(x, y, 26) || !libre(x, y, 10) || salvajes.some(s => Math.hypot(s.x - x, s.y - y) < 70)) continue;
     const nv = Math.min(10, 5 + Math.round(Math.hypot(x - entrada.x, y - entrada.y) / dmax * 4) + (r() < 0.4 ? 1 : 0));
-    salvajes.push({ linea: especies[Math.floor(r() * especies.length)], nivel: nv, x: Math.round(x), y: Math.round(y) });
+    salvajes.push({ linea: tirarEspecie('lago', r)!.linea, nivel: nv, x: Math.round(x), y: Math.round(y) });
   }
 
   // El alfa: un Golduck de nivel 12 junto al muelle, en la orilla.

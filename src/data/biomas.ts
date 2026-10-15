@@ -32,6 +32,7 @@ import type { Paleta } from '../render/TerrainCore';
 import type { Colocado } from './mapaDibujo';
 import type { Alfa, ClimaBase, Llegada, MapaAventura, MapaId, Punto, Ronda, Salida } from './bosque';
 import { rng } from '../util';
+import { tirarEspecie } from './aparicion';
 import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 
 type Rect = { x0: number; y0: number; x1: number; y1: number };
@@ -81,7 +82,7 @@ interface DefZona {
   agua?: { tipo: 'mar'; lado: Lado } | { tipo: 'lagunas'; n: number };
   extras: [string, number, Donde][];
   hito: string; alfa: { linea: string; forma: string; nivel: number };
-  especies: string[]; niveles: [number, number];
+  niveles: [number, number];
   caminoLosas?: boolean;              // ruinas: los senderos son losas (vértice 2)
   diseno: { puntos: string[]; marco: string; miga: string; descanso: string[]; rara: { linea: string; nivel: number } };
   hitoEscala?: number; alrededorHito?: [string, number];   // hito pequeño: más grande y con piezas alrededor
@@ -460,7 +461,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   });
 
   // 7. Salvajes: 2-3 por claro, con el nivel según el orden de lejanía a la entrada.
-  const especies = [...def.especies].sort(() => r() - 0.5).slice(0, 7);
+  const especie = () => tirarEspecie(def.id, r)!.linea;   // tabla de la zona (data/aparicion.ts)
   const salvajes: Ronda[] = [];
   orden.forEach((c, i) => {
     if (c === descanso) return;
@@ -468,18 +469,18 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     for (let k = 0; k < n; k++) {
       const a = r() * Math.PI * 2, rr = r() * c.rad * 0.6;
       const x = Math.round(c.x + Math.cos(a) * rr), y = Math.round(c.y + Math.sin(a) * rr * 0.8);
-      if (!enAgua(x, y, 10)) salvajes.push({ linea: pick(especies), nivel: Math.round(base + (r() < 0.4 ? 1 : 0)), x, y });
+      if (!enAgua(x, y, 10)) salvajes.push({ linea: especie(), nivel: Math.round(base + (r() < 0.4 ? 1 : 0)), x, y });
     }
   });
-  if (sec) salvajes.push({ linea: D.rara.linea, nivel: D.rara.nivel, x: Math.round(sec.x), y: Math.round(sec.y + 10) });
-  bolsas.forEach((b, i) => { if (i % 2 === 0) salvajes.push({ linea: pick(especies), nivel: Math.round((def.niveles[0] + def.niveles[1]) / 2 + 1), x: Math.round(b.x), y: Math.round(b.y + 8) }); });
+  if (sec) salvajes.push({ linea: D.rara.linea, nivel: D.rara.nivel, fija: true, x: Math.round(sec.x), y: Math.round(sec.y + 10) });
+  bolsas.forEach((b, i) => { if (i % 2 === 0) salvajes.push({ linea: especie(), nivel: Math.round((def.niveles[0] + def.niveles[1]) / 2 + 1), x: Math.round(b.x), y: Math.round(b.y + 8) }); });
   // Explanadas: 3 salvajes más en cada una (es el espacio de combate), con el nivel de su tramo del recorrido.
   explanadas.slice(0, -1).forEach((f, i) => {
     const nv = Math.round(def.niveles[0] + (def.niveles[1] - def.niveles[0]) * (i + 1) / 3);
     for (let k = 0, t = 0; k < 3 && t < 60; t++) {
       const e = pick(f), a = r() * Math.PI * 2, d = Math.sqrt(r()) * 0.7, x = Math.round(e.x + Math.cos(a) * e.rx * d), y = Math.round(e.y + Math.sin(a) * e.ry * d);
       if (enAgua(x, y, 10)) continue;
-      salvajes.push({ linea: pick(especies), nivel: nv + (r() < 0.4 ? 1 : 0), x, y }); k++;
+      salvajes.push({ linea: especie(), nivel: nv + (r() < 0.4 ? 1 : 0), x, y }); k++;
     }
   });
   // Solo los que se pueden alcanzar desde la entrada.
@@ -507,10 +508,10 @@ const DEFS: Record<Bioma, DefZona> = {
     extras: [['madera_deriva', 5, 'borde'], ['barca', 2, 'orilla'], ['red_pesca', 3, 'borde'], ['poza_marea', 3, 'claro'], ['conchas', 10, 'claro'], ['hierba_duna', 14, 'borde'], ['roca_costa', 8, 'orilla']],
     hito: 'faro', alfa: { linea: 'wailmer', forma: 'wailord', nivel: 16 },
     clima: { tipo: 'lluvia', prob: 0.3 },
-    especies: ['magikarp', 'wailmer', 'pidgey', 'rookidee', 'pachirisu', 'psyduck', 'marill'], niveles: [8, 14],
+    niveles: [8, 14],
   },
   cantera: {
-    id: 'cantera', bioma: 'cantera', bajo: ['roca_mineral', 'arbusto_seco', 'roca_mineral'], rio: true, diseno: { puntos: ['vagoneta', 'andamio', 'cristal_acero', 'roca_mineral'], marco: 'cristal_acero', miga: 'grava', descanso: ['hoguera', 'tronco_caido'], rara: { linea: 'larvitar', nivel: 18 } },
+    id: 'cantera', bioma: 'cantera', bajo: ['roca_mineral', 'arbusto_seco', 'roca_mineral'], rio: true, diseno: { puntos: ['vagoneta', 'andamio', 'cristal_acero', 'roca_mineral'], marco: 'cristal_acero', miga: 'grava', descanso: ['hoguera', 'tronco_caido'], rara: { linea: 'aron', nivel: 18 } },
     nombre: 'Cantera Gris', lema: 'Nivel 10-16 · Roca, Tierra, Lucha y Acero', sal: 0xca7e2a,
     bienvenida: 'La cantera. Vagonetas, andamios y mineral en la roca. Al fondo, la boca de la cueva.',
     puertas: [{ lado: 's', t: 0.5, a: 'bosque', texto: 'Al bosque' }, { lado: 'e', t: 0.3, a: 'pantano', texto: 'Al pantano' }],
@@ -518,7 +519,7 @@ const DEFS: Record<Bioma, DefZona> = {
     extras: [['vagoneta', 3, 'borde'], ['andamio', 3, 'borde'], ['cristal_acero', 5, 'borde'], ['roca_mineral', 6, 'borde'], ['grava', 8, 'claro'], ['arbusto_seco', 8, 'borde']],
     hito: 'entrada_cueva', alfa: { linea: 'onix', forma: 'onix', nivel: 18 },
     clima: { tipo: 'arena', prob: 0.3 },
-    especies: ['geodude', 'onix', 'larvitar', 'sudowoodo', 'diglett', 'drilbur', 'mudbray', 'rhyhorn', 'machop', 'timburr', 'makuhita', 'aron', 'magnemite'], niveles: [10, 16],
+    niveles: [10, 16],
   },
   pantano: {
     id: 'pantano', bioma: 'pantano', bajo: ['roca_musgo', 'tronco_podrido', 'juncos_secos'], rio: true, diseno: { puntos: ['tronco_podrido', 'cerca_rota', 'farol_fuego_fatuo', 'roca_musgo'], marco: 'farol_fuego_fatuo', miga: 'seta_toxica', descanso: ['hoguera', 'tronco_podrido'], rara: { linea: 'misdreavus', nivel: 20 } },
@@ -529,7 +530,7 @@ const DEFS: Record<Bioma, DefZona> = {
     extras: [['lapida', 10, 'borde'], ['farol_fuego_fatuo', 6, 'borde'], ['seta_toxica', 10, 'claro'], ['charco_toxico', 3, 'claro'], ['cerca_rota', 4, 'borde'], ['juncos_secos', 12, 'orilla']],
     hito: 'lapida', hitoEscala: 1.8, alrededorHito: ['lapida', 7], alfa: { linea: 'gastly', forma: 'haunter', nivel: 20 },
     clima: { tipo: 'lluvia', prob: 0.5 },
-    especies: ['grimer', 'trubbish', 'zubat', 'gastly', 'litwick', 'misdreavus', 'poochyena', 'sableye', 'murkrow', 'spinarak'], niveles: [12, 18],
+    niveles: [12, 18],
   },
   ruinas: {
     id: 'ruinas', bioma: 'ruinas', bajo: ['muro_roto', 'columna_rota', 'flores_hada'], rio: true, diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'columna_rota'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
@@ -539,7 +540,7 @@ const DEFS: Record<Bioma, DefZona> = {
     muro: ['arbol_flores'], relleno: ['arbol_flores', 'muro_roto', 'columna_rota'], claros: 6,
     extras: [['estatua', 4, 'borde'], ['altar', 2, 'claro'], ['cristal_psiquico', 6, 'borde'], ['losas_ruina', 6, 'claro'], ['flores_hada', 14, 'claro'], ['columna_rota', 9, 'borde']],   // sin muro_roto suelto (un bloque cuadrado que parecía un pilar puesto al azar)
     hito: 'arco_ruinas', alfa: { linea: 'ralts', forma: 'kirlia', nivel: 22 },
-    especies: ['abra', 'ralts', 'natu', 'clefairy', 'togepi', 'flabebe'], niveles: [14, 20],
+    niveles: [14, 20],
   },
   volcan: {
     id: 'volcan', bioma: 'volcan', bajo: ['roca_magma', 'obsidiana', 'roca_basalto'], rio: true, diseno: { puntos: ['cristal_fuego', 'roca_magma', 'obsidiana', 'roca_basalto'], marco: 'cristal_fuego', miga: 'ceniza', descanso: ['hoguera', 'roca_basalto'], rara: { linea: 'dratini', nivel: 26 } },
@@ -550,7 +551,7 @@ const DEFS: Record<Bioma, DefZona> = {
     extras: [['fumarola', 8, 'claro'], ['cristal_fuego', 6, 'borde'], ['obsidiana', 6, 'borde'], ['ceniza', 8, 'claro'], ['charco_lava', 3, 'claro']],
     hito: 'fosil_dragon', alfa: { linea: 'growlithe', forma: 'arcanine', nivel: 26 },
     clima: { tipo: 'sol', prob: 0.6 },
-    especies: ['growlithe', 'slugma', 'torkoal', 'gible', 'axew', 'dratini', 'druddigon'], niveles: [18, 24],
+    niveles: [18, 24],
   },
   nieve: {
     id: 'nieve', bioma: 'nieve', bajo: ['roca_nevada', 'monton_nieve', 'arbusto_nevado'], rio: true, diseno: { puntos: ['cristal_hielo', 'carambanos', 'tronco_nevado', 'monton_nieve'], marco: 'cristal_hielo', miga: 'arbusto_nevado', descanso: ['hoguera', 'tronco_nevado'], rara: { linea: 'beldum', nivel: 28 } },
@@ -561,7 +562,7 @@ const DEFS: Record<Bioma, DefZona> = {
     extras: [['carambanos', 6, 'borde'], ['cristal_hielo', 6, 'borde'], ['tronco_nevado', 5, 'borde'], ['monton_nieve', 6, 'borde'], ['arbusto_nevado', 8, 'borde']],
     hito: 'estanque_helado', alfa: { linea: 'snorunt', forma: 'glalie', nivel: 28 },
     clima: { tipo: 'granizo', prob: 0.8 },
-    especies: ['vanillite', 'snorunt', 'swinub', 'bergmite', 'beldum'], niveles: [20, 26],
+    niveles: [20, 26],
   },
 };
 export const BIOMAS = Object.keys(DEFS) as Bioma[];

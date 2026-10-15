@@ -70,7 +70,9 @@ const ES_MAS = {
   sludge: 'Residuos', smog: 'Polución', smokescreen: 'Pantallahumo', spark: 'Chispa', splash: 'Salpicadura', stomp: 'Pisotón',
   strength: 'Fuerza', supersonic: 'Supersónico', swift: 'Rapidez', tackle: 'Placaje', tailwhip: 'Látigo', takedown: 'Derribo',
   teleport: 'Teletransporte', thundershock: 'Impactrueno', twister: 'Ciclón', vinewhip: 'Látigo Cepa', vitalthrow: 'Tiro Vital',
-  watergun: 'Pistola Agua', wingattack: 'Ataque Ala', withdraw: 'Refugio',
+  watergun: 'Pistola Agua', wingattack: 'Ataque Ala', withdraw: 'Refugio', aurorabeam: 'Rayo Aurora', branchpoke: 'Punzada Rama',
+  leafage: 'Follaje', lovelykiss: 'Beso Amoroso', naturepower: 'Adaptación', poisontail: 'Cola Veneno', present: 'Presente',
+  shelltrap: 'Coraza Trampa', workup: 'Avivar',
 };
 
 const flags = o =>Object.keys(o ?? {}).filter(k => o[k]);
