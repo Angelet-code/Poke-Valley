@@ -108,6 +108,21 @@ Cómo es (constantes `ALFA_*` en Aventura.ts):
 - **Reaparece a los 5 minutos** de tiempo real: la hora de su caída se guarda en `estado.alfas`, así que cuenta
   aunque cambies de zona.
 
+### Mapa y puntos de vuelo (2026-10-15)
+- **Mapa (M)**, hecho: la zona entera desde arriba, a pantalla completa con marco de pergamino. Es una segunda cámara
+  de `Aventura` encajada en el hueco de `encajeMapa` (con su luz del día); el suelo usa una copia reducida y suavizada
+  (`ground_mapa`), porque reducido sin suavizar se llenaba de puntitos. Encima, la escena `MapaZona`
+  (`src/scenes/MapaZona.ts`): nombre, tú (punto dorado con pulso), salidas con su rótulo y el tablón. Mientras está
+  abierto no te mueves, no se ve el HUD ni los efectos, y el mundo sigue. M o Esc lo cierran.
+- **Mapa del mundo**, hecho: con el mapa abierto, rueda abajo, clic derecho o la pestaña «Mundo». Las 9 zonas en una
+  cuadrícula unidas por sus caminos (`src/data/mundo.ts`: colocación y caminos a mano; al añadir una zona, ponerla
+  ahí). Cada zona visitada sale con su miniatura y las demás en niebla con «?»; la tuya, con marco dorado y tu punto.
+  Rueda arriba o clic en tu zona vuelve a la zona. La miniatura la pinta `Aventura.miniatura` al entrar en cada zona
+  (el suelo y el escenario en un canvas de 360 px, sin Pokémon) y se guarda en localStorage
+  `pokemon-valley/miniaturas`, por estilo y semilla.
+- **Puntos de vuelo**, por hacer: un Pokémon volador en cada zona; F a su lado abre el mapa y el punto que elijas con
+  el ratón es a donde te lleva volando.
+
 ### Mundo continuo (v2)
 Hoy el suelo de cada zona es un único canvas a resolución de pantalla. Un mundo de 3 zonas a zoom 4 ocuparía unos
 10 000 × 8 000 px, más que el tamaño máximo de textura de muchas GPU. Para quitar el fundido hay que trocear

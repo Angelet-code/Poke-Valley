@@ -10,6 +10,7 @@ import { REG, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, enMacizo } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
+import { guardarMiniatura } from '../data/mundo';
 import { FORMAS } from '../data/pokedex';
 import type { Mision } from '../combate/misiones';
 import { dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
@@ -35,6 +36,15 @@ import type { DatosEvolucion } from './Evolucion';
 
 export type { Aura, Luchador, Temple };
 const TABLON_CERCA = 44;           // px para abrir el tablón con F
+const MINI_ANCHO = 360;            // px de la miniatura de cada zona (mapa del mundo)
+
+// Mapa (M): la zona entera desde arriba, con una segunda cámara encajada en este hueco (px de pantalla). La escena
+// MapaZona pinta el marco alrededor y las marcas encima (tú, salidas, tablón).
+export function encajeMapa(W: number, H: number): { x: number; y: number; w: number; h: number; zoom: number } {
+  const mx = 18 * S, arriba = 28 * S, abajo = 20 * S, aw = VW * S - 2 * mx, ah = VH * S - arriba - abajo;
+  const zoom = Math.min(aw / W, ah / H), w = Math.round(W * zoom), h = Math.round(H * zoom);
+  return { x: Math.round(mx + (aw - w) / 2), y: Math.round(arriba + (ah - h) / 2), w, h, zoom };
+}
 
 // Cómo se ve cada clima (capa de fx/weather.ts) y cómo tiñe la luz del mapa (multiplica la luz ambiente).
 const ASPECTO_CLIMA: Record<Clima, WeatherLook> = { lluvia: 'rain', sol: 'sun', arena: 'sand', nieve: 'snow', granizo: 'hail' };
@@ -58,6 +68,8 @@ export class Aventura extends Phaser.Scene {
   mundo: Mundo | null = null;
   probShiny = PROB_SHINY;             // de cada salvaje que aparece (en la consola se puede subir para probar)
   stage!: Stage;
+  verMapa = false;                    // mapa abierto (M)
+  private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
   panel: 'movs' | 'misiones' | null = null;   // panel abierto (K movimientos, F en el tablón): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
   listo = false;
@@ -116,6 +128,7 @@ export class Aventura extends Phaser.Scene {
   private async montar(data: { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number } }, n: number): Promise<void> {
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
+    this.verMapa = false; this.camMapa = null;
     this.placas.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva();
@@ -189,6 +202,7 @@ export class Aventura extends Phaser.Scene {
     this.listo = true;
     // El HUD recién lanzado se crea en el siguiente paso: el rótulo de la zona y el aviso, un poco después.
     const mapa = this.mapa;
+    this.time.delayedCall(1200, () => { if (this.mapa === mapa && this.listo) this.miniatura(); });
     this.time.delayedCall(250, () => {
       if (this.mapa !== mapa) return;
       this.events.emit('zona', { nombre: mapa.nombre, lema: mapa.lema });
@@ -326,7 +340,7 @@ export class Aventura extends Phaser.Scene {
   // ---- Entrada ----
   private entradas(): void {
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,H', false) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,H,M', false) as Record<string, Phaser.Input.Keyboard.Key>;
     // Al perder el foco (otra ventana, Alt+Tab) no llega el "soltar": que no se quede andando solo.
     const soltar = () => kb.resetKeys();
     this.game.events.on(Phaser.Core.Events.BLUR, soltar);
@@ -338,8 +352,10 @@ export class Aventura extends Phaser.Scene {
     this.keys.F.on('down', () => this.interactuar());
     this.keys.SPACE.on('down', () => this.interactuar());
     this.keys.H.on('down', () => this.usarHogar());
+    this.keys.M.on('down', () => this.mostrarMapa(!this.verMapa));
     this.keys.K.on('down', () => { this.panel = this.panel === 'movs' ? null : 'movs'; this.asignando = null; });
     this.keys.ESC.on('down', () => {
+      if (this.verMapa) { this.mostrarMapa(false); return; }
       if (this.mundo?.hogar) { this.mundo.cortarHogar(); return; }
       if (this.asignando) { this.asignando = null; return; }
       if (this.panel) { this.panel = null; return; }
@@ -349,11 +365,74 @@ export class Aventura extends Phaser.Scene {
     this.input.mouse!.disableContextMenu();
     // Clic en un Pokémon: objetivo (el HUD se queda con los clics que caen en él).
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (!this.listo || !this.mundo || (this.scene.get('hud') as { tapaClic?: (x: number, y: number) => boolean }).tapaClic?.(p.x, p.y)) return;
+      if (!this.listo || !this.mundo || this.verMapa || (this.scene.get('hud') as { tapaClic?: (x: number, y: number) => boolean }).tapaClic?.(p.x, p.y)) return;
       const o = this.mundo.bajo(p.worldX, p.worldY);
       if (o) { this.objetivo = o; if (p.rightButtonDown()) this.casilla(0); }
       else if (!p.rightButtonDown()) this.objetivo = null;
     });
+  }
+
+  // Miniatura de la zona para el mapa del mundo: el suelo y el escenario (sin los Pokémon) pintados por orden de
+  // profundidad en un canvas pequeño. Queda como textura `mini_<zona>` y en localStorage (data/mundo.ts).
+  private miniatura(): void {
+    const { W, H, id } = this.mapa, k = MINI_ANCHO / W, c = document.createElement('canvas');
+    c.width = MINI_ANCHO; c.height = Math.round(H * k);
+    const g = c.getContext('2d')!;
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    const fuera = new Set<Phaser.GameObjects.GameObject>([this.anillo]);
+    for (const v of this.vistas.values()) { fuera.add(v.spr); fuera.add(v.sombra); if (v.aura) fuera.add(v.aura); if (v.auraSuelo) fuera.add(v.auraSuelo); }
+    this.children.depthSort();
+    for (const o of this.children.list) {
+      if (fuera.has(o)) continue;
+      if (o instanceof Phaser.GameObjects.Ellipse && o.visible && o.isFilled) {   // sombras de los árboles
+        const col = o.fillColor;
+        g.globalAlpha = o.fillAlpha * o.alpha; g.globalCompositeOperation = 'source-over';
+        g.fillStyle = `rgb(${col >> 16},${(col >> 8) & 255},${col & 255})`;
+        g.beginPath(); g.ellipse(o.x * k, o.y * k, o.width / 2 * o.scaleX * k, o.height / 2 * o.scaleY * k, 0, 0, Math.PI * 2); g.fill();
+        continue;
+      }
+      if (!(o instanceof Phaser.GameObjects.Image) || !o.visible || o.alpha <= 0 || o.blendMode === Phaser.BlendModes.ADD || o.texture.key === 'ground_mapa') continue;
+      const fr = o.frame, img = fr.source.image as CanvasImageSource;
+      g.save();
+      g.globalAlpha = o.alpha; g.globalCompositeOperation = o.blendMode === Phaser.BlendModes.MULTIPLY ? 'multiply' : 'source-over';
+      g.translate(o.x * k, o.y * k); g.rotate(o.rotation); g.scale(o.scaleX * k * (o.flipX ? -1 : 1), o.scaleY * k * (o.flipY ? -1 : 1));
+      try { g.drawImage(img, fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, -o.displayOriginX, -o.displayOriginY, fr.cutWidth, fr.cutHeight); } catch { /* textura sin imagen */ }
+      g.restore();
+    }
+    if (this.textures.exists('mini_' + id)) this.textures.remove('mini_' + id);
+    this.textures.addCanvas('mini_' + id, c);
+    guardarMiniatura(this.partida.estado.semilla, id, c.toDataURL('image/jpeg', 0.82));
+  }
+  // El mapa abierto pasa de la zona al mundo (la cámara del mapa solo se ve con el de la zona).
+  verMundo(v: boolean): void { this.camMapa?.setVisible(this.verMapa && !v); }
+
+  // Abre o cierra el mapa: la cámara del mapa se hace la primera vez (sin las barras de vida ni el anillo del
+  // objetivo); mientras está abierto no se pinta la cámara del juego ni los canvas de efectos, y no te mueves.
+  mostrarMapa(v: boolean): void {
+    if (v && (!this.listo || this.evolucionando)) return;
+    if (v && !this.textures.exists('mini_' + this.mapa.id)) this.miniatura();   // recién llegado: aún no estaba
+    this.verMapa = v;
+    if (v && !this.camMapa) {
+      const e = encajeMapa(this.mapa.W, this.mapa.H);
+      this.camMapa = this.cameras.add(e.x, e.y, e.w, e.h).setZoom(e.zoom).centerOn(this.mapa.W / 2, this.mapa.H / 2).setBackgroundColor(0x1b120a);
+      this.camMapa.ignore([this.barras, this.anillo, this.marcaG]);
+      // El suelo reducido tanto sin suavizar se llena de puntitos (su grano): para el mapa, una copia ya reducida.
+      const suelo = this.children.list.find(o => o instanceof Phaser.GameObjects.Image && o.texture.key === 'ground') as Phaser.GameObjects.Image | undefined;
+      const fuente = suelo?.texture.getSourceImage() as HTMLCanvasElement | undefined;
+      if (suelo && fuente) {
+        if (this.textures.exists('ground_mapa')) this.textures.remove('ground_mapa');
+        const c = this.textures.createCanvas('ground_mapa', e.w, e.h)!, cx = c.getContext();
+        cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+        cx.drawImage(fuente, 0, 0, e.w, e.h); c.refresh();
+        const img = this.add.image(0, 0, 'ground_mapa').setOrigin(0).setDisplaySize(this.mapa.W, this.mapa.H).setDepth(suelo.depth);
+        this.cameras.main.ignore(img); this.camMapa.ignore(suelo);
+      }
+    }
+    this.camMapa?.setVisible(v);
+    this.cameras.main.setVisible(!v);
+    this.stage?.visible(!v);
+    this.scene.setVisible(!v, 'hud');
+    if (v) this.scene.launch('mapaZona'); else if (this.scene.isActive('mapaZona')) this.scene.stop('mapaZona');
   }
 
   // F / espacio: junto al tablón, las misiones; junto a uno de tus Pokémon del pueblo, convertirte en él.
@@ -471,6 +550,7 @@ export class Aventura extends Phaser.Scene {
     await cargar(this, [idSprite(f.dex, m.shiny)]);
     // Si mientras cargaba ha cambiado de mapa o se ha debilitado, la forma nueva sale al volver a montar el mapa.
     if (this.mundo !== mundo || mundo.jugador !== p || p.muerto || mundo.cambiando || !this.listo || this.evolucionando) return;
+    this.mostrarMapa(false);
     this.evolucionando = true;
     const cam = this.cameras.main, v = this.vistaDe(p);
     const datos: DatosEvolucion = {
@@ -688,6 +768,7 @@ export class Aventura extends Phaser.Scene {
 
   // ---- Cambiar de mapa ----
   irA(mapa: MapaId, desde: MapaId | 'inicio'): void {
+    this.mostrarMapa(false);
     this.listo = false;
     this.guardar();
     this.stage.settle();
@@ -699,7 +780,7 @@ export class Aventura extends Phaser.Scene {
     const mundo = this.mundo;
     if (!this.listo || !mundo) return;
     const dt = Math.min(0.05, dtMs / 1000), k = this.keys;
-    const vx = +(k.D.isDown || k.RIGHT.isDown) - +(k.A.isDown || k.LEFT.isDown), vy = +(k.S.isDown || k.DOWN.isDown) - +(k.W.isDown || k.UP.isDown);
+    const vx = this.verMapa ? 0 : +(k.D.isDown || k.RIGHT.isDown) - +(k.A.isDown || k.LEFT.isDown), vy = this.verMapa ? 0 : +(k.S.isDown || k.DOWN.isDown) - +(k.W.isDown || k.UP.isDown);
     if (this.red) this.pasoRed();
     mundo.paso(dt, { vx, vy });
     this.sincronizar();

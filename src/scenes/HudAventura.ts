@@ -147,7 +147,7 @@ export class HudAventura extends Phaser.Scene {
     this.fichaG = this.add.graphics().setDepth(5);
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(6).setVisible(false);
     // Teclas de ayuda.
-    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar'];
+    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar', 'M mapa'];
     ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
 
     // Avisos.
@@ -164,6 +164,7 @@ export class HudAventura extends Phaser.Scene {
     // Clics en la barra y en el panel.
     this.input.mouse!.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (this.av.verMapa) return;
       const x = p.x / S, y = p.y / S;
       const z = this.panelZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (z) { this.av.asignando = z.a; return; }
@@ -184,7 +185,7 @@ export class HudAventura extends Phaser.Scene {
   tapaClic(px: number, py: number): boolean {
     const x = px / S, y = py / S;
     const c = this.misCaja;
-    return (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
+    return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
       || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h);
   }
   private casillaEn(x: number, y: number): number {
