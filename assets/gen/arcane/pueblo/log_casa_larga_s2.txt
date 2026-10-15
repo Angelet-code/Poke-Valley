@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\casa_larga_s2_0.png
+148.6s

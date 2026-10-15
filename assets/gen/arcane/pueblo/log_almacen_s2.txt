@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\almacen_s2_0.png
+87.2s

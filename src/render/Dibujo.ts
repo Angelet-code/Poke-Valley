@@ -16,6 +16,9 @@ export interface Elemento {
   huella: [number, number, number, number] | null;  // px del PNG: rectángulo que bloquea el paso
   k?: number; dir?: string;
   sombra?: { archivo: string; w: number; h: number; dx: number; dy: number };
+  // Catálogo Arcane: ancla y escala del elemento dibujo con el mismo id. Los polígonos de SUELOS están en px de esa
+  // imagen; con `ref` se pasan al mundo con su ancla y su escala, así la planta de la casa queda igual en los dos estilos.
+  ref?: { ancla: [number, number]; k: number };
 }
 // Lo dibujado: imagen, factor px PNG → mundo, alto en el mundo, base (para el orden) y huella en el mundo.
 export interface Pieza {
@@ -137,7 +140,8 @@ export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
   }
   const sue = SUELOS[el.id];
   if (sue) {
-    const aMundo = ([px, py]: [number, number]): [number, number] => [c.x + (c.flip ? ax - px : px - ax) * k, c.y + (py - ay) * k];
+    const [rx, ry] = el.ref?.ancla ?? el.ancla, rk = el.ref ? k / (el.k ?? 1) * el.ref.k : k;
+    const aMundo = ([px, py]: [number, number]): [number, number] => [c.x + (c.flip ? rx - px : px - rx) * rk, c.y + (py - ry) * rk];
     pieza.suelo = sue.poligonos.map(pol => pol.map(aMundo));
     if (sue.puerta) pieza.puerta = aMundo(sue.puerta);
     pieza.base = Math.max(...pieza.suelo.flat().map(q => q[1]));

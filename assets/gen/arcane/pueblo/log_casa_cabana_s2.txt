@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\casa_cabana_s2_0.png
+22.3s

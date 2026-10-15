@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\pozo_s1_0.png
+87.2s

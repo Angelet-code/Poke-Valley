@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\casa_chimenea_s2_0.png
+122.3s

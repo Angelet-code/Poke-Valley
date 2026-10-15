@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\camino_e_s1_0.png
+31.2s

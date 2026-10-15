@@ -10,6 +10,7 @@
 import type { MapData } from './types';
 import { COLOCADOS, H as H_PUEBLO, W as W_PUEBLO, terrenoDibujo, type Colocado } from './mapaDibujo';
 import { rng } from '../util';
+import { ARCANE } from '../config';
 
 export const T = 24;
 export type MapaId = 'pueblo' | 'bosque' | 'lago';
@@ -37,12 +38,13 @@ const TABLON: Punto = { x: 392, y: 436 };
 export function pueblo(): MapaAventura {
   const datos = terrenoDibujo(), [ix, iy] = datos.inicio ?? [469, 400];
   return {
-    id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS, { id: 'valla', x: TABLON.x, y: TABLON.y }], detalles: 70,
+    id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS, { id: ARCANE ? 'tablon' : 'valla', x: TABLON.x, y: TABLON.y }, { id: 'poste', x: 500, y: H_PUEBLO - 40 }], detalles: 70,
     lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del sur lleva al bosque.',
     llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: H_PUEBLO - 46, dir: 4 } },
     salidas: [{ x0: 520, y0: H_PUEBLO - 14, x1: 600, y1: H_PUEBLO, a: 'bosque', texto: 'Al bosque' }],
     salvajes: [],
-    // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Arte provisional: un trozo de valla.
+    // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
+    // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,
   };
 }

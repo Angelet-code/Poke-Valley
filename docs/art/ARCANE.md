@@ -127,3 +127,36 @@ Capturas: [bosque_vista](arcane/bosque_vista.jpg), [bosque_arbol_viejo](arcane/b
   - Hay un poste junto a cada salida: entrada del bosque, salida del este y salida del lago al bosque.
 - **Sin `?set=arcane`**: las piezas nuevas no existen en el catálogo dibujo y no se dibujan. Esto vale para la
   seta, el tronco, el panal, el árbol viejo, el poste y el nenúfar.
+
+### Fase 3 hecha (2026-10-15): el pueblo
+Capturas: [pueblo_vista](arcane/pueblo_vista.jpg), [pueblo_dia](arcane/pueblo_dia.jpg) y
+[pueblo_noche](arcane/pueblo_noche.jpg).
+
+- **Receta "repintado"** (`assets/gen/arcane/pueblo/gen.sh`):
+  - Klein `--edit` con dos imágenes: la pieza dibujo y la referencia. El prompt de estilo es fuerte ("completely
+    repaint… clearly visible brushstrokes…") y pide "la misma forma, en el mismo sitio".
+  - Con un prompt suave apenas cambiaba (lo de la fase 1). Con este sale un Arcane claro y conserva la silueta
+    (comparativa en `pruebas/`).
+  - El tablón, que es nuevo, sale de la referencia sola.
+- **Elegidas:**
+  - casas: casa_grande s1, casa_cabana s2, casa_larga s1, casa_chimenea s1, tienda s2, almacen s2;
+  - mobiliario: pozo s1, hoguera s1, valla s1, farola s1, farola_madera s1, tablon s2;
+  - caminos: camino_c/d/e s1.
+- **Alineado con el dibujo** (`alinear()` en `catalogo_arcane.py`):
+  - El recorte repintado sale más ancho, porque incluye la sombra pintada. Escalado por el ancho, las casas quedaban
+    un 13-17 % más pequeñas y desplazadas.
+  - Se busca el desplazamiento entre los dos recortes (0-8 px) y se toman del dibujo el ancla, la escala y la huella.
+  - Las casas llevan además `ref` (ancla y escala del dibujo): `Dibujo.dibujar` pasa con ella los polígonos de
+    SUELOS al mundo, así que las colisiones son las mismas que en el estilo dibujo.
+  - El punto de luz de farolas y hoguera va en proporción a la altura y sigue valiendo.
+- **Valla:** tiene `abrir_huecos` (`ABRIR_HUECOS`), porque el interior del corral debe verse transparente.
+- **Pueblo** (`src/data/bosque.ts`):
+  - El tablón de misiones usa `tablon` en Arcane; en dibujo sigue la valla provisional.
+  - Hay un poste junto a la salida al bosque.
+- **Catálogo Arcane:** 40 elementos. Las tres zonas están completas con `?set=arcane`.
+
+### Siguiente: fase 4 (remate)
+- Probar si `?set=arcane` pasa a ser el modo por defecto.
+- El agua lisa y la sombra doble de los árboles (pendientes de la fase 1).
+- Las manchas de arena del pueblo se ven como manchas planas.
+- Que los Pokémon se lean bien sobre el fondo oscuro, y los marcos del HUD a juego.

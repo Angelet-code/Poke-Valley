@@ -15,6 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw
 
 RAIZ = Path(__file__).resolve().parents[1]          # lab/
@@ -53,12 +54,55 @@ ELEGIDOS = {
     "arbol_viejo": ("arbol", f"{BQ}/arbol_viejo_s2_0.png"),
     "panal": ("roca", f"{BQ}/panal_s1_0.png"),
     "poste": ("roca", f"{BQ}/poste_s2_0.png"),
+    # Fase 3: el pueblo (assets/gen/arcane/pueblo/gen.sh, repintado de la pieza dibujo; semillas en ELEGIDOS_PUEBLO).
 }
+PB = "assets/gen/arcane/pueblo"
+ELEGIDOS_PUEBLO = {   # id → (tipo, semilla)
+    "casa_grande": ("casa", 1), "casa_cabana": ("casa", 2), "casa_larga": ("casa", 1), "casa_chimenea": ("casa", 1),
+    "tienda": ("casa", 2), "almacen": ("casa", 2), "pozo": ("roca", 1), "hoguera": ("roca", 1), "valla": ("roca", 1),
+    "farola": ("roca", 1), "farola_madera": ("roca", 1), "camino_c": ("piedras", 1), "camino_d": ("piedras", 1),
+    "camino_e": ("piedras", 1), "tablon": ("roca", 2),
+}
+ELEGIDOS.update({id_: (t, f"{PB}/{id_}_s{s}_0.png") for id_, (t, s) in ELEGIDOS_PUEBLO.items()})
+# Los que tienen polígonos de suelo (SUELOS en src/render/Dibujo.ts): se guarda el ancla y la escala del dibujo.
+REPINTADOS = set(ELEGIDOS_PUEBLO) - {"tablon"}
+CON_SUELO = {"casa_grande", "almacen", "tienda", "casa_cabana", "casa_larga", "casa_chimenea"}
+# Los que tienen dentro un hueco grande del color del fondo que debe verse transparente (el corral de la valla). En el
+# resto los huecos se rellenan: el brillo verdoso de lo alto de las rocas tiene el color del fondo.
+ABRIR_HUECOS = {"valla"}
 # Tipo en el juego distinto del de la huella: el nenúfar va a ras de suelo como un detalle, pero no puede ser
 # "detalle", porque Aventura reparte los detalles por el césped (y saldrían nenúfares en la hierba).
 TIPO_JUEGO = {"nenufar": "losa"}
 # Ancho en px de mundo de los que no tienen equivalente en el catálogo dibujo.
-ANCHO = {"sauce": 84, "juncos": 22, "muelle": 72, "nenufar": 30, "seta": 14, "tronco_caido": 48, "arbol_viejo": 130, "panal": 26, "poste": 20}
+ANCHO = {"sauce": 84, "juncos": 22, "muelle": 72, "nenufar": 30, "seta": 14, "tronco_caido": 48, "arbol_viejo": 130, "panal": 26, "poste": 20, "tablon": 40}
+
+
+def alinear(id_, klein, e):
+    """Repintados (el pueblo): la imagen nueva conserva la posición de la pieza dibujo dentro del lienzo, pero su recorte
+    puede ser más ancho (la sombra pintada a un lado). Se busca el desplazamiento d entre los dos recortes (máscaras
+    reducidas ×1/8, el que más solapa) y se toman del dibujo el ancla (+d), la escala y la huella (+d): la pieza queda en
+    el mismo sitio y al mismo tamaño en el mundo, y sus colisiones son las de siempre."""
+    kk = klein[id_]
+    ma = np.asarray(Image.open(OUT / e["archivo"]).getchannel("A")) > 128
+    mk = np.asarray(Image.open(KLEIN.parent / kk["archivo"]).getchannel("A")) > 128
+    red = lambda m: np.asarray(Image.fromarray(m.astype(np.uint8) * 255).resize((max(1, m.shape[1] // 8), max(1, m.shape[0] // 8)), Image.BOX)) > 127
+    a, k = red(ma), red(mk)
+    mejor, d = -1, (0, 0)
+    for dy in range(-12, 13):
+        for dx in range(-40, 41):
+            ys0, xs0 = max(0, dy), max(0, dx)
+            ys1, xs1 = min(a.shape[0], k.shape[0] + dy), min(a.shape[1], k.shape[1] + dx)
+            if ys1 <= ys0 or xs1 <= xs0:
+                continue
+            n = int((a[ys0:ys1, xs0:xs1] & k[ys0 - dy:ys1 - dy, xs0 - dx:xs1 - dx]).sum())
+            if n > mejor:
+                mejor, d = n, (dx * 8, dy * 8)
+    e["ancla"] = [kk["ancla"][0] + d[0], kk["ancla"][1] + d[1]]
+    e["k"] = kk.get("k", 1)
+    if kk.get("huella"):
+        h = kk["huella"]
+        e["huella"] = [h[0] + d[0], h[1] + d[1], h[2] + d[0], h[3] + d[1]]
+    return d
 
 
 def ancho_mundo(id_, klein):
@@ -111,10 +155,14 @@ def main():
         if not x2.exists():
             subprocess.run([sys.executable, "-I", str(RAIZ / "tools/ampliar.py"), "--modelo", "RealESRGAN_x4plus_anime_6B.safetensors",
                             "--entrada", str(src), "--salida", str(x2)], check=True)
-        e = recortar(x2, id_, tipo, OUT, abrir_huecos=False)
+        e = recortar(x2, id_, tipo, OUT, abrir_huecos=id_ in ABRIR_HUECOS)
         e["k"] = round(ancho_mundo(id_, klein) / (e["w"] * F / PNG_X), 4)
+        if id_ in REPINTADOS:
+            print("  alineado con el dibujo, desplazamiento", alinear(id_, klein, e))
         e["origen"] = img
         e["tipo"] = TIPO_JUEGO.get(id_, e["tipo"])
+        if id_ in CON_SUELO:
+            e["ref"] = {"ancla": klein[id_]["ancla"], "k": klein[id_].get("k", 1)}
         hechos[id_] = e
         print(f"{id_:12s} {e['w']}x{e['h']}  k={e['k']}  ({img})", flush=True)
         cat_path.write_text(json.dumps({"escala": PNG_X, "elementos": list(hechos.values())}, indent=1, ensure_ascii=False), encoding="utf-8")

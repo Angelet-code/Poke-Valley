@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\hoguera_s2_0.png
+121.3s

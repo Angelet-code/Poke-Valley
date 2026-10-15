@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\tienda_s1_0.png
+97.3s

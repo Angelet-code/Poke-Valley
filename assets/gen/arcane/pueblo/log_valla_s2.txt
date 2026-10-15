@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\valla_s2_0.png
+138.5s

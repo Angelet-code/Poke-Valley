@@ -1,0 +1,2 @@
+assets\gen\arcane\pueblo\farola_madera_s2_0.png
+21.1s
