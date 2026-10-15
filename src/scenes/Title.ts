@@ -28,6 +28,9 @@ const POKES: [string, number, number, number, number, number][] = [
   ['bidoof-Idle', 1120, 618, 68, 1600, 0], ['geodude-Idle', 1240, 668, 104, 1400, 800],
   ['growlithe-Idle', 990, 668, 64, 1900, 400],
 ];
+// Modo aventura: Pokémon que pasean por el claro Arcane, detrás del logo y del menú (sin pisar casas ni árboles).
+const PASEAN = ['b', 'marill', 'oddish', 'bidoof', 'growlithe', 'geodude'];
+const CLARO = { x0: 430, x1: 1030, y0: 240, y1: 690 };   // px del fondo (1440×810)
 const FLECHA = [0, 0, 6, 0, 6, 4, 10, 4, 10, 8, 14, 8, 14, 14, 10, 14, 10, 18, 6, 18, 6, 22, 0, 22];
 // Modo aventura (el de por defecto, docs/GDD-combate.md).
 const CONTROLES_AVENTURA = 'WASD: mover · clic o Tab: elegir objetivo · 1-0: tu barra (movimientos y objetos)\n'
@@ -39,6 +42,7 @@ interface Opcion { texto: string; detalle: string; hacer: () => void }
 
 export class Title extends Phaser.Scene {
   private sel = 0;
+  private enFondo = (x: number, y: number) => ({ x: D(x), y: D(y) });
   private textos: Phaser.GameObjects.Text[] = [];
 
   constructor() { super('title'); }
@@ -46,7 +50,7 @@ export class Title extends Phaser.Scene {
   create(): void {
     const aventura = GRANJA ? null : NUEVA ? null : Partida.resumen();
     const res = GRANJA ? (NUEVA ? null : World.resumenPartida()) : aventura ? { dia: aventura.dia, aldeanos: 0 } : null, hay = !!res;
-    this.sel = 0; this.textos = [];
+    this.sel = 0; this.textos = []; this.botones = []; this.botonesAv = [];
     this.fondo();
     this.cabecera();
 
@@ -66,14 +70,15 @@ export class Title extends Phaser.Scene {
       ? [{ texto: 'Continuar', detalle, hacer: () => empezar(false) },
         { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: () => empezar(true) }, controles]
       : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'Bulbasaur y diez Poké Balls', hacer: () => empezar(true) }, controles];
-    this.menu(ops);
-    this.poke('b-Idle', 684, 640, 72, 1600, 0);
+    if (GRANJA) this.menu(ops); else this.menuAventura(ops);
+    if (GRANJA) this.poke('b-Idle', 684, 640, 72, 1600, 0);
     this.pie();
 
     const kb = this.input.keyboard!;
     const mover = (d: number) => { if (!this.cubre) { this.sel = (this.sel + d + ops.length) % ops.length; this.marcar(); } };
     kb.on('keydown-UP', () => mover(-1)); kb.on('keydown-W', () => mover(-1));
     kb.on('keydown-DOWN', () => mover(1)); kb.on('keydown-S', () => mover(1));
+    if (!GRANJA) { kb.on('keydown-LEFT', () => mover(-1)); kb.on('keydown-A', () => mover(-1)); kb.on('keydown-RIGHT', () => mover(1)); kb.on('keydown-D', () => mover(1)); }
     for (const t of ['ENTER', 'SPACE', 'F']) kb.on('keydown-' + t, () => { if (!this.cubre) ops[this.sel].hacer(); });
     if (hay) kb.on('keydown-N', () => { if (!this.cubre) empezar(true); });
 
@@ -89,6 +94,7 @@ export class Title extends Phaser.Scene {
 
   // Cielo, césped, árboles, casa, almacén, caja de Pelipper, flores y aldeanos.
   private fondo(): void {
+    if (!GRANJA && this.textures.exists('tit-fondo')) { this.fondoAventura(); return; }
     const W = VW * S, g = this.add.graphics();
     g.fillGradientStyle(0x8fd0f0, 0x8fd0f0, 0xbfe6f2, 0xbfe6f2, 1).fillRect(0, 0, W, D(231));
     g.fillGradientStyle(0xbfe6f2, 0xbfe6f2, 0xf3efc8, 0xf3efc8, 1).fillRect(0, D(231), W, D(190));
@@ -118,6 +124,46 @@ export class Title extends Phaser.Scene {
     }
   }
 
+  // Modo aventura: claro del bosque montado con el catálogo Arcane (1440×810, cubre la ventana) y los Pokémon.
+  private fondoAventura(): void {
+    const W = VW * S, H = VH * S;
+    this.textures.get('tit-fondo').setFilter(Phaser.Textures.FilterMode.LINEAR);   // pintura, no pixel art
+    const im = this.add.image(W / 2, H / 2, 'tit-fondo').setDepth(-2000);
+    const sc = Math.max(W / im.width, H / im.height);
+    im.setScale(sc);
+    // Px del fondo (1440×810) → px de pantalla, para que el claro siga bajo los Pokémon en ventanas más anchas.
+    this.enFondo = (x, y) => ({ x: W / 2 + (x - im.width / 2) * sc, y: H / 2 + (y - im.height / 2) * sc });
+    for (const id of PASEAN) this.pasear(id);
+  }
+
+  // Un Pokémon que va de un punto del claro a otro con su Walk (fila PMD según la dirección) y descansa un rato.
+  private pasear(id: string): void {
+    if (!this.anims.exists(`${id}-Walk-0`) || !this.textures.exists(`${id}-Walk`)) return;
+    const fr = this.textures.getFrame(`${id}-Walk`, 0), bb = silueta(fr);
+    const punto = () => this.enFondo(Phaser.Math.Between(CLARO.x0, CLARO.x1), Phaser.Math.Between(CLARO.y0, CLARO.y1));
+    const p0 = punto();
+    const sombra = this.add.ellipse(p0.x, p0.y, bb.w * P * 0.8, Math.max(D(10), bb.w * P * 0.22), 0x1c3012, 0.35);
+    const spr = this.add.sprite(p0.x, p0.y, `${id}-Walk`, 0).setScale(P)
+      .setOrigin((bb.x + bb.w / 2) / fr.width, (bb.y + bb.h) / fr.height);
+    const fondo = () => { spr.setDepth(-1000 + spr.y); sombra.setPosition(spr.x, spr.y - D(2)).setDepth(-1001 + spr.y); };
+    fondo();
+    let fila = 0;
+    const descansar = () => {
+      spr.play(this.anims.exists(`${id}-Reposo-${fila}`) ? `${id}-Reposo-${fila}` : `${id}-Idle-${fila}`);
+      this.time.delayedCall(Phaser.Math.Between(1200, 4000), andar);
+    };
+    const andar = () => {
+      if (!this.sys.isActive()) return;
+      const p = punto(), dx = p.x - spr.x, dy = p.y - spr.y;
+      // PMD: 0 abajo, 1 abajo-dcha, 2 dcha, 3 arriba-dcha, 4 arriba, 5 arriba-izq, 6 izq, 7 abajo-izq.
+      const oct = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));   // 0 dcha, 2 abajo, -2 arriba
+      fila = [2, 1, 0, 7, 6, 5, 4, 3][(oct + 8) % 8];
+      spr.play(`${id}-Walk-${fila}`);
+      this.tweens.add({ targets: spr, x: p.x, y: p.y, duration: Math.hypot(dx, dy) / D(55) * 1000, onUpdate: fondo, onComplete: descansar });
+    };
+    this.time.delayedCall(Phaser.Math.Between(0, 2500), andar);
+  }
+
   // Un Pokémon quieto de frente, con su sombra en el suelo: salta y la sombra se encoge.
   private poke(key: string, l: number, t: number, w: number, periodo: number, retardo: number): void {
     if (!this.textures.exists(key)) return;
@@ -134,6 +180,11 @@ export class Title extends Phaser.Scene {
 
   private cabecera(): void {
     const cx = VW * S / 2 / k;
+    if (!GRANJA && this.textures.exists('tit-logo')) {
+      // Logo pixel art a zoom entero (×2 en el diseño de 1440 px), entre el borde de arriba y el cartel del menú.
+      this.add.image(D(cx), D(36), 'tit-logo').setOrigin(0.5, 0).setScale(Math.max(1, Math.round(2 * S / 3)));
+      return;
+    }
     this.texto(cx, 70, 'FANGAME · prototipo 0.2d', 26, '#fff6dc', { fontStyle: 'bold' })
       .setOrigin(0.5).setLetterSpacing(D(6)).setShadow(D(2), D(2), '#2b3a1f', 0, false, true);
     // Título: sombra lejana, canto naranja y letras amarillas, todo con borde marrón.
@@ -152,7 +203,7 @@ export class Title extends Phaser.Scene {
 
   // Cartel de madera con pergamino; la opción elegida, resaltada y con flecha que parpadea.
   private menu(ops: Opcion[]): void {
-    const X = 540, Y = 318, W = 360, BH = 69, GAP = 10, top = Y + 36;
+    const W = 360, X = VW * S / 2 / k - W / 2, Y = 318, BH = 69, GAP = 10, top = Y + 36;
     const H = 36 + ops.length * BH + (ops.length - 1) * GAP + 36, g = this.add.graphics();
     g.fillStyle(0x1e2814, 0.4).fillRoundedRect(D(X), D(Y + 10), D(W), D(H), D(10));
     g.fillStyle(0x3a2412).fillRoundedRect(D(X), D(Y), D(W), D(H), D(10));
@@ -178,15 +229,48 @@ export class Title extends Phaser.Scene {
     this.time.addEvent({ delay: 500, loop: true, callback: () => { const f = this.botones[this.sel]?.flecha; if (f) f.setAlpha(f.alpha < 1 ? 1 : 0.35); } });
   }
 
+  // Modo aventura, como el diseño de Claude Design: franja «Pulsa espacio» y botones en fila, azul noche con
+  // ribete de oro y sombra dura; el elegido, más claro y con borde turquesa.
+  private menuAventura(ops: Opcion[]): void {
+    const cx = VW * S / 2 / k, BW = 250, BH = 72, GAP = 20, top = 380;
+    const tira = this.texto(cx, 300, 'PULSA ESPACIO PARA EMPEZAR', 22, '#b0f6ec').setOrigin(0.5).setLetterSpacing(D(6));
+    const tw = tira.width / k + 32, g = this.add.graphics();
+    g.fillStyle(0x2e1a14).fillRect(D(cx - tw / 2 - 4), D(300 - 22 - 4), D(tw + 8), D(44 + 8));
+    g.fillStyle(0x10142c).fillRect(D(cx - tw / 2), D(300 - 22), D(tw), D(44));
+    tira.setDepth(1);
+    const x0 = cx - (ops.length * BW + (ops.length - 1) * GAP) / 2;
+    this.botonesAv = ops.map((op, i) => {
+      const bx = x0 + i * (BW + GAP), b = this.add.graphics(), sel = this.add.graphics();
+      b.fillStyle(0x0a0c1c).fillRect(D(bx + 4), D(top + 4), D(BW), D(BH));
+      b.fillStyle(0x2e1a14).fillRect(D(bx), D(top), D(BW), D(BH));
+      b.fillStyle(0xc48830).fillRect(D(bx + 4), D(top + 4), D(BW - 8), D(BH - 8));
+      b.fillStyle(0x1e264e).fillRect(D(bx + 8), D(top + 8), D(BW - 16), D(BH - 16));
+      sel.fillStyle(0x48c4c4).fillRect(D(bx - 4), D(top - 4), D(BW + 8), D(4)).fillRect(D(bx - 4), D(top + BH), D(BW + 8), D(4))
+        .fillRect(D(bx - 4), D(top), D(4), D(BH)).fillRect(D(bx + BW), D(top), D(4), D(BH));
+      sel.fillStyle(0x30264e).fillRect(D(bx + 8), D(top + 8), D(BW - 16), D(BH - 16));
+      const tit = this.texto(bx + BW / 2, top + 30, op.texto, 22, '#fae296', { fontStyle: 'bold' }).setOrigin(0.5);
+      const det = this.texto(bx + BW / 2, top + 53, op.detalle, 13, '#b8bedc').setOrigin(0.5);
+      const zona = this.add.zone(D(bx), D(top), D(BW), D(BH)).setOrigin(0).setInteractive({ useHandCursor: true });
+      zona.on('pointerover', () => { if (!this.cubre) { this.sel = i; this.marcar(); } });
+      zona.on('pointerdown', () => { if (!this.cubre) op.hacer(); });
+      return { sel, tit, det };
+    });
+    this.marcar();
+  }
+
+  private botonesAv: { sel: Phaser.GameObjects.Graphics; tit: Phaser.GameObjects.Text; det: Phaser.GameObjects.Text }[] = [];
+
   private marcar(): void {
     this.botones.forEach((b, i) => { b.fondo.setVisible(i === this.sel); b.flecha.setVisible(i === this.sel).setAlpha(1); });
+    this.botonesAv.forEach((b, i) => { const on = i === this.sel; b.sel.setVisible(on); b.tit.setColor(on ? '#fff8d6' : '#fae296'); b.det.setColor(on ? '#e8e2cc' : '#b8bedc'); });
   }
 
   private pie(): void {
     const W = VW * S;
-    this.add.rectangle(0, VH * S - D(41), W, D(41), 0x1c2414, 0.72).setOrigin(0);
-    this.texto(24, 789, 'Intro / clic: elegir · ↑ ↓ mover · N: nueva partida', 17, '#e9efd9').setOrigin(0, 0.5);
-    this.texto(W / k - 24, 789, 'Sprites: SpriteCollab (CC BY-NC 4.0) · bayas: pokeemerald · fangame sin ánimo de lucro', 17, '#e9efd9').setOrigin(1, 0.5);
+    const y = VH * S / k - 21, c = GRANJA ? '#e9efd9' : '#e8e2cc';
+    this.add.rectangle(0, VH * S - D(41), W, D(41), GRANJA ? 0x1c2414 : 0x10142c, GRANJA ? 0.72 : 0.9).setOrigin(0);
+    this.texto(24, y, GRANJA ? 'Intro / clic: elegir · ↑ ↓ mover · N: nueva partida' : 'Intro / clic: elegir · ← → mover · N: nueva partida', 17, c).setOrigin(0, 0.5);
+    this.texto(W / k - 24, y, 'Sprites: SpriteCollab (CC BY-NC 4.0) · bayas: pokeemerald · fangame sin ánimo de lucro', 17, c).setOrigin(1, 0.5);
   }
 
   // Panel con los controles; cualquier tecla o clic lo cierra.

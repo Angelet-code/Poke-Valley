@@ -31,6 +31,9 @@ export class Preload extends Phaser.Scene {
     // Pantalla de título (Title.ts): césped de fondo y flores.
     this.load.image('tit-cesped', `${A}game/cesped_0.png`);
     for (const n of [0, 7, 18]) this.load.image('tit-flor' + n, `${A}game/flores_nuevas/flor_${n}.png`);
+    // Modo aventura: logo pixel (tools/logo_pixel.py) y claro del bosque Arcane (tools/fondo_titulo.py).
+    this.load.image('tit-logo', `${A}ui/logo/logo_pow.png`);
+    this.load.image('tit-fondo', `${A}ui/titulo/fondo_arcane.jpg`);
     for (let i = 0; i < ROCK_N; i++) this.load.image('roca' + i, `${A}game/rocas/roca_${i}.png`);
 
     const objs = this.registry.get(REG.objs) as ObjCatalog;
