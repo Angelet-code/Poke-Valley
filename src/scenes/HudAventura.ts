@@ -1,6 +1,6 @@
 // HUD del modo aventura (escena paralela a Aventura, sin zoom), con el estilo de UIScene (madera + pergamino):
 // - Arriba a la izquierda, tu Pokémon (vida, nivel, experiencia, estado); arriba en el centro, el objetivo (con su
-//   temple: tranquilo, asustadizo o peleón); arriba a la derecha, el mapa y la hora.
+//   naturaleza y cómo reaccionará contigo, combate/naturalezas.ts); arriba a la derecha, el mapa y la hora.
 // - Abajo, la barra de atajos (teclas 1-0): movimientos con el color de su tipo u objetos con su icono y cuántos
 //   quedan; se oscurecen mientras se enfrían y el número se pone rojo si el objetivo está lejos. Al pasar el ratón,
 //   la ficha del movimiento. Clic = usar; clic derecho = quitar de la barra.
@@ -10,7 +10,8 @@
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
-import { COLOR_TEMPLE, NOMBRE_TEMPLE, type Aura, type Aventura, type Luchador } from './Aventura';
+import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
+import { type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
@@ -294,8 +295,8 @@ export class HudAventura extends Phaser.Scene {
     this.pintarMarco(this.yo, 4, 4, p, p.estado ? NOMBRE_ESTADO[p.estado] : tipos, p.estado ? 0xb03a2e : C.maderaClara, m.nivel >= 100 ? 1 : (m.exp - e0) / Math.max(1, e1 - e0));
     // Objetivo.
     const o = av.objetivo;
-    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${NOMBRE_TEMPLE[o.temple]} · ${o.tipos.map(t => TIPO_ES[t]).join(' · ')}`;
-    this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : o.rol === 'vecino' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_TEMPLE[o.temple], 0.6));
+    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}`;
+    this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : o.rol === 'vecino' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_REACCION[av.mundo!.reaccionA(o)], 0.6));
     // Reloj.
     const min = Math.floor(av.partida.estado.minuto) % (24 * 60), h = Math.floor(min / 60), mm = Math.floor(min % 60 / 10) * 10;
     this.reloj.setText(`${av.mapa.nombre}\n${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).setLineSpacing(-1 * S);

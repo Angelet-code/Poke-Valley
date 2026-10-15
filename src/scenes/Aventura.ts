@@ -29,14 +29,15 @@ import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { MoveCue } from '../fx/tipos';
 import { CASILLAS, PROB_SHINY, Partida } from '../combate/partida';
 import { NOMBRE_ESTADO, NOMBRE_STAT, formaDe, statsDe, type Clima } from '../combate/reglas';
-import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso, type Temple } from '../combate/mundo';
+import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
+import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
 import { ESTADO_CADA, TINTE_ESTADO, auraEstado } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
 import type { DatosEvolucion } from './Evolucion';
 
-export type { Aura, Luchador, Temple };
+export type { Aura, Luchador };
 const TABLON_CERCA = 44;           // px para abrir el tablón con F
 const MINI_ANCHO = 360;            // px de la miniatura de cada zona (mapa del mundo)
 // Punto de vuelo (docs/GDD-mundo.md): Corviknight, el taxi volador de Galar, junto a la entrada de cada zona con un
@@ -94,8 +95,6 @@ export function encajeMapa(W: number, H: number): { x: number; y: number; w: num
 const ASPECTO_CLIMA: Record<Clima, WeatherLook> = { lluvia: 'rain', sol: 'sun', arena: 'sand', nieve: 'snow', granizo: 'hail' };
 const LUZ_CLIMA: Record<Clima, [number, number, number]> = { lluvia: [0.84, 0.88, 0.96], sol: [1.1, 1.02, 0.86], arena: [1, 0.86, 0.68], nieve: [0.92, 0.96, 1.06], granizo: [0.82, 0.86, 0.95] };
 
-export const NOMBRE_TEMPLE: Record<Temple, string> = { amistoso: 'Tranquilo', huidizo: 'Asustadizo', agresivo: 'Peleón' };
-export const COLOR_TEMPLE: Record<Temple, number> = { amistoso: 0x8fd36a, huidizo: 0xffd65a, agresivo: 0xff7a5a };
 
 interface Luz { luz: Phaser.GameObjects.Light; halo: Phaser.GameObjects.Image; tipo: TipoLuz; fase: number }
 // Lo que se ve de cada luchador: su sprite (con la forma que haya cargada: la shiny llega un poco después), la sombra
@@ -216,7 +215,7 @@ export class Aventura extends Phaser.Scene {
     this.abrirMacizoVacio();
     this.mundo = new Mundo({
       mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => !enRect(tiras.pasos, x, y) && (this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y)),   // el macizo de las zonas de bioma bloquea como el agua
-      anatomia: this.anatomia, probShiny: this.probShiny,
+      anatomia: this.anatomia, probShiny: this.probShiny, natu: new URLSearchParams(location.search).get('natu') ?? undefined,
     });
     this.ponerVuelo(porId, bloques);
     this.ponerDetalles(cat.elementos, porId, bloques);
@@ -843,7 +842,7 @@ export class Aventura extends Phaser.Scene {
     }
     const o = mundo.objetivo;
     if (o && !o.muerto) {
-      const col = o.rol === 'vecino' ? 0x9fd0ff : o.modo === 'pelear' ? COLOR_TEMPLE.agresivo : COLOR_TEMPLE[o.temple];
+      const col = o.rol === 'vecino' ? 0x9fd0ff : o.modo === 'pelear' ? COLOR_REACCION.pelea : COLOR_REACCION[mundo.reaccionA(o)];
       const w = Math.max(18, o.alto * 0.8);
       this.anillo.setVisible(true).setPosition(o.x, o.y - 2).setSize(w, w * 0.36).setDisplaySize(w, w * 0.36).setFillStyle(col, 0.45).setDepth(o.y - 1.5);
     } else this.anillo.setVisible(false);

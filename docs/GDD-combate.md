@@ -88,12 +88,49 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   Antes era un 0,72 fijo: Pikachu flotaba sobre su sombra y saltaba al atacar. El alto del cuerpo y el ancho de la
   sombra también salen de esa medida. Pendiente: los que vuelan (Zubat, Gastly) deberían tener la sombra algo
   separada; haría falta su `Shadow.png` de SpriteCollab.
-- **Temple de cada salvaje** (sale al azar):
-  - **Tranquilo** (25 %): no pelea nunca; al pegarle se aparta un momento.
-  - **Asustadizo** (35 %): al pegarle huye unos segundos.
-  - **Peleón** (40 %): al pegarle te persigue y ataca con su movimiento listo más fuerte (a veces con uno de
-    estado). Si se aleja más de 330 px de su sitio, vuelve y se cura (correa).
-  - Nadie ataca sin que le peguen primero.
+- **Naturaleza de cada salvaje** (2026-10-15; sustituye al temple Tranquilo/Asustadizo/Peleón): sale al azar entre
+  las 25 (`combate/naturalezas.ts`) y decide su reacción según tu nivel frente al suyo: **igual** (±1), **fuerte**
+  (tú 2 o más por encima) o **débil** (tú 2 o más por debajo). La placa del objetivo dice su naturaleza y qué hará
+  contigo, con el color (rojo ataca, amarillo huye, verde se deja). El alfa siempre pelea.
+  - Reacciones: **Acecha** (te ataca si pasas a menos de 70 px), **Se defiende** (ataca si le pegas), **Llama**
+    (ataca si le pegas y se suman los salvajes a menos de 120 px que no huyan ni se queden quietos), **Aguanta** (el
+    primer golpe lo encaja; al segundo pelea), **Acorralado** (huye; con menos de la mitad de PS, al pegarle se da la
+    vuelta y pelea), **Huye** (si le pegas, 4-6 s), **Huye al verte** (huye si pasas a menos de 90 px, aunque no le
+    pegues), **Quieto** (ni huye ni pelea).
+  - Al pelear te persigue y ataca con su movimiento listo más fuerte (a veces con uno de estado). Si se aleja más de
+    330 px de su sitio, vuelve y se cura (correa).
+  - Probar una sola: `?natu=firme` (id sin tildes) hace que todos los salvajes del mapa la tengan.
+
+  | Naturaleza | Igual (±1) | Tú más fuerte (+2) | Tú más débil (−2) |
+  |---|---|---|---|
+  | Fuerte | Se defiende | Se defiende | Acecha |
+  | Huraña | Se defiende | Huye al verte | Acecha |
+  | Firme | Se defiende | Se defiende | Acecha |
+  | Pícara | Acecha | Acorralado | Acecha |
+  | Audaz | Acecha | Se defiende | Acecha |
+  | Osada | Aguanta | Aguanta | Se defiende |
+  | Dócil | Quieto | Huye | Aguanta |
+  | Plácida | Quieto | Quieto | Aguanta |
+  | Agitada | Se defiende | Acorralado | Acecha |
+  | Floja | Quieto | Huye | Quieto |
+  | Miedosa | Huye | Huye al verte | Acorralado |
+  | Activa | Acecha | Huye al verte | Acecha |
+  | Seria | Se defiende | Llama | Se defiende |
+  | Alegre | Se defiende | Acorralado | Acecha |
+  | Ingenua | Acecha | Acecha | Se defiende |
+  | Modesta | Aguanta | Huye | Se defiende |
+  | Afable | Aguanta | Acorralado | Se defiende |
+  | Mansa | Quieto | Aguanta | Aguanta |
+  | Tímida | Huye al verte | Huye al verte | Aguanta |
+  | Alocada | Acecha | Se defiende | Acecha |
+  | Serena | Aguanta | Aguanta | Quieto |
+  | Amable | Quieto | Acorralado | Quieto |
+  | Grosera | Llama | Llama | Acecha |
+  | Cauta | Aguanta | Llama | Se defiende |
+  | Rara | al azar | al azar | al azar (fijas mientras vive) |
+
+  Con nivel igual, solo 2 de 25 huyen (antes, el 60 %), y uno de ellos (Tímida) ya al verte; si eres mucho más
+  fuerte, 7 huyen (4 al verte) y 5 se acorralan.
 - **Vida**: fuera de combate (nadie te persigue, 6 s sin pegar ni recibir y sin quemadura ni veneno) se recupera un 5 % por segundo. Las bayas curan: Aranja 30 %,
   Zidra 50 %.
 - **Debilitarse**: vuelves al pueblo con la vida entera, sin otra penalización.
@@ -177,7 +214,7 @@ a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 bot�
   - `atrapa` está en `data/especies.ts`, entre 0,1 y 0,6.
   - Las Balls multiplican así: Poké ×1, Super ×1,5, Ultra ×2; la Master no falla.
   - A vida llena, la probabilidad es un tercio de la que tiene casi debilitado.
-- Si sale de la Ball, reacciona según su temple (huye o te ataca).
+- Si sale de la Ball, reacciona según su naturaleza (§3, Naturaleza).
 - Si se queda, entra en tu equipo con su nivel y su vida y aparece en el pueblo.
 - Empiezas con 10 Poké Balls y 3 Bayas Aranja. Los derrotados a veces sueltan bayas o Balls.
 

@@ -14,6 +14,7 @@ import { dentroDe } from '../util';
 import { HOGAR_CARGA, HOGAR_CD, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
+import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
   TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
@@ -48,9 +49,11 @@ const ALFA_DANO = 0.35;            // fracción de tu vida si te pilla dentro
 // Poké Ball: vuela VUELO_BALL s; dentro, se mueve tres veces y a los MENEOS_BALL s se sabe si se queda.
 export const VUELO_BALL = 0.42;
 const MENEOS_BALL = 0.25 + 3 * 0.32 + 2 * 0.26;
-const IMPACTO_MAX = 2.5;           // s: si la animación de un movimiento no llega al golpe, se aplica igual
+const IMPACTO_MAX = 2.5;
+const ACECHO = 70;                 // px: a esta distancia, el que acecha te ve y ataca
+const ESPANTO = 90;                // px: a esta distancia, el que se espanta te ve y huye
+const LLAMADA = 120;               // px: los salvajes que oyen al que llama a los suyos           // s: si la animación de un movimiento no llega al golpe, se aplica igual
 
-export type Temple = 'amistoso' | 'huidizo' | 'agresivo';
 // Bufos y debufos (los iconos del HUD y de las placas): estados y cambios de stats, con lo que les queda.
 export interface Aura { txt: string; color: number; frac: number; nombre: string }
 const CORTO_STAT: Record<Stat6, string> = { atk: 'At', def: 'Df', spa: 'AE', spd: 'DE', spe: 'Ve', accuracy: 'Pr', evasion: 'Ev' };
@@ -83,7 +86,8 @@ export interface Luchador {
   cdDura: Record<string, number>; gcdDura: number;   // lo que duró cada enfriamiento al ponerse (con la celeridad de entonces)
   lanza: Lanza | null;
   anim: AnimId | null; animHasta: number; animN: number; quietoHasta: number;   // animN: cuenta las que se ponen
-  temple: Temple; modo: 'pasear' | 'huir' | 'pelear' | 'volver'; casa: Punto; meta: Punto | null; espera: number;
+  natu: string; tabla: Naturaleza; aguante: number;   // naturaleza (combate/naturalezas.ts), su tabla y golpes encajados (Aguanta)
+  modo: 'pasear' | 'huir' | 'pelear' | 'volver'; casa: Punto; meta: Punto | null; espera: number;
   huirHasta: number; ultimoCombate: number; rival: Luchador | null;
   muerto: boolean; enBall: boolean;
   ruta: Punto[] | null; rutaA: Punto | null; rutaT: number; atasco: number;   // camino que sigue (navegacion.ts), hacia dónde y cuándo se calculó
@@ -118,7 +122,7 @@ export type Salida =
 export interface FotoSalvaje {
   u: string; li: string; f?: string; n: number; sh?: boolean; al?: boolean; r: number; c: Punto;   // r: su ronda en el mapa (−1: ninguna)
   x: number; y: number; d: number; an: boolean; ps: number; hp: number; e: string | null; m: boolean; b: boolean;
-  te: Temple; mo: Luchador['modo']; ri: string | null; a: AnimId | null; aN: number; aR: number;
+  te: string; tr?: [Reaccion, Reaccion, Reaccion]; mo: Luchador['modo']; ri: string | null; a: AnimId | null; aN: number; aR: number;
   ln?: [string, number, number, 0 | 1];   // lo que lanza: movimiento, s que le quedan, duración y si es canalizado
 }
 export interface Foto {
@@ -146,6 +150,7 @@ export interface OpcionesMundo {
   mapa: MapaAventura; partida: Partida; desde: MapaId | 'inicio';
   bloques: Bloque[]; agua: (x: number, y: number) => boolean; anatomia: Anatomia;
   probShiny: number; rnd?: () => number;
+  natu?: string;   // fuerza la naturaleza de todos los salvajes (para probar: ?natu=firme)
 }
 
 const idSprite = (dex: string, shiny?: boolean) => shiny ? `${dex}s` : dex;   // como sprites.ts
@@ -170,6 +175,7 @@ export class Mundo {
   // Piedra de hogar canalizándose (s de juego): la barra de lanzamiento la pinta el HUD.
   hogar: { t0: number; t1: number } | null = null;
   private readonly rnd: () => number;
+  private readonly natuForzada?: string;
   private readonly anatomia: Anatomia;
   private readonly agua: (x: number, y: number) => boolean;
   private cubos = new Map<number, Bloque[]>();   // bloques por cubo de CUBO px, para no recorrerlos todos
@@ -192,7 +198,7 @@ export class Mundo {
 
   constructor(o: OpcionesMundo) {
     this.mapa = o.mapa; this.partida = o.partida; this.probShiny = o.probShiny;
-    this.rnd = o.rnd ?? Math.random; this.anatomia = o.anatomia; this.agua = o.agua;
+    this.rnd = o.rnd ?? Math.random; this.natuForzada = o.natu && NATURALEZAS[o.natu] ? o.natu : undefined; this.anatomia = o.anatomia; this.agua = o.agua;
     for (const b of o.bloques) this.meterBloque(b);
     this.nav = new Rejilla(this.mapa.W, this.mapa.H, (x, y) => this.pisable({ x, y }));
     const lleg = this.mapa.llegada[o.desde] ?? this.mapa.llegada.inicio!, act = this.partida.activo;
@@ -300,7 +306,7 @@ export class Mundo {
       stats, ps: stats.hp, boosts: {}, boostHasta: {}, estado: null, estadoHasta: 0, ticEstado: 0, toxN: 0,
       x, y, dir: 0, anda: false, alto: Math.min(ALTO_MAX, as * escala),
       movs: miembro ? miembro.movs : movsHasta(f.id, nivel), cd: {}, gcd: 0, cdDura: {}, gcdDura: GCD, lanza: null, anim: null, animHasta: 0, animN: 0, quietoHasta: 0,
-      temple: 'agresivo', modo: 'pasear', casa: { x, y }, meta: null, espera: rnd() * 2, huirHasta: 0, ultimoCombate: -99, rival: null,
+      natu: 'fuerte', tabla: NATURALEZAS.fuerte, aguante: -99, modo: 'pasear', casa: { x, y }, meta: null, espera: rnd() * 2, huirHasta: 0, ultimoCombate: -99, rival: null,
       muerto: false, enBall: false, ruta: null, rutaA: null, rutaT: -99, atasco: 0, forma, escala, golpeAlfa: 0, shiny: sh,
       sexo: miembro ? miembro.sexo ?? null : tirarSexo(f.id, rnd),
     };
@@ -309,8 +315,8 @@ export class Mundo {
   private crearSalvaje(r: Ronda): Luchador {
     const l = this.crearLuchador('salvaje', r.linea, r.nivel, r.x, r.y, undefined, undefined, this.rnd() < this.probShiny);
     l.ronda = r;
-    const t = this.rnd();
-    l.temple = t < 0.25 ? 'amistoso' : t < 0.6 ? 'huidizo' : 'agresivo';
+    l.natu = this.natuForzada ?? IDS_NATURALEZA[Math.floor(this.rnd() * IDS_NATURALEZA.length)];
+    l.tabla = tablaDe(l.natu, this.rnd);
     return l;
   }
   // El alfa de la zona: la forma fija, ×1,4, con aura y el triple de vida. Siempre peleón. Si cayó hace menos de
@@ -329,7 +335,7 @@ export class Mundo {
     return l;
   }
   private hacerAlfa(l: Luchador): void {
-    l.alfa = true; l.escala *= ALFA_ESCALA; l.temple = 'agresivo'; l.nombre += ' alfa';
+    l.alfa = true; l.escala *= ALFA_ESCALA; l.tabla = { nombre: l.tabla.nombre, igual: 'pelea', fuerte: 'pelea', debil: 'pelea' }; l.nombre += ' alfa';
     l.alto = Math.min(ALTO_MAX * ALFA_ESCALA, l.alto * ALFA_ESCALA);
     l.stats = { ...l.stats, hp: l.stats.hp * ALFA_VIDA }; l.ps = l.stats.hp;
   }
@@ -371,7 +377,6 @@ export class Mundo {
       let x = c.x + Math.cos(a) * 70, y = c.y + 40 + Math.sin(a) * 40;
       for (let k = 0; k < 30 && !this.pisable({ x, y }); k++) { x = c.x + (this.rnd() - 0.5) * 300; y = c.y + (this.rnd() - 0.2) * 200; }
       const l = this.crearLuchador('vecino', m.linea, m.nivel, x, y, m);
-      l.temple = 'amistoso';
       this.vecinos.push(l);
     });
   }
@@ -419,7 +424,6 @@ export class Mundo {
     const nuevo = this.crearLuchador('jugador', otro.linea, otro.nivel, v.x, v.y, otro);
     nuevo.ps = Math.max(1, Math.round(nuevo.stats.hp * otro.ps));
     const viejo = this.crearLuchador('vecino', yo.linea, yo.nivel, p.x, p.y, yo);
-    viejo.temple = 'amistoso';
     this.vecinos = this.vecinos.filter(l => l !== v).concat(viejo);
     this.jugador = nuevo;
     this.objetivo = null;
@@ -477,7 +481,6 @@ export class Mundo {
       if (l.lanza.canal) {
         l.cd[id] = this.ahora + (l.cdDura[id] = pf.cd / k);
         if (l.estado === 'par' && this.rnd() < 0.25) { l.lanza = null; this.rotulo(l, '¡Paralizado!', 'bad'); return true; }
-        if (blanco !== l) this.provocar(blanco, l);
       }
       this.reproducir(l, 'Charge', t);
       return true;
@@ -495,7 +498,6 @@ export class Mundo {
     // Agotado (Hiperrayo): un rato sin poder hacer nada.
     if (pf.agotado) { l.gcd = Math.max(l.gcd, this.ahora + pf.agotado); l.gcdDura = Math.max(l.gcdDura, pf.agotado); this.despues(0.5, () => this.rotulo(l, 'Agotado', 'weak')); }
     if (l.estado === 'par' && this.rnd() < 0.25) { this.rotulo(l, '¡Paralizado!', 'bad'); return; }
-    if (blanco !== l) this.provocar(blanco, l);
     // El efecto sale en el fotograma del golpe de la animación (HitFrame), no antes.
     this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => this.lanzarMov(l, id, blanco));
   }
@@ -580,7 +582,8 @@ export class Mundo {
     const m = getMove(id)!;
     if (l.muerto && t !== l) return;
     if (t.muerto || t.enBall) return;
-    if (t !== l) l.ultimoCombate = t.ultimoCombate = this.ahora;   // atacar (aunque falle) también es estar en combate
+    // Se entra en combate cuando el golpe llega (aunque falle), no al empezar a lanzarlo: si no, el que huye corta el lanzamiento.
+    if (t !== l) { l.ultimoCombate = t.ultimoCombate = this.ahora; this.provocar(t, l); }
     // Lo que le pasa a quien no llevas tú (un remoto, o un salvaje en espejo) se lo aplica quien lo lleva.
     const ajeno = this.ajeno(t);
     if (ajeno) this.salir({ tipo: 'golpe', de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.filter(e => e.quien === t).map(e => ({ boosts: e.boosts, estado: e.estado })) });
@@ -641,12 +644,35 @@ export class Mundo {
     if (l.estado === 'slp' && l.anim === 'Sleep') l.animHasta = 0;
     l.estado = null; l.toxN = 0;
   }
-  // Un salvaje al que le pegan reacciona según su temple: el tranquilo no pelea, el asustadizo huye y el peleón ataca.
-  private provocar(t: Luchador, de: Luchador): void {
-    if (t.rol !== 'salvaje' || t.muerto) return;
-    if (t.temple === 'amistoso') { if (t.modo !== 'huir') { t.modo = 'huir'; t.huirHasta = this.ahora + 1.5; } return; }
-    if (t.temple === 'huidizo') { t.modo = 'huir'; t.huirHasta = this.ahora + 4 + this.rnd() * 2; t.meta = null; return; }
-    t.modo = 'pelear'; t.rival = de; t.meta = null;
+  // Cómo reacciona el salvaje `l` ante el rival `de`: su naturaleza y la diferencia de nivel (combate/naturalezas.ts).
+  reaccionA(l: Luchador, de: Luchador = this.jugador): Reaccion {
+    return l.tabla[casoDe(de.rol === 'jugador' ? this.partida.activo.nivel : de.nivel, l.nivel)];
+  }
+  // Un salvaje al que le pegan (o tira de una Ball) reacciona según su naturaleza; `llamado`: se lo pide otro salvaje.
+  private provocar(t: Luchador, de: Luchador, llamado = false): void {
+    if (t.rol !== 'salvaje' || t.muerto || (t.modo === 'pelear' && t.rival === de)) return;
+    const r = this.reaccionA(t, de);
+    const pelear = () => {
+      t.modo = 'pelear'; t.rival = de; t.meta = null;
+      if (r === 'llama' && !llamado) {
+        this.rotulo(t, '¡!', 'bad');
+        for (const o of this.salvajes) if (o !== t && !o.muerto && !o.enBall && o.modo !== 'pelear' && Math.hypot(o.x - t.x, o.y - t.y) < LLAMADA) {
+          const ro = this.reaccionA(o, de);
+          if (ro !== 'huye' && ro !== 'espanta' && ro !== 'quieto') { o.modo = 'pelear'; o.rival = de; o.meta = null; }
+        }
+      }
+    };
+    if (llamado || r === 'acecha' || r === 'pelea' || r === 'llama') { pelear(); return; }
+    if (r === 'quieto') { t.meta = null; t.modo = 'pasear'; t.espera = 2; return; }
+    if (r === 'aguanta') {
+      // Varias llamadas por golpe (al soltarlo y al dañar): cuenta como el mismo si llegan juntas.
+      if (t.aguante > 0 && this.ahora - t.aguante > 0.8) { pelear(); return; }
+      if (t.aguante <= 0 || this.ahora - t.aguante > 20) { t.aguante = this.ahora; t.meta = null; this.rotulo(t, 'Aguanta', 'weak'); }
+      return;
+    }
+    if (r === 'acorralado' && t.ps < t.stats.hp * 0.5) { pelear(); return; }
+    if (t.modo === 'huir') return;
+    t.modo = 'huir'; t.huirHasta = this.ahora + 4 + this.rnd() * 2; t.meta = null;
   }
 
   private debilitar(t: Luchador, de: Luchador | null): void {
@@ -857,6 +883,15 @@ export class Mundo {
       l.atasco = l.anda ? 0 : l.atasco + dt;
       if (l.atasco > 1.5) { l.x = l.casa.x; l.y = l.casa.y; l.atasco = 0; }   // sin forma de llegar: a casa directamente
       return;
+    }
+    // Si pasas cerca (tú u otro jugador): el que acecha te ataca sin que le pegues y el que se espanta sale corriendo.
+    if (l.rol === 'salvaje' && !this.espejo) {
+      for (const j of [p, ...this.remotos]) {
+        if (j.muerto) continue;
+        const d = Math.hypot(j.x - l.x, j.y - l.y), r = d <= ESPANTO ? this.reaccionA(l, j) : null;
+        if (r === 'acecha' && d <= ACECHO) { this.rotulo(l, '!', 'bad'); this.provocar(l, j); return; }
+        if (r === 'espanta') { this.rotulo(l, '!', 'weak'); this.provocar(l, j); return; }
+      }
     }
     // Pasear cerca de su sitio, con pausas.
     if (!l.meta) {
@@ -1088,7 +1123,7 @@ export class Mundo {
       s: this.salvajes.map(l => ({
         u: l.uid, li: l.linea, f: l.forma, n: l.nivel, sh: l.shiny || undefined, al: l.alfa || undefined, r: l.ronda ? this.mapa.salvajes.indexOf(l.ronda) : -1, c: l.casa,
         x: r1(l.x), y: r1(l.y), d: l.dir, an: l.anda, ps: Math.round(l.ps), hp: l.stats.hp, e: l.estado, m: l.muerto, b: l.enBall,
-        te: l.temple, mo: l.modo, ri: l.rival?.uid ?? null, a: l.anim, aN: l.animN, aR: l.anim ? r1(Math.max(0, l.animHasta - this.ahora)) : 0,
+        te: l.natu, tr: l.natu === 'rara' ? [l.tabla.igual, l.tabla.fuerte, l.tabla.debil] : undefined, mo: l.modo, ri: l.rival?.uid ?? null, a: l.anim, aN: l.animN, aR: l.anim ? r1(Math.max(0, l.animHasta - this.ahora)) : 0,
         ln: l.lanza ? [l.lanza.id, r1(l.lanza.t1 - this.ahora), r1(l.lanza.t1 - l.lanza.t0), l.lanza.canal ? 1 : 0] : undefined,
       })),
       clima: this.clima ? { tipo: this.clima.tipo, resta: r1(this.clima.hasta - this.ahora), b: this.clima.base ? 1 : undefined } : null,
@@ -1116,7 +1151,8 @@ export class Mundo {
       rm.x = s.x; rm.y = s.y; rm.t = this.ahora;
       if (s.aN !== rm.animN) { rm.animN = s.aN; if (s.a) { l.anim = s.a; l.animN++; l.animHasta = this.ahora + s.aR; } }
       l.lanza = s.ln ? { id: s.ln[0], obj: null, t0: this.ahora + s.ln[1] - s.ln[2], t1: this.ahora + s.ln[1], canal: !!s.ln[3], tics: 1, hechos: 0 } : null;
-      l.casa = s.c; l.dir = s.d; l.anda = s.an; l.ps = s.ps; l.stats = { ...l.stats, hp: s.hp }; l.temple = s.te; l.modo = s.mo;
+      l.casa = s.c; l.dir = s.d; l.anda = s.an; l.ps = s.ps; l.stats = { ...l.stats, hp: s.hp }; l.modo = s.mo;
+      if (!l.alfa) { l.natu = s.te; l.tabla = s.tr ? { nombre: NATURALEZAS.rara.nombre, igual: s.tr[0], fuerte: s.tr[1], debil: s.tr[2] } : tablaDe(s.te, Math.random); }
       if (s.e !== l.estado) { l.estado = s.e; l.estadoHasta = this.ahora + (s.e ? DURA_ESTADO[s.e] ?? 1 : 0); }
       if (s.m && !l.muerto) { l.muerto = true; if (this.objetivo === l) this.objetivo = null; }
       if (this.miBall !== l.uid) l.enBall = s.b;
