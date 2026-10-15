@@ -21,7 +21,7 @@ import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
-import { NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';
+import { NOMBRE_BAYERO, NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES } from '../combate/objetos';
@@ -133,6 +133,11 @@ export class HudAventura extends Phaser.Scene {
   private tiClave = '';
   private tiZonas: { x: number; y: number; w: number; h: number; id: string }[] = [];
   private tiCaja: { x: number; y: number; w: number; h: number } | null = null;
+  // Snorlax, el obseso de las bayas (F a su lado): su pedido y las bayas que se compra. `id` vacío = la tarjeta del pedido.
+  private baObjs: Phaser.GameObjects.GameObject[] = [];
+  private baClave = '';
+  private baZonas: { x: number; y: number; w: number; h: number; id: string }[] = [];
+  private baCaja: { x: number; y: number; w: number; h: number } | null = null;
   private trObjs: Phaser.GameObjects.GameObject[] = [];
   private trClave = '';
   private trZonas: { x: number; y: number; w: number; h: number; clic?: (mayus: boolean) => void; ficha?: string }[] = [];
@@ -153,6 +158,7 @@ export class HudAventura extends Phaser.Scene {
     this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null; this.invElegido = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.tiObjs = []; this.tiClave = ''; this.tiZonas = []; this.tiCaja = null;
+    this.baObjs = []; this.baClave = ''; this.baZonas = []; this.baCaja = null;
     this.trObjs = []; this.trClave = ''; this.trZonas = []; this.trCaja = null;
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
@@ -221,6 +227,8 @@ export class HudAventura extends Phaser.Scene {
       const mz = this.misZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       const tz = this.av.panel === 'tienda' ? this.tiZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h) : undefined;
       if (tz) { this.av.comprar(tz.id, (p.event as MouseEvent | undefined)?.shiftKey ? 5 : 1); return; }
+      const bz = this.av.panel === 'bayas' ? this.baZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h) : undefined;
+      if (bz) { if (bz.id) this.av.venderBaya(bz.id, (p.event as MouseEvent | undefined)?.shiftKey ? 5 : 1); else this.av.entregarBayas(); return; }
       if (mz) {
         const st = this.av.partida.estadoMision(mz.m);
         if (st === 'nueva') this.av.aceptarMision(mz.m); else if (st === 'lista') this.av.entregarMision(mz.m);
@@ -242,6 +250,7 @@ export class HudAventura extends Phaser.Scene {
     return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
       || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h)
       || (this.av.panel === 'tienda' && !!this.tiCaja && x >= this.tiCaja.x && x < this.tiCaja.x + this.tiCaja.w && y >= this.tiCaja.y && y < this.tiCaja.y + this.tiCaja.h)
+      || (this.av.panel === 'bayas' && !!this.baCaja && x >= this.baCaja.x && x < this.baCaja.x + this.baCaja.w && y >= this.baCaja.y && y < this.baCaja.y + this.baCaja.h)
       || (this.av.panel === 'inv' && !!this.invCaja && x >= this.invCaja.x && x < this.invCaja.x + this.invCaja.w && y >= this.invCaja.y && y < this.invCaja.y + this.invCaja.h);
   }
   private casillaEn(x: number, y: number): number {
@@ -407,6 +416,7 @@ export class HudAventura extends Phaser.Scene {
     this.pintarInventario();
     this.pintarMisiones();
     this.pintarTienda();
+    this.pintarBayero();
     this.pintarTrato();
     this.pintarSeguimiento(cl ? 44 : 30);
   }
@@ -515,6 +525,58 @@ export class HudAventura extends Phaser.Scene {
       this.tiZonas.push({ x: fx, y: fy, w: fw, h: FH, id });
     });
     t(x + w / 2, y + h - 9, 'Clic: comprar uno · Mayús+clic: cinco', 5, C.maderaClara).setOrigin(0.5, 0);
+  }
+
+  // Snorlax (F a su lado): arriba su pedido (la baya, cuántas llevas y lo que paga; clic = entregar), debajo cada baya
+  // que llevas, que se compra a precio de gourmet (clic: una; Mayús: cinco).
+  private pintarBayero(): void {
+    const av = this.av, pa = av.partida;
+    const ped = pa.pedidoBaya, sueltas = Object.keys(pa.estado.items).filter(id => ITEMS[id]?.tipo === 'baya' && pa.tiene(id) > 0);
+    const k = av.panel === 'bayas' ? `${pa.dinero}|${ped.baya}|${ped.n}|${ped.dadas}|${sueltas.map(id => `${id}${pa.tiene(id)}`).join()}` : '';
+    if (k === this.baClave) return;
+    this.baClave = k;
+    this.baObjs.forEach(o => o.destroy()); this.baObjs = []; this.baZonas = []; this.baCaja = null;
+    if (av.panel !== 'bayas') return;
+    const FH = 24, w = 176, x = 4, y = 40, h = 18 + (FH + 6) + (sueltas.length ? 8 + sueltas.length * (FH + 3) : 0) + 12;
+    this.baCaja = { x, y, w, h };
+    const g = this.add.graphics().setDepth(6);
+    this.baObjs.push(g);
+    marco(g, x, y, w, h, PANEL);
+    const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.baObjs.push(q); return q; };
+    const moneda = (mx: number, my: number) => { const im = this.add.image(mx * S, my * S, this.pixeles('hud_moneda', MONEDA, COL_MONEDA)).setOrigin(0, 0.5).setDepth(8); this.baObjs.push(im); };
+    t(x + 6, y + 5, `${NOMBRE_BAYERO.toUpperCase()} · FANÁTICO DE LAS BAYAS`, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    const din = t(x + w - 6, y + 4, String(pa.dinero), 6.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
+    moneda(x + w - 6 - din.width / S - 9, y + 8.5);
+    // El pedido: la baya, cuántas lleva ya entregadas y lo que paga.
+    const fx = x + 6, fw = w - 12, fy = y + 16, tengo = pa.tiene(ped.baya), puede = tengo > 0, it = ITEMS[ped.baya];
+    marco(g, fx - 1, fy - 1, fw + 2, FH + 4, { ...PANEL, borde: 0xc8962a, fondo: C.elegidoFondo });
+    rect(g, C.bandeja, 1, fx + 2, fy + 2, FH - 4, FH - 2);
+    this.iconoItem(fx + FH / 2, fy + FH / 2 + 1, ped.baya, 16, this.baObjs, 8);
+    t(fx + FH + 2, fy + 3, `${it?.nombre ?? ped.baya} ×${ped.n}`, 6, C.tinta, { fontStyle: 'bold' });
+    t(fx + FH + 2, fy + 13.5, `Entregadas ${ped.dadas}/${ped.n} · llevas ${tengo}`, 4.5, C.maderaClara);
+    const pr = t(fx + fw - 4, fy + FH / 2 + 1, String(pa.pagoPedido), 6.5, puede ? 0x4f9a3a : C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0.5);
+    moneda(fx + fw - 4 - pr.width / S - 9, fy + FH / 2 + 1);
+    if (!puede) rect(g, C.hueco, 0.35, fx, fy, fw, FH + 2);
+    this.baZonas.push({ x: fx, y: fy, w: fw, h: FH + 2, id: '' });
+    let yy = fy + FH + 6;
+    if (sueltas.length) {
+      t(x + w / 2, yy - 1, 'Le encantan todas: te las compra a mejor precio', 4.5, C.maderaClara).setOrigin(0.5, 0);
+      yy += 7;
+      for (const id of sueltas) {
+        const b = ITEMS[id], pb = pa.precioBaya(id);
+        rect(g, C.huecoSombra, 1, fx - 1, yy - 1, fw + 2, FH + 2);
+        rect(g, C.hueco, 1, fx, yy, fw, FH);
+        rect(g, C.bandeja, 1, fx + 2, yy + 2, FH - 4, FH - 4);
+        this.iconoItem(fx + FH / 2, yy + FH / 2, id, 16, this.baObjs, 8);
+        t(fx + FH + 2, yy + 3, b.nombre, 6, C.tinta, { fontStyle: 'bold' });
+        t(fx + FH + 2, yy + 13, `llevas ${pa.tiene(id)} · vender`, 4.5, C.maderaClara);
+        const q = t(fx + fw - 4, yy + FH / 2, String(pb), 6.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0.5);
+        moneda(fx + fw - 4 - q.width / S - 9, yy + FH / 2);
+        this.baZonas.push({ x: fx, y: yy, w: fw, h: FH, id });
+        yy += FH + 3;
+      }
+    }
+    t(x + w / 2, y + h - 9, 'Clic: entregar / vender uno · Mayús+clic: cinco', 5, C.maderaClara).setOrigin(0.5, 0);
   }
 
   // Seguimiento (derecha, bajo la hora): las misiones aceptadas con su cara y "2/5"; "?" en dorado si está cumplida.

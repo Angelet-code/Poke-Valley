@@ -9,7 +9,7 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
@@ -48,6 +48,7 @@ export interface MapaAventura {
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
   tienda?: Punto;                 // el tendero (pueblo): F a su lado abre la tienda (Poké Balls y pociones)
+  bayero?: Punto;                 // el obseso de las bayas (pueblo): F a su lado, pedidos de bayas y venta de bayas
   vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
@@ -69,6 +70,7 @@ export function pueblo(): MapaAventura {
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,
     tienda: TENDERO,
+    bayero: BAYERO,
     rellano: { x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }, vuelo: sitioVolador({ x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }),   // junto a la boca norte
     parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };

@@ -7,6 +7,12 @@ import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimient
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, nivelPorExp } from './reglas';
 import { misionesDe, type EstadoMision, type Mision } from './misiones';
+import { BAYAS_SALVAJES, ITEMS } from '../data/items';
+
+// El Pokémon obseso de las bayas del pueblo: pide `n` de una baya y paga el doble de su precio por unidad; las demás
+// bayas que lleves te las compra a un 50 % más que la caja.
+export interface PedidoBaya { baya: string; n: number; dadas: number; hechos: number }
+export const PAGO_PEDIDO = 2, PAGO_BAYA = 1.5;
 
 export const CASILLAS = 10;
 export const HUECOS_OBJ = 2;          // objetos equipables que lleva cada Pokémon (inventario, I)
@@ -57,6 +63,7 @@ export interface Estado {
   regalo?: boolean;                           // recibió el regalo de equipables por error: se le retira al cargar
   dinero?: number;                            // Pokécoins: se ganan derrotando salvajes y se gastan en la tienda del pueblo
   derrotas?: Record<string, number>;          // por línea: cuántos has derrotado (racha de shiny, RACHA_SHINY)
+  bayero?: PedidoBaya;                        // el pedido actual del obseso de las bayas (y cuántos le has cumplido)
   vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
 }
 export type Aviso =
@@ -191,6 +198,36 @@ export class Partida {
     this.estado.dinero = this.dinero - precio * n;
     this.dar(id, n);
     return true;
+  }
+  // Pedido de bayas: sale de la semilla y de cuántos has cumplido, así que es el mismo si recargas.
+  get pedidoBaya(): PedidoBaya {
+    return this.estado.bayero ??= this.nuevoPedido(0);
+  }
+  get pagoPedido(): number { const p = this.pedidoBaya; return Math.round((ITEMS[p.baya]?.precio ?? 20) * p.n * PAGO_PEDIDO); }
+  precioBaya(id: string): number { return Math.round((ITEMS[id]?.precio ?? 0) * PAGO_BAYA); }
+  // Entrega al pedido hasta `n` bayas de las que faltan. Al completarlo cobras y llega otro. Devuelve lo entregado y lo cobrado.
+  entregarBayas(): { dadas: number; pago: number } {
+    const p = this.pedidoBaya, dadas = Math.min(p.n - p.dadas, this.tiene(p.baya));
+    if (dadas <= 0) return { dadas: 0, pago: 0 };
+    this.estado.items[p.baya] -= dadas; p.dadas += dadas;
+    if (p.dadas < p.n) return { dadas, pago: 0 };
+    const pago = this.pagoPedido;
+    this.cobrar(pago);
+    this.estado.bayero = this.nuevoPedido(p.hechos + 1);
+    return { dadas, pago };
+  }
+  private nuevoPedido(hechos: number): PedidoBaya {
+    const bayas = BAYAS_SALVAJES.filter(b => ITEMS[b]);
+    return { baya: bayas[(this.estado.semilla + hechos * 7) % bayas.length] ?? 'oran', n: 3 + (this.estado.semilla + hechos * 5) % 4, dadas: 0, hechos };
+  }
+  // Vender `n` bayas sueltas (cualquier baya): cobras a precio de gourmet.
+  venderBayas(id: string, n = 1): number {
+    n = Math.min(n, this.tiene(id));
+    if (n <= 0 || ITEMS[id]?.tipo !== 'baya') return 0;
+    this.estado.items[id] -= n;
+    const pago = this.precioBaya(id) * n;
+    this.cobrar(pago);
+    return pago;
   }
   // Objetos equipados (inventario, I): HUECOS_OBJ huecos; el que había en el hueco vuelve a la mochila.
   objetos(m: Miembro): (string | null)[] { return Array.from({ length: HUECOS_OBJ }, (_, i) => m.objetos?.[i] ?? null); }

@@ -31,6 +31,7 @@ export const PLAZA: P = [504, 470];                 // centro de la plaza
 const R_PLAZA = 78;
 export const TABLON = { x: 440, y: 452 };           // tablón de misiones, al oeste de la hoguera
 export const TENDERO = { x: 838, y: 562 };          // Kecleon, el tendero: delante del mostrador del puesto de la tienda
+export const BAYERO = { x: 712, y: 468 };           // Snorlax, el obseso de las bayas: en el césped al este de la plaza, junto al camino a la tienda
 export const INICIO: P = [504, 540];                // donde apareces (en la plaza, al sur de la hoguera)
 export const SALIDA_X: [number, number] = [520, 600]; // boca norte del pueblo (al bosque)
 export const RELLANO_PUEBLO: P = [724, 150];          // rellano de vuelo, a la derecha de la boca norte (data/rellano.ts)

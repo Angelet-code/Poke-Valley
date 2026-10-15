@@ -82,6 +82,10 @@ const ICONO_DESCUBRIR = [
 // vendedor del WoW, una bolsa de dinero (pixel art). F a su lado abre la tienda (la pinta el HUD).
 export const DEX_TIENDA = '0352', NOMBRE_TIENDA = 'Kecleon';
 export const TIENDA_CERCA = 46;
+// El obseso de las bayas (pueblo): Snorlax. Pide bayas (misiones sin diálogo: la baya y cuántas) y las paga bien; las demás
+// bayas que lleves también se las queda a buen precio. Encima, una baya que flota.
+export const DEX_BAYERO = '0143', NOMBRE_BAYERO = 'Snorlax';
+export const BAYERO_CERCA = 54;
 // Lo que vende, por orden (precios de data/items.ts).
 export const VENTA = ['pokeball', 'superball', 'pocion', 'superpocion'];
 const ICONO_TIENDA = [
@@ -143,8 +147,9 @@ export class Aventura extends Phaser.Scene {
   vueloNuevo = false;                 // el punto de vuelo de aquí se acaba de descubrir (al abrir el mapa de vuelo)
   vuelo: { x: number; y: number; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   tendero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
+  bayero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
-  panel: 'movs' | 'misiones' | 'inv' | 'tienda' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
+  panel: 'movs' | 'misiones' | 'inv' | 'tienda' | 'bayas' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
   listo = false;
   evolucionando = false;
@@ -216,7 +221,7 @@ export class Aventura extends Phaser.Scene {
     carga?.progreso(0.08);
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
-    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null;
+    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null; this.bayero = null;
     this.placas.clear(); this.bocadillos.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial, data.usuario);
@@ -244,6 +249,7 @@ export class Aventura extends Phaser.Scene {
     for (const nv of niveles) for (const l of tabla) formas.push(formaDe(l, nv).dex);
     formas.push(DEX_VUELO);
     if (this.mapa.tienda) formas.push(DEX_TIENDA);
+    if (this.mapa.bayero) formas.push(DEX_BAYERO);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
     // Progreso: los sprites van en dos pasadas del cargador (AnimData.xml y luego las hojas); el suelo, aparte.
@@ -273,6 +279,7 @@ export class Aventura extends Phaser.Scene {
     });
     this.ponerVuelo(porId, bloques);
     this.ponerTendero(bloques);
+    this.ponerBayero(bloques);
     this.ponerDetalles(cat.elementos, porId, bloques);
     const mundo = this.mundo;
     if (data.pos) { mundo.jugador.x = data.pos.x; mundo.jugador.y = data.pos.y; }
@@ -439,6 +446,52 @@ export class Aventura extends Phaser.Scene {
     if (!this.partida.comprar(id, it.precio, n)) { this.aviso(`No te llega: ${it.nombre} ×${n} cuesta ${it.precio * n} Pokécoins`); return; }
     this.guardar();
     this.aviso(`Compras ${it.nombre} ×${n} por ${it.precio * n} Pokécoins`);
+  }
+  // Snorlax, el obseso de las bayas, con su nombre, «‹Bayas›» y una baya encima; su huella se suma al mundo.
+  private ponerBayero(bloques: Bloque[]): void {
+    const t = this.mapa.bayero;
+    if (!t) return;
+    const { x, y } = t, an = ancla(DEX_BAYERO), ancho = Math.max(10, Math.min(40, an.ancho * 0.75));
+    const nuevo: Bloque = { x, y: y + 2, w: 26, h: 10, rombo: true };
+    this.mundo!.anadirBloques([nuevo]); bloques.push(nuevo);
+    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
+    poner(spr, DEX_BAYERO, 'Idle', 0);
+    const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
+    const placa = this.add.text(x, y - an.alto - 2, `${NOMBRE_BAYERO}
+‹Bayas›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#f0a0c8', stroke: '#3a1630', strokeThickness: 2 * S, align: 'center' })
+      .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
+    const icono = this.add.image(x, placa.y - 16, `icono_${this.partida.pedidoBaya.baya}`).setOrigin(0.5, 1).setDepth(1e5).setScale(0.8);
+    for (const o of [sombra, placa, icono]) o.resetPipeline();
+    this.bayero = { x, y, spr, placa, icono, fila: 0 };
+  }
+  // Quieto, mira hacia ti cuando te acercas; la baya del pedido flota. El panel se cierra al alejarte.
+  private pasoBayero(): void {
+    const v = this.bayero, p = this.mundo!.jugador;
+    if (!v) return;
+    const baya = `icono_${this.partida.pedidoBaya.baya}`;
+    if (v.icono.texture.key !== baya && this.textures.exists(baya)) v.icono.setTexture(baya);
+    v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2.5 + 2)) * 3).setVisible(this.panel !== 'bayas');
+    const d = Math.hypot(p.x - v.x, p.y - v.y);
+    const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
+    if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_BAYERO, 'Idle', fila); }
+    if (this.panel === 'bayas' && d > BAYERO_CERCA + 30) this.panel = null;
+  }
+  // Entregar al pedido las bayas que lleves (clic en la tarjeta del pedido del HUD).
+  entregarBayas(): void {
+    if (this.panel !== 'bayas') return;
+    const pa = this.partida, { baya, n } = pa.pedidoBaya, nombre = ITEMS[baya]?.nombre ?? baya, antes = pa.pedidoBaya.dadas;
+    const { dadas, pago } = pa.entregarBayas();
+    if (!dadas) { this.aviso(`No llevas ${nombre}`); return; }
+    this.guardar();
+    this.aviso(pago ? `${NOMBRE_BAYERO} ha devorado ${nombre} ×${dadas}. ¡Pedido cumplido! +${pago} Pokécoins` : `Le das ${nombre} ×${dadas} a ${NOMBRE_BAYERO} (${antes + dadas}/${n})`);
+  }
+  // Venderle bayas sueltas a precio de gourmet (clic en la fila; Mayús, cinco).
+  venderBaya(id: string, n = 1): void {
+    if (this.panel !== 'bayas') return;
+    const pago = this.partida.venderBayas(id, n);
+    if (!pago) return;
+    this.guardar();
+    this.aviso(`${NOMBRE_BAYERO} se come tus bayas y te paga ${pago} Pokécoins`);
   }
   // Puntos de vuelo descubiertos (por zona, dónde está su volador). Se descubren hablando con él (F).
   get vuelosConocidos(): Record<string, { x: number; y: number; u: number; v: number }> { return this.partida.estado.vuelos ?? {}; }
@@ -745,6 +798,8 @@ export class Aventura extends Phaser.Scene {
     if (t && Math.hypot(t.x - p.x, t.y - p.y) < TABLON_CERCA) { this.panel = this.panel === 'misiones' ? null : 'misiones'; this.asignando = null; return; }
     const ti = this.tendero;
     if (ti && Math.hypot(ti.x - p.x, ti.y - p.y) < TIENDA_CERCA) { this.panel = this.panel === 'tienda' ? null : 'tienda'; this.asignando = null; return; }
+    const by = this.bayero;
+    if (by && Math.hypot(by.x - p.x, by.y - p.y) < BAYERO_CERCA) { this.panel = this.panel === 'bayas' ? null : 'bayas'; this.asignando = null; return; }
     mundo.interactuar();
   }
 
@@ -1187,6 +1242,7 @@ ${l.nombre} Nv.${l.nivel}`;
     this.pasoTablon();
     this.pasoVuelo();
     this.pasoTendero();
+    this.pasoBayero();
     this.pintarHogar();
     this.dibujarBarras();
     this.stage.actualizar(t, dtMs);
