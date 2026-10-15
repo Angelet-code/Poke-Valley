@@ -58,9 +58,16 @@ export class PantallaCarga {
     this.fin = f;
   }
 
+  private quieto = 0;                      // ms sin avanzar
+  private vel = 0;                         // px/s, suavizada
+
   private paso(_t: number, dt: number): void {
+    const antes = this.visto;
     this.visto = Math.min(this.real, this.visto + VEL * dt / 1000);
     const x = this.x0 + (this.x1 - this.x0) * this.visto, b = D(4);
+    const v = dt > 0 ? (this.visto - antes) * (this.x1 - this.x0) * 1000 / dt : 0;
+    this.vel += (v - this.vel) * Math.min(1, dt / 150);
+    this.quieto = v > 0 ? 0 : this.quieto + dt;
     this.relleno.clear();
     if (x > this.x0) {
       this.relleno.fillStyle(0x227884).fillRect(this.x0, this.y, x - this.x0, this.h);
@@ -70,8 +77,10 @@ export class PantallaCarga {
     if (this.poke) {
       this.poke.x = Math.round(x);
       this.poke.y = this.y;
-      // Quieto mientras espera a que llegue más (no camina en el sitio).
-      const anda = this.visto < this.real;
+      // Las patas al ritmo de lo que avanza: la animación PMD va a ~40 px de pantalla por segundo y zoom; más rápido,
+      // se acelera (hasta ×4). Quieto si lleva un rato sin avanzar (no camina en el sitio ni da tirones).
+      this.poke.anims.timeScale = Phaser.Math.Clamp(this.vel / (P * 40), 1, 4);
+      const anda = this.quieto < 200;
       if (anda && this.poke.anims.isPaused) this.poke.anims.resume();
       else if (!anda && this.poke.anims.isPlaying) this.poke.anims.pause();
     }
