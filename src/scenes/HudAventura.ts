@@ -144,8 +144,8 @@ export class HudAventura extends Phaser.Scene {
     this.castG = this.add.graphics().setDepth(4);
     this.castTxt = this.sombreado(VW / 2, CAST_Y + 4.5, 'Piedra de hogar', 5).setOrigin(0.5).setDepth(5).setVisible(false);
     // Ficha del movimiento bajo el ratón.
-    this.fichaG = this.add.graphics().setDepth(5);
-    this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(6).setVisible(false);
+    this.fichaG = this.add.graphics().setDepth(9);
+    this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(10).setVisible(false);
     // Teclas de ayuda.
     const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar', 'M mapa'];
     ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
@@ -339,7 +339,9 @@ export class HudAventura extends Phaser.Scene {
     }
     this.pintarHogar(ptr.x / S, ptr.y / S);
     const px = ptr.x / S, py = ptr.y / S, chip = [...this.yo.zonas, ...this.obj.zonas].find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h);
+    const carta = av.panel === 'movs' ? this.panelZonas.find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h) : undefined;
     if (chip) this.fichaAura(chip);
+    else if (carta) this.pintarFicha(carta.a, -1, carta);
     else if (!this.fichaTapada) this.pintarFicha(sobre >= 0 ? m.barra[sobre] : null, sobre);
     this.pintarPanel();
     this.pintarMisiones();
@@ -441,11 +443,11 @@ export class HudAventura extends Phaser.Scene {
     });
   }
 
-  // Ficha del atajo bajo el ratón (encima de la barra).
-  private pintarFicha(a: Atajo, i: number): void {
+  // Ficha del atajo bajo el ratón (encima de la barra), o de una carta del panel K (encima de la carta).
+  private pintarFicha(a: Atajo, i: number, carta?: { x: number; y: number; w: number; h: number }): void {
     const g = this.fichaG;
     g.clear();
-    if (!a || i < 0) { this.ficha.setVisible(false); return; }
+    if (!a || (i < 0 && !carta)) { this.ficha.setVisible(false); return; }
     let txt: string;
     if ('m' in a) {
       const m = getMove(a.m);
@@ -456,7 +458,8 @@ export class HudAventura extends Phaser.Scene {
       txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · se recarga en ${enfriamiento(m)} s`;
     } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : 'Te cura un poco'}`;
     this.ficha.setText(txt).setVisible(true);
-    const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, x = Math.max(4, Math.min(VW - w - 4, BX + 4 + i * (CW + HUECO) + CW / 2 - w / 2)), y = BY - h - 3;
+    const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, cx = carta ? carta.x + carta.w / 2 : BX + 4 + i * (CW + HUECO) + CW / 2;
+    const x = Math.max(4, Math.min(VW - w - 4, cx - w / 2)), y = carta ? (carta.y - h - 3 >= 4 ? carta.y - h - 3 : carta.y + carta.h + 3) : BY - h - 3;
     marco(g, x, y, w, h, PANEL);
     this.ficha.setPosition((x + 4) * S, (y + 3) * S);
   }
