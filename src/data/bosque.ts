@@ -12,9 +12,10 @@ import type { Colocado } from './mapaDibujo';
 import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { ARCANE } from '../config';
+import { esBioma, zonaBioma, type Bioma } from './biomas';
 
 export const T = 24;
-export type MapaId = 'pueblo' | 'bosque' | 'lago';
+export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma;
 export interface Punto { x: number; y: number }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
@@ -32,7 +33,8 @@ export interface MapaAventura {
   salvajes: Ronda[];
   alfa?: Alfa;
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
-  parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
+  parcelas?: Punto[];
+  suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
 }
 
 
@@ -62,6 +64,7 @@ export function bosque(semilla: number): MapaAventura {
   const entre = (a: number, b: number) => a + r() * (b - a);
   const entrada = { x: W / 2, y: H - 30 };
   const este = Math.round(H * 0.3);   // y de la salida del este (al lago), al fondo del bosque
+  const norte = Math.round(W * 0.42); // x de la salida del norte (a la cantera)
 
   // Claros: el de la entrada y 5-7 más, repartidos por el interior sin pisarse.
   const claros: (Punto & { rad: number })[] = [{ x: W / 2, y: H - 120, rad: 90 }];
@@ -81,6 +84,10 @@ export function bosque(semilla: number): MapaAventura {
   const salidaE = { x: W + 10, y: este };
   const cE = claros.reduce((m, c) => Math.hypot(c.x - salidaE.x, c.y - salidaE.y) < Math.hypot(m.x - salidaE.x, m.y - salidaE.y) ? c : m);
   tramos.push([cE, { x: (cE.x + W) / 2, y: (cE.y + este) / 2 + entre(-30, 30) }, salidaE]);
+  // Sendero a la cantera: del claro más cercano a la salida del norte.
+  const salidaN = { x: norte, y: -10 };
+  const cN = claros.reduce((m, c) => Math.hypot(c.x - salidaN.x, c.y - salidaN.y) < Math.hypot(m.x - salidaN.x, m.y - salidaN.y) ? c : m);
+  tramos.push([cN, { x: (cN.x + norte) / 2, y: cN.y / 2 }, salidaN]);
   const puntos: Punto[] = [];
   for (const t of tramos) for (let i = 0; i < t.length - 1; i++) {
     const a = t[i], b = t[i + 1], n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 8);
@@ -107,6 +114,7 @@ export function bosque(semilla: number): MapaAventura {
   poner({ id: 'arbol_viejo', x: Math.round(lejos.x), y: Math.round(lejos.y - lejos.rad * 0.55) }, 46);
   poner({ id: 'poste', x: Math.round(entrada.x - 64), y: H - 34 }, 12);
   poner({ id: 'poste', x: W - 70, y: este - 44, flip: true }, 12);
+  poner({ id: 'poste', x: norte - 64, y: 92 }, 12);
   // Estanque en un claro lejano (la mitad de las veces).
   if (r() < 0.5 && claros.length > 2) {
     const c = claros[2 + Math.floor(r() * (claros.length - 2))];
@@ -117,6 +125,7 @@ export function bosque(semilla: number): MapaAventura {
   for (let y = 10; y < H + 40; y += 30) for (const x of [entre(-6, 14), entre(30, 50), W - entre(-6, 14), W - entre(30, 50)]) if (x < W / 2 || Math.abs(y - este) > 64) poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
   for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)]) {
     if (y > H && Math.abs(x - entrada.x) < 70) continue;
+    if (y < 80 && Math.abs(x - norte) < 70) continue;   // boca del norte
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
   }
   // Dentro: árboles sueltos donde no hay claro ni sendero.
@@ -159,9 +168,10 @@ export function bosque(semilla: number): MapaAventura {
     id: 'bosque', alfa, nombre: 'Bosque Verde', datos: { mw: MW, mh: MH, vert, inicio: [entrada.x, entrada.y - 20] }, W, H, colocados: col, detalles: 90,
     lema: 'Nivel 1-7 · Bicho, Planta, Volador y más',
     bienvenida: 'El bosque. Elige a un salvaje (clic o Tab) y atácalo con los números. Al fondo, un sendero sale al este, hacia el lago.',
-    llegada: { pueblo: { x: entrada.x, y: H - 50, dir: 4 }, inicio: { x: entrada.x, y: H - 50, dir: 4 }, lago: { x: W - 40, y: este, dir: 6 } },
+    llegada: { pueblo: { x: entrada.x, y: H - 50, dir: 4 }, inicio: { x: entrada.x, y: H - 50, dir: 4 }, lago: { x: W - 40, y: este, dir: 6 }, cantera: { x: norte, y: 50, dir: 0 } },
     salidas: [{ x0: entrada.x - 50, y0: H - 12, x1: entrada.x + 50, y1: H, a: 'pueblo', texto: 'Al pueblo' },
-      { x0: W - 14, y0: este - 50, x1: W, y1: este + 50, a: 'lago', texto: 'Al lago' }],
+      { x0: W - 14, y0: este - 50, x1: W, y1: este + 50, a: 'lago', texto: 'Al lago' },
+      { x0: norte - 50, y0: 0, x1: norte + 50, y1: 14, a: 'cantera', texto: 'A la cantera' }],
     salvajes,
   };
 }
@@ -198,7 +208,10 @@ export function lago(semilla: number): MapaAventura {
     anillo.push({ x: Math.max(90, Math.min(W - 90, cx + dx * d)), y: Math.max(110, Math.min(H - 80, cy + dy * d)) });
   }
   const oeste = anillo.reduce((m, p) => p.x < m.x ? p : m);
-  const tramos: Punto[][] = [anillo.concat(anillo[0]), [{ x: -10, y: entrada.y }, { x: (oeste.x) / 2, y: (entrada.y + oeste.y) / 2 + entre(-20, 20) }, oeste]];
+  // Salida del este (a la costa), arriba a la derecha: del punto del anillo más cercano al borde.
+  const salidaE = { x: W + 10, y: Math.round(H * 0.2) };
+  const pE = anillo.reduce((m, p) => Math.hypot(p.x - salidaE.x, p.y - salidaE.y) < Math.hypot(m.x - salidaE.x, m.y - salidaE.y) ? p : m);
+  const tramos: Punto[][] = [anillo.concat(anillo[0]), [{ x: -10, y: entrada.y }, { x: (oeste.x) / 2, y: (entrada.y + oeste.y) / 2 + entre(-20, 20) }, oeste], [pE, salidaE]];
   const puntos: Punto[] = [];
   for (const t of tramos) for (let i = 0; i < t.length - 1; i++) {
     const a = t[i], b = t[i + 1], n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 8);
@@ -225,6 +238,7 @@ export function lago(semilla: number): MapaAventura {
   // Borde de árboles, con la boca del oeste libre.
   for (let y = 10; y < H + 40; y += 30) for (const x of [entre(-6, 14), entre(30, 50), W - entre(-6, 14), W - entre(30, 50)]) {
     if (x < W / 2 && Math.abs(y - entrada.y) < 64) continue;
+    if (x > W / 2 && Math.abs(y - salidaE.y) < 64) continue;   // boca del este (a la costa)
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
   }
   for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)]) poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
@@ -286,13 +300,14 @@ export function lago(semilla: number): MapaAventura {
     id: 'lago', alfa, nombre: 'Lago Celeste', datos: { mw: LW, mh: LH, vert, inicio: [40, entrada.y] }, W, H, colocados: col, detalles: 80,
     lema: 'Nivel 5-10 · Agua y orilla',
     bienvenida: 'El lago. Un camino lo rodea; cuanto más lejos de la entrada, más fuertes son los salvajes.',
-    llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 } },
-    salidas: [{ x0: 0, y0: entrada.y - 50, x1: 14, y1: entrada.y + 50, a: 'bosque', texto: 'Al bosque' }],
+    llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 }, costa: { x: W - 40, y: salidaE.y, dir: 6 } },
+    salidas: [{ x0: 0, y0: entrada.y - 50, x1: 14, y1: entrada.y + 50, a: 'bosque', texto: 'Al bosque' },
+      { x0: W - 14, y0: salidaE.y - 50, x1: W, y1: salidaE.y + 50, a: 'costa', texto: 'A la costa' }],
     salvajes,
   };
 }
 
 // La zona `id` del mundo de la partida (la semilla es fija: el mundo sale siempre igual).
 export function crearMapa(id: MapaId, semilla: number): MapaAventura {
-  return id === 'bosque' ? bosque(semilla) : id === 'lago' ? lago(semilla) : pueblo();
+  return id === 'bosque' ? bosque(semilla) : id === 'lago' ? lago(semilla) : esBioma(id) ? zonaBioma(id, semilla) : pueblo();
 }

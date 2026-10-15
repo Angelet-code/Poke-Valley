@@ -12,7 +12,7 @@ cerrados (pueblo + bosque procedural). El juego de antes, estilo Stardew (granja
   - `src/combate/mundo.ts`: la simulación (choques, IA, combate, capturas, clima, alfa, hogar), sin Phaser y con
     semilla (`rnd`). Avanza con `paso(dt, entrada)` y pasa sucesos a la escena: es la base para el multijugador;
   - `src/combate/`: reglas, partida y sprites;
-  - `src/data/bosque.ts`: mapas;
+  - `src/data/bosque.ts`: mapas (pueblo en `puebloAventura.ts`; las seis zonas de bioma en `biomas.ts`, generador común, ver `docs/GDD-mundo.md` §4b y §5);
   - `src/data/movimientos.ts`: datos de `src/data/gen/combate.json`, que genera
     `node tools/datos_combate.mjs` desde el Showdown de Pokémon Colleja;
   - `src/fx/`: animaciones de movimientos copiadas de Pokémon Colleja

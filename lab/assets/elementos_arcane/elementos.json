@@ -431,7 +431,7 @@
   },
   {
    "id": "seta",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "seta.png",
    "w": 1289,
    "h": 1120,
@@ -1014,7 +1014,7 @@
   },
   {
    "id": "hierba_duna",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "hierba_duna.png",
    "w": 1643,
    "h": 1681,
@@ -1255,7 +1255,7 @@
   },
   {
    "id": "arbusto_seco",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "arbusto_seco.png",
    "w": 1063,
    "h": 1369,
@@ -1342,7 +1342,7 @@
   },
   {
    "id": "seta_toxica",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "seta_toxica.png",
    "w": 1209,
    "h": 1326,
@@ -1713,7 +1713,7 @@
   },
   {
    "id": "flores_hada",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "flores_hada.png",
    "w": 1055,
    "h": 1006,
@@ -1805,7 +1805,7 @@
   },
   {
    "id": "fumarola",
-   "tipo": "detalle",
+   "tipo": "losa",
    "archivo": "fumarola.png",
    "w": 1373,
    "h": 1711,

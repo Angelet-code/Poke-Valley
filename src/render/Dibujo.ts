@@ -73,16 +73,21 @@ export function cargarCatalogos(scene: Phaser.Scene): void {
   scene.load.json('dib-original', `${L}elementos/elementos.json?v=${v}`);
   scene.load.json('dib-klein', `${L}elementos_klein/elementos.json?v=${v}`);
   scene.load.json('dib-vector', `${L}vector/elementos_klein/vector.json?v=${v}`);
-  if (ARCANE) scene.load.json('dib-arcane', `${L}elementos_arcane/elementos.json?v=${v}`);
+  scene.load.json('dib-arcane', `${L}elementos_arcane/elementos.json?v=${v}`);
 }
 // Boot.create: catálogo final (los del set Klein, con su carpeta, y los detalles del original).
 export function catalogo(scene: Phaser.Scene): { elementos: Elemento[]; vectores: string[] } {
   let klein = (scene.cache.json.get('dib-klein')?.elementos ?? []).map((e: Elemento) => ({ ...e, dir: 'elementos_klein' }));
   // ?set=arcane: los del catálogo Arcane sustituyen a los Klein con el mismo id; los que aún no estén, siguen en dibujo.
+  // Sin él, también entran los que solo existen en Arcane (las piezas de los biomas, el tablón…), para que las zonas
+  // de bioma no salgan vacías en el estilo dibujo.
+  const arc: Elemento[] = (scene.cache.json.get('dib-arcane')?.elementos ?? []).map((e: Elemento) => ({ ...e, dir: 'elementos_arcane' }));
   if (ARCANE) {
-    const arc: Elemento[] = (scene.cache.json.get('dib-arcane')?.elementos ?? []).map((e: Elemento) => ({ ...e, dir: 'elementos_arcane' }));
     const ids = new Set(arc.map(e => e.id));
     klein = [...klein.filter((e: Elemento) => !ids.has(e.id)), ...arc];
+  } else {
+    const ids = new Set(klein.map((e: Elemento) => e.id));
+    klein = [...klein, ...arc.filter(e => !ids.has(e.id))];
   }
   const detalles = (scene.cache.json.get('dib-original')?.elementos ?? []).filter((e: Elemento) => e.tipo === 'detalle');
   return { elementos: [...klein, ...detalles], vectores: scene.cache.json.get('dib-vector') ?? [] };

@@ -8,6 +8,7 @@
 import Phaser from 'phaser';
 import { REG, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
+import { PALETAS_BIOMA } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { FORMAS } from '../data/pokedex';
 import type { Mision } from '../combate/misiones';
@@ -130,7 +131,9 @@ export class Aventura extends Phaser.Scene {
     this.lights.enable().setAmbientColor(0xffffff);
     this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, this.iluminar, this);
 
-    this.terrain = new Terrain(this.mapa.datos, S, { paleta: PALETA_DIBUJO, decals: false });
+    // Zonas de bioma: su paleta y sus texturas (cargadas en Preload como suelo_<bioma>_a / _b).
+    const su = this.mapa.suelo;
+    this.terrain = new Terrain(this.mapa.datos, S, su ? { paleta: PALETAS_BIOMA[su], decals: false, claves: { cesped: `suelo_${su}_a`, tierra: `suelo_${su}_b` } } : { paleta: PALETA_DIBUJO, decals: false });
     // Sprites de quien sale en este mapa (en paralelo al suelo).
     const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
     for (const r of this.mapa.salvajes) formas.push(formaDe(r.linea, r.nivel).dex);

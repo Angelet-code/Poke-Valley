@@ -20,7 +20,8 @@ export { T };
 
 // Otro estilo de suelo (lab/): paleta, texturas de césped/tierra y si lleva calcomanías (matas y
 // flores del valle). Sin opciones, el suelo de siempre.
-export interface OpcionesSuelo { paleta?: Paleta; cesped?: string; tierra?: string; decals?: boolean }
+// claves: texturas ya cargadas con otras claves que 'g0'/'d0' (zonas de bioma del modo aventura, data/biomas.ts).
+export interface OpcionesSuelo { paleta?: Paleta; cesped?: string; tierra?: string; decals?: boolean; claves?: { cesped: string; tierra: string } }
 
 // Matorral procedural (acordado con el usuario).
 const BUSH = {
@@ -86,9 +87,11 @@ export class Terrain extends TerrainCore {
 
   // Solo prepara el mapa; los campos y el primer pintado los hace calcular().
   private readonly conDecals: boolean;
+  private readonly claves: { cesped: string; tierra: string };
   constructor(map: MapData, S: number, opciones: OpcionesSuelo = {}) {
     super(map.mw, map.mh, S, undefined, opciones.paleta);
     this.conDecals = opciones.decals ?? true;
+    this.claves = opciones.claves ?? { cesped: 'g0', tierra: 'd0' };
     map.vert.forEach((row, vy) => row.forEach((v, vx) => { this.VERT[vy * (this.MW + 1) + vx] = v; }));
     if (this.conDecals) this.generarDecals();
   }
@@ -137,7 +140,7 @@ export class Terrain extends TerrainCore {
   private texturas(scene: Phaser.Scene): void {
     const { S, W } = this;
     const ck = screenTex(scene, 'pared', CLIFF_H * S);
-    this.setTexturas(pixels(scene, 'g0'), pixels(scene, 'd0'), pixels(scene, ck), (scene.textures.get(ck).getSourceImage() as HTMLCanvasElement).width);
+    this.setTexturas(pixels(scene, this.claves.cesped), pixels(scene, this.claves.tierra), pixels(scene, ck), (scene.textures.get(ck).getSourceImage() as HTMLCanvasElement).width);
     if (!this.conDecals) return;
     for (const dc of DECALS) {
       dc.imgs = [];

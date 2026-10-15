@@ -233,3 +233,62 @@ con las de las tres zonas).
 - Colores medios para la paleta de cada zona (`Paleta` de Terrain): `lab/assets/suelo_arcane/paletas_biomas.json`.
 - Las más flojas: las **losas de las ruinas**, porque el quilt rompe la rejilla (mejor el suelo 2 de Terrain, que
   hace losas en mosaico), y la **roca volcánica**, con las grietas de lava a trozos.
+
+### 4b. Las zonas de bioma, jugables (2026-10-15)
+Código: [src/data/biomas.ts](../src/data/biomas.ts). Las seis zonas salen de un **generador común** (`zona`). Cada
+bioma declara:
+- sus piezas de borde y de relleno, y su agua (mar en la costa; lagunas de lodo, lava o agua helada);
+- sus piezas sueltas, el hito y su alfa;
+- sus salidas, sus especies y sus niveles.
+
+El suelo de cada zona son sus dos texturas (`SUELO_BIOMA`) con su paleta (`PALETAS_BIOMA`).
+- Las carga `Preload` con las claves `suelo_<bioma>_a` y `suelo_<bioma>_b`; `Terrain` admite `claves`.
+- En el volcán la "agua" es lava (la paleta), con la misma colisión.
+- Los senderos del pantano y del volcán usan una versión aclarada del barro y de la ceniza (`barro_claro`,
+  `ceniza_clara`), porque si no, no se veían.
+
+**El mundo:**
+```
+                         Volcán ── Ruinas ── Cumbres
+                                     │
+            Cantera ── Pantano ──────┘
+               │
+  Pueblo ── Bosque ── Lago ── Costa
+```
+- El bosque sale al norte a la cantera, y el lago al este a la costa.
+- Los niveles suben por ese orden.
+- El alfa de cada zona espera en su hito: Wailord 16, Onix 18, Haunter 20, Kirlia 22, Arcanine 26 y Glalie 28.
+
+Capturas: [costa](img/zona_costa.jpg), [cantera](img/zona_cantera.jpg), [pantano](img/zona_pantano.jpg),
+[ruinas](img/zona_ruinas.jpg), [volcán](img/zona_volcan.jpg) y [cumbres](img/zona_nieve.jpg).
+
+- **Las piezas del bioma solo existen en Arcane.** Sin `?set=arcane` también se cargan (`Dibujo.catalogo`), así que
+  las zonas de bioma se ven igual en los dos estilos.
+- **Detalles por el suelo:** las piezas de bioma de tipo "detalle" (y la seta) pasan a "losa". Se ven igual, a ras de
+  suelo, pero así Aventura no las reparte por el césped de otras zonas: nada de fumarolas en el pueblo.
+- **Pendiente:** las misiones del tablón solo tienen el bosque y el lago (`ZONAS_MISION` en `combate/misiones.ts`).
+
+## 5. Diseño de zonas: lo investigado y cómo se aplica (2026-10-15)
+| Principio | De dónde | En el generador (`diseno` de cada bioma) |
+|---|---|---|
+| Al entrar se tiene que "entender" la zona; no dejar espacio abierto sin propósito | Diseñadores de nivel de Blizzard (Nagrand, Artcraft) | Hito local ya en el claro de la entrada; cada claro tiene algo (salvajes, hito local o descanso) |
+| Hito global que atrae y orienta (el *weenie* de Disney) | Disney, Zelda: Breath of the Wild (GMTK) | Hito al fondo, en el claro más lejano, enmarcado por una pareja de piezas (`marco`) como una puerta |
+| Hitos locales y "micro-hitos" para orientarse | Diseño de niveles (*weenies* globales y locales) | Una pieza grande y distinta en cada claro (`puntos`) |
+| Migas de pan en lugar de flechas | Diseño de niveles (*breadcrumbs*) | Camino principal entrada → hito más ancho, con piezas pequeñas a los lados (`miga`) |
+| Ritmo: alternar tensión y descanso | Libros de diseño de niveles (ritmo, *push and pull*) | Claros con salvajes (tensión), senderos sin ellos y un claro de descanso a mitad de camino con hoguera (`descanso`) |
+| Esconder y revelar; recompensar al que explora | Zelda (oclusión del terreno), Pokémon (objetos y zonas ocultas) | Rincón secreto: claro apartado, sendero estrecho, anillo de muro con una sola boca y una especie rara de más nivel (`rara`) |
+| Ni vacío ni atiborrado | Blizzard (Nagrand); generación procedural ("demasiado aleatorio") | Menos relleno en la cantera, el pantano y las cumbres; los claros respiran |
+
+Fuentes:
+- [WoW level designers discuss Draenor's callbacks and vignettes](https://www.engadget.com/2014-10-31-wow-level-designers-discuss-draenors-callbacks-and-vignettes.html)
+- [WoW's level designers: telling stories with landscapes](https://blizzardwatch.com/2016/11/06/wows-level-designers-telling-stories-landscapes)
+- [How Nintendo Solved Zelda's Open World Problem (GMTK)](https://gmtk.substack.com/p/how-nintendo-solved-zeldas-open-world)
+- [Should players be hand-held? (gamedev.net)](https://gamedev.net/blogs/entry/2277800-should-players-be-hand-held)
+- [Level design first blocks, part 2 (Game Developer)](https://www.gamedeveloper.com/design/level-design-first-blocks-part-2-level-design-theory)
+- [Emily Short: geography in interactive fiction](https://emshort.blog/how-to-play/writing-if/my-articles/geography/)
+- [Procedural 2D Map Generation for Computer Games (Charles University)](https://dspace.cuni.cz/handle/20.500.11956/99794)
+
+**Para más adelante**, aplicable también al bosque y al lago:
+- el mismo camino principal con migas y su claro de descanso;
+- *vistas*: desde un claro alto se ve el hito antes de llegar;
+- una mazmorra tras la boca de la cueva de la cantera.

@@ -72,7 +72,7 @@ CON_SUELO = {"casa_grande", "almacen", "tienda", "casa_cabana", "casa_larga", "c
 ABRIR_HUECOS = {"valla"}
 # Tipo en el juego distinto del de la huella: el nenúfar va a ras de suelo como un detalle, pero no puede ser
 # "detalle", porque Aventura reparte los detalles por el césped (y saldrían nenúfares en la hierba).
-TIPO_JUEGO = {"nenufar": "losa"}
+TIPO_JUEGO = {"nenufar": "losa", "seta": "losa"}
 # Ancho en px de mundo de los que no tienen equivalente en el catálogo dibujo.
 ANCHO = {"sauce": 84, "juncos": 22, "muelle": 72, "nenufar": 30, "seta": 14, "tronco_caido": 48, "arbol_viejo": 130, "panal": 26, "poste": 20, "tablon": 40}
 # Biomas futuros (docs/GDD-mundo.md §4): assets/gen/arcane/biomas/piezas.txt (bioma|id|tipo|ancho|descripción) y la
@@ -87,7 +87,7 @@ if (_BIO / "elegidos.json").exists():
         if _id in _sel:
             ELEGIDOS[_id] = ("detalle" if _tipo == "losa" else _tipo, f"assets/gen/arcane/biomas/{_bio}/{_id}_s{_sel[_id]}_0.png")
             ANCHO[_id] = int(_ancho)
-            if _tipo == "losa":
+            if _tipo in ("losa", "detalle"):   # a ras de suelo, pero fuera del reparto de detalles por el césped
                 TIPO_JUEGO[_id] = "losa"
 
 
