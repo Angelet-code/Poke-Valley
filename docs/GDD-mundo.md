@@ -308,6 +308,30 @@ Ahora lo transitable se **excava** (`biomas.ts`, rejilla `Macizo` de 8 px):
 - **Siempre conectada:** lo que no se alcanza desde la entrada pasa a macizo, y los salvajes que no se alcanzan se
   quitan. Comprobado en las seis zonas: hito, salidas y todos los salvajes, alcanzables.
 
+### 5c. Explanadas: pasillos y espacios abiertos (2026-10-15)
+Con el macizo, el usuario: "ahora los mapas son todo pasillo; la combinación de pasillos con espacios abiertos es lo que
+hará las zonas más interesantes". Ahora:
+- **Dos explanadas por zona** en el camino principal, a un tercio y a dos tercios del recorrido. Tienen un contorno
+  irregular de tres elipses y son unas tres veces más grandes que un claro.
+- **La arena del alfa**: el claro del hito, ampliado.
+- **Ritmo:** pasillo → espacio abierto → pasillo. El macizo baja del 71 % a entre el 41 % y el 67 %.
+- **Dentro de cada explanada:**
+  - islas sueltas de relleno (una por cada 30 000 px², a veces en grupitos) que cubren sin cerrar el paso;
+  - 3 salvajes más, porque es el espacio de combate.
+- **Ríos y lagunas no las inundan**: quedan en sus orillas.
+- **Vista 3/4:** un árbol en el borde sur de un hueco lo tapa con su copa, y el hueco parece más estrecho de lo que es.
+  - En ese borde el macizo lleva piezas bajas (`bajo` de cada bioma: rocas, arbustos, montones de nieve, muros
+    bajos) o nada.
+  - Así lo que se ve coincide con lo que se pisa.
+- **Herramienta para revisar la estructura sin abrir el juego** (`tools/zonas/`): `volcar.ts` ejecuta el generador en
+  Node y `estructura.py` pinta lo transitable, el macizo, el agua, los salvajes y el alfa de las seis zonas →
+  [estructura_zonas.png](img/estructura_zonas.png). Se usa así:
+  ```
+  npx esbuild tools/zonas/volcar.ts --bundle --platform=node --outfile=tools/zonas/volcar.cjs
+  node tools/zonas/volcar.cjs tools/zonas/estructura.json [semilla]
+  python -I tools/zonas/estructura.py tools/zonas/estructura.json docs/img/estructura_zonas.png
+  ```
+
 Siguiente paso posible, con arte: **acantilados y desniveles** (bordes de meseta, rampas y escaleras), para tener alturas
 y no solo paredes.
 
