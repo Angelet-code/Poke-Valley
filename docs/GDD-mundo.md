@@ -367,6 +367,24 @@ hará las zonas más interesantes". Ahora:
   python -I tools/zonas/estructura.py tools/zonas/estructura.json docs/img/estructura_zonas.png
   ```
 
+### 5d. Acantilados, muros y puentes en las zonas (2026-10-15)
+Con las tiras de [ARCANE.md](art/ARCANE.md) ("Muros y barreras"):
+- **Puentes** (`biomas.ts`, en `zona`): cada cruce de un camino con el río lleva un puente del bioma en vez del vado
+  de piedras.
+  - Es horizontal o vertical según cruce el camino, y se pone en el punto más metido en el agua (en un claro el río va
+    seco y no hace falta).
+  - El río sigue por debajo: la tabla es el único paso, y cuenta como suelo al ver qué se alcanza desde la entrada.
+  - En la escena, `despejarPuentes` (`bordes.ts`) quita el macizo y las piezas sueltas de debajo y de justo delante.
+- **Bordes del macizo** (`src/data/bordes.ts`, `tirasDeBorde`, lo llama la escena antes de montar las tiras):
+  - Donde el borde sur del macizo va casi recto (zigzag de hasta 48 px) al menos ~120 px, pone un acantilado o un
+    muro del bioma (pesos por bioma en `BORDES`). Va con la cara hacia el jugador y la base en lo más bajo del borde.
+    Lo pisable que queda detrás de la cara pasa a macizo, siempre que delante queden 40 px de paso.
+  - Solo si lo que tapa por encima es todo macizo: nunca esconde un pasillo.
+  - En los bordes este y oeste, muros o acantilados verticales, solo en tramos de 200 px o más (cortos parecían
+    pilares sueltos).
+  - Salen 2-7 tiras por zona: los bordes del generador son orgánicos y casi nunca van rectos mucho trecho.
+- Comprobado: los 7 puentes de las 5 zonas con río se cruzan enteros, y las ruinas se ven bien de día.
+
 Siguiente paso posible, con arte: **acantilados y desniveles** (bordes de meseta, rampas y escaleras), para tener alturas
 y no solo paredes.
 

@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\ruinas\montana_s1_0.png
+126.5s

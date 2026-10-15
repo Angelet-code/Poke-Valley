@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\cantera\muro_v_s1_0.png
+117.6s

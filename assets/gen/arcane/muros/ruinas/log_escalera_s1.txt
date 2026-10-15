@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\ruinas\escalera_s1_0.png
+119.6s

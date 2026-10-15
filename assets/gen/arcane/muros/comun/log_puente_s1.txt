@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\comun\puente_s1_0.png
+65.2s

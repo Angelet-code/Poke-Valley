@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\cantera\acantilado_v_s1_0.png
+108.5s

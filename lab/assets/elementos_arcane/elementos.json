@@ -2100,6 +2100,4612 @@
     "dy": 671
    },
    "k": 0.1301
+  },
+  {
+   "id": "acantilado_comun_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_comun_izq.png",
+   "w": 939,
+   "h": 1033,
+   "ancla": [
+    469,
+    1033
+   ],
+   "k": 0.4414,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_comun",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    681,
+    939,
+    1033
+   ]
+  },
+  {
+   "id": "acantilado_comun_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_comun_tramo.png",
+   "w": 819,
+   "h": 1033,
+   "ancla": [
+    409,
+    1026
+   ],
+   "k": 0.4414,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_comun",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    674,
+    819,
+    1026
+   ]
+  },
+  {
+   "id": "acantilado_comun_der",
+   "tipo": "muro",
+   "archivo": "acantilado_comun_der.png",
+   "w": 802,
+   "h": 1033,
+   "ancla": [
+    401,
+    1028
+   ],
+   "k": 0.4414,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_comun",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    676,
+    802,
+    1028
+   ]
+  },
+  {
+   "id": "escalera_comun",
+   "tipo": "muro",
+   "archivo": "escalera_comun.png",
+   "w": 1376,
+   "h": 1033,
+   "ancla": [
+    688,
+    1033
+   ],
+   "k": 0.4414,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_comun",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     681,
+     440,
+     1033
+    ],
+    [
+     935,
+     681,
+     1376,
+     1033
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_comun_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_comun_arr.png",
+   "w": 605,
+   "h": 539,
+   "ancla": [
+    302,
+    539
+   ],
+   "k": 0.6942,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_comun",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    72,
+    161,
+    532,
+    539
+   ]
+  },
+  {
+   "id": "acantilado_v_comun_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_comun_tramo.png",
+   "w": 605,
+   "h": 1192,
+   "ancla": [
+    302,
+    1192
+   ],
+   "k": 0.6942,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_comun",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    72,
+    59,
+    532,
+    1192
+   ]
+  },
+  {
+   "id": "acantilado_v_comun_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_comun_abj.png",
+   "w": 605,
+   "h": 695,
+   "ancla": [
+    302,
+    695
+   ],
+   "k": 0.6942,
+   "origen": "assets/gen/arcane/muros/comun/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_comun",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    72,
+    34,
+    532,
+    695
+   ]
+  },
+  {
+   "id": "montana_comun",
+   "tipo": "roca",
+   "archivo": "montana_comun.png",
+   "w": 1558,
+   "h": 1633,
+   "ancla": [
+    779,
+    1632
+   ],
+   "k": 0.7317,
+   "origen": "assets/gen/arcane/muros/comun/montana_s1_0.png",
+   "huella": [
+    124,
+    815,
+    1433,
+    1583
+   ]
+  },
+  {
+   "id": "arboleda_comun",
+   "tipo": "roca",
+   "archivo": "arboleda_comun.png",
+   "w": 1622,
+   "h": 1750,
+   "ancla": [
+    811,
+    1748
+   ],
+   "k": 0.6289,
+   "origen": "assets/gen/arcane/muros/comun/arboleda_s1_0.png",
+   "sombra": {
+    "archivo": "arboleda_comun_sombra.png",
+    "w": 1490,
+    "h": 658,
+    "dx": 69,
+    "dy": 1087
+   },
+   "huella": [
+    129,
+    873,
+    1492,
+    1695
+   ]
+  },
+  {
+   "id": "muro_comun_izq",
+   "tipo": "muro",
+   "archivo": "muro_comun_izq.png",
+   "w": 652,
+   "h": 331,
+   "ancla": [
+    326,
+    331
+   ],
+   "k": 0.7251,
+   "origen": "assets/gen/arcane/muros/comun/muro_s1_0.png",
+   "tira": {
+    "id": "muro_comun",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    191,
+    652,
+    331
+   ]
+  },
+  {
+   "id": "muro_comun_tramo",
+   "tipo": "muro",
+   "archivo": "muro_comun_tramo.png",
+   "w": 1048,
+   "h": 331,
+   "ancla": [
+    524,
+    311
+   ],
+   "k": 0.7251,
+   "origen": "assets/gen/arcane/muros/comun/muro_s1_0.png",
+   "tira": {
+    "id": "muro_comun",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    171,
+    1048,
+    311
+   ]
+  },
+  {
+   "id": "muro_comun_der",
+   "tipo": "muro",
+   "archivo": "muro_comun_der.png",
+   "w": 709,
+   "h": 331,
+   "ancla": [
+    354,
+    323
+   ],
+   "k": 0.7251,
+   "origen": "assets/gen/arcane/muros/comun/muro_s1_0.png",
+   "tira": {
+    "id": "muro_comun",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    183,
+    709,
+    323
+   ]
+  },
+  {
+   "id": "porton_comun",
+   "tipo": "muro",
+   "archivo": "porton_comun.png",
+   "w": 1072,
+   "h": 331,
+   "ancla": [
+    536,
+    323
+   ],
+   "k": 0.7251,
+   "origen": "assets/gen/arcane/muros/comun/muro_s1_0.png",
+   "tira": {
+    "id": "muro_comun",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     190,
+     321,
+     323
+    ],
+    [
+     750,
+     190,
+     1072,
+     323
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_comun_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_comun_arr.png",
+   "w": 663,
+   "h": 632,
+   "ancla": [
+    331,
+    632
+   ],
+   "k": 0.2715,
+   "origen": "assets/gen/arcane/muros/comun/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_comun",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    79,
+    189,
+    583,
+    632
+   ]
+  },
+  {
+   "id": "muro_v_comun_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_comun_tramo.png",
+   "w": 663,
+   "h": 1072,
+   "ancla": [
+    331,
+    1072
+   ],
+   "k": 0.2715,
+   "origen": "assets/gen/arcane/muros/comun/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_comun",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    79,
+    53,
+    583,
+    1072
+   ]
+  },
+  {
+   "id": "muro_v_comun_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_comun_abj.png",
+   "w": 663,
+   "h": 569,
+   "ancla": [
+    331,
+    569
+   ],
+   "k": 0.2715,
+   "origen": "assets/gen/arcane/muros/comun/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_comun",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    79,
+    28,
+    583,
+    569
+   ]
+  },
+  {
+   "id": "valla_comun_izq",
+   "tipo": "muro",
+   "archivo": "valla_comun_izq.png",
+   "w": 1014,
+   "h": 413,
+   "ancla": [
+    507,
+    413
+   ],
+   "k": 0.3777,
+   "origen": "assets/gen/arcane/muros/comun/valla_s1_0.png",
+   "tira": {
+    "id": "valla_comun",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    268,
+    1014,
+    413
+   ]
+  },
+  {
+   "id": "valla_comun_tramo",
+   "tipo": "muro",
+   "archivo": "valla_comun_tramo.png",
+   "w": 758,
+   "h": 413,
+   "ancla": [
+    379,
+    387
+   ],
+   "k": 0.3777,
+   "origen": "assets/gen/arcane/muros/comun/valla_s1_0.png",
+   "tira": {
+    "id": "valla_comun",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    242,
+    758,
+    387
+   ]
+  },
+  {
+   "id": "valla_comun_der",
+   "tipo": "muro",
+   "archivo": "valla_comun_der.png",
+   "w": 485,
+   "h": 413,
+   "ancla": [
+    242,
+    397
+   ],
+   "k": 0.3777,
+   "origen": "assets/gen/arcane/muros/comun/valla_s1_0.png",
+   "tira": {
+    "id": "valla_comun",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    252,
+    485,
+    397
+   ]
+  },
+  {
+   "id": "valla_v_comun_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_comun_arr.png",
+   "w": 811,
+   "h": 1002,
+   "ancla": [
+    405,
+    1002
+   ],
+   "k": 0.1184,
+   "origen": "assets/gen/arcane/muros/comun/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_comun",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    97,
+    300,
+    713,
+    1002
+   ]
+  },
+  {
+   "id": "valla_v_comun_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_comun_tramo.png",
+   "w": 811,
+   "h": 746,
+   "ancla": [
+    405,
+    746
+   ],
+   "k": 0.1184,
+   "origen": "assets/gen/arcane/muros/comun/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_comun",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    97,
+    37,
+    713,
+    746
+   ]
+  },
+  {
+   "id": "valla_v_comun_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_comun_abj.png",
+   "w": 811,
+   "h": 504,
+   "ancla": [
+    405,
+    504
+   ],
+   "k": 0.1184,
+   "origen": "assets/gen/arcane/muros/comun/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_comun",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    97,
+    25,
+    713,
+    504
+   ]
+  },
+  {
+   "id": "puente_comun_izq",
+   "tipo": "puente",
+   "archivo": "puente_comun_izq.png",
+   "w": 823,
+   "h": 496,
+   "ancla": [
+    411,
+    496
+   ],
+   "k": 0.5565,
+   "origen": "assets/gen/arcane/muros/comun/puente_s1_0.png",
+   "tira": {
+    "id": "puente_comun",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_comun_tramo",
+   "tipo": "puente",
+   "archivo": "puente_comun_tramo.png",
+   "w": 801,
+   "h": 496,
+   "ancla": [
+    400,
+    465
+   ],
+   "k": 0.5565,
+   "origen": "assets/gen/arcane/muros/comun/puente_s1_0.png",
+   "tira": {
+    "id": "puente_comun",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_comun_der",
+   "tipo": "puente",
+   "archivo": "puente_comun_der.png",
+   "w": 731,
+   "h": 496,
+   "ancla": [
+    365,
+    488
+   ],
+   "k": 0.5565,
+   "origen": "assets/gen/arcane/muros/comun/puente_s1_0.png",
+   "tira": {
+    "id": "puente_comun",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_comun_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_comun_arr.png",
+   "w": 862,
+   "h": 728,
+   "ancla": [
+    431,
+    728
+   ],
+   "k": 0.3063,
+   "origen": "assets/gen/arcane/muros/comun/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_comun",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_comun_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_comun_tramo.png",
+   "w": 862,
+   "h": 853,
+   "ancla": [
+    431,
+    853
+   ],
+   "k": 0.3063,
+   "origen": "assets/gen/arcane/muros/comun/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_comun",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_comun_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_comun_abj.png",
+   "w": 862,
+   "h": 479,
+   "ancla": [
+    431,
+    479
+   ],
+   "k": 0.3063,
+   "origen": "assets/gen/arcane/muros/comun/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_comun",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "acantilado_costa_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_costa_izq.png",
+   "w": 939,
+   "h": 1048,
+   "ancla": [
+    469,
+    1048
+   ],
+   "k": 0.4351,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_costa",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    691,
+    939,
+    1048
+   ]
+  },
+  {
+   "id": "acantilado_costa_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_costa_tramo.png",
+   "w": 819,
+   "h": 1048,
+   "ancla": [
+    409,
+    1043
+   ],
+   "k": 0.4351,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_costa",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    686,
+    819,
+    1043
+   ]
+  },
+  {
+   "id": "acantilado_costa_der",
+   "tipo": "muro",
+   "archivo": "acantilado_costa_der.png",
+   "w": 802,
+   "h": 1048,
+   "ancla": [
+    401,
+    1042
+   ],
+   "k": 0.4351,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_costa",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    685,
+    802,
+    1042
+   ]
+  },
+  {
+   "id": "escalera_costa",
+   "tipo": "muro",
+   "archivo": "escalera_costa.png",
+   "w": 1654,
+   "h": 1048,
+   "ancla": [
+    827,
+    1048
+   ],
+   "k": 0.4351,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_costa",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     691,
+     529,
+     1048
+    ],
+    [
+     1124,
+     691,
+     1654,
+     1048
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_costa_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_costa_arr.png",
+   "w": 645,
+   "h": 626,
+   "ancla": [
+    322,
+    626
+   ],
+   "k": 0.6512,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_costa",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    77,
+    187,
+    567,
+    626
+   ]
+  },
+  {
+   "id": "acantilado_v_costa_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_costa_tramo.png",
+   "w": 645,
+   "h": 753,
+   "ancla": [
+    322,
+    753
+   ],
+   "k": 0.6512,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_costa",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    77,
+    37,
+    567,
+    753
+   ]
+  },
+  {
+   "id": "acantilado_v_costa_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_costa_abj.png",
+   "w": 645,
+   "h": 748,
+   "ancla": [
+    322,
+    748
+   ],
+   "k": 0.6512,
+   "origen": "assets/gen/arcane/muros/costa/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_costa",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    77,
+    37,
+    567,
+    748
+   ]
+  },
+  {
+   "id": "montana_costa",
+   "tipo": "roca",
+   "archivo": "montana_costa.png",
+   "w": 1451,
+   "h": 1549,
+   "ancla": [
+    725,
+    1548
+   ],
+   "k": 0.7857,
+   "origen": "assets/gen/arcane/muros/costa/montana_s1_0.png",
+   "sombra": {
+    "archivo": "montana_costa_sombra.png",
+    "w": 1439,
+    "h": 634,
+    "dx": 9,
+    "dy": 864
+   },
+   "huella": [
+    116,
+    773,
+    1334,
+    1501
+   ]
+  },
+  {
+   "id": "arboleda_costa",
+   "tipo": "roca",
+   "archivo": "arboleda_costa.png",
+   "w": 1682,
+   "h": 1782,
+   "ancla": [
+    841,
+    1780
+   ],
+   "k": 0.6064,
+   "origen": "assets/gen/arcane/muros/costa/arboleda_s1_0.png",
+   "huella": [
+    134,
+    889,
+    1547,
+    1726
+   ]
+  },
+  {
+   "id": "muro_costa_izq",
+   "tipo": "muro",
+   "archivo": "muro_costa_izq.png",
+   "w": 580,
+   "h": 444,
+   "ancla": [
+    290,
+    444
+   ],
+   "k": 0.5405,
+   "origen": "assets/gen/arcane/muros/costa/muro_s1_0.png",
+   "tira": {
+    "id": "muro_costa",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    257,
+    580,
+    444
+   ]
+  },
+  {
+   "id": "muro_costa_tramo",
+   "tipo": "muro",
+   "archivo": "muro_costa_tramo.png",
+   "w": 1055,
+   "h": 444,
+   "ancla": [
+    527,
+    423
+   ],
+   "k": 0.5405,
+   "origen": "assets/gen/arcane/muros/costa/muro_s1_0.png",
+   "tira": {
+    "id": "muro_costa",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    236,
+    1055,
+    423
+   ]
+  },
+  {
+   "id": "muro_costa_der",
+   "tipo": "muro",
+   "archivo": "muro_costa_der.png",
+   "w": 714,
+   "h": 444,
+   "ancla": [
+    357,
+    424
+   ],
+   "k": 0.5405,
+   "origen": "assets/gen/arcane/muros/costa/muro_s1_0.png",
+   "tira": {
+    "id": "muro_costa",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    237,
+    714,
+    424
+   ]
+  },
+  {
+   "id": "porton_costa",
+   "tipo": "muro",
+   "archivo": "porton_costa.png",
+   "w": 1244,
+   "h": 444,
+   "ancla": [
+    622,
+    434
+   ],
+   "k": 0.5405,
+   "origen": "assets/gen/arcane/muros/costa/muro_s1_0.png",
+   "tira": {
+    "id": "muro_costa",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     256,
+     373,
+     434
+    ],
+    [
+     870,
+     256,
+     1244,
+     434
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_costa_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_costa_arr.png",
+   "w": 719,
+   "h": 891,
+   "ancla": [
+    359,
+    891
+   ],
+   "k": 0.2503,
+   "origen": "assets/gen/arcane/muros/costa/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_costa",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    86,
+    267,
+    632,
+    891
+   ]
+  },
+  {
+   "id": "muro_v_costa_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_costa_tramo.png",
+   "w": 719,
+   "h": 767,
+   "ancla": [
+    359,
+    767
+   ],
+   "k": 0.2503,
+   "origen": "assets/gen/arcane/muros/costa/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_costa",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    86,
+    38,
+    632,
+    767
+   ]
+  },
+  {
+   "id": "muro_v_costa_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_costa_abj.png",
+   "w": 719,
+   "h": 623,
+   "ancla": [
+    359,
+    623
+   ],
+   "k": 0.2503,
+   "origen": "assets/gen/arcane/muros/costa/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_costa",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    86,
+    31,
+    632,
+    623
+   ]
+  },
+  {
+   "id": "valla_costa_izq",
+   "tipo": "muro",
+   "archivo": "valla_costa_izq.png",
+   "w": 530,
+   "h": 527,
+   "ancla": [
+    265,
+    527
+   ],
+   "k": 0.296,
+   "origen": "assets/gen/arcane/muros/costa/valla_s1_0.png",
+   "tira": {
+    "id": "valla_costa",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    342,
+    530,
+    527
+   ]
+  },
+  {
+   "id": "valla_costa_tramo",
+   "tipo": "muro",
+   "archivo": "valla_costa_tramo.png",
+   "w": 826,
+   "h": 527,
+   "ancla": [
+    413,
+    501
+   ],
+   "k": 0.296,
+   "origen": "assets/gen/arcane/muros/costa/valla_s1_0.png",
+   "tira": {
+    "id": "valla_costa",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    316,
+    826,
+    501
+   ]
+  },
+  {
+   "id": "valla_costa_der",
+   "tipo": "muro",
+   "archivo": "valla_costa_der.png",
+   "w": 636,
+   "h": 527,
+   "ancla": [
+    318,
+    522
+   ],
+   "k": 0.296,
+   "origen": "assets/gen/arcane/muros/costa/valla_s1_0.png",
+   "tira": {
+    "id": "valla_costa",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    337,
+    636,
+    522
+   ]
+  },
+  {
+   "id": "valla_v_costa_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_costa_arr.png",
+   "w": 685,
+   "h": 637,
+   "ancla": [
+    342,
+    637
+   ],
+   "k": 0.1401,
+   "origen": "assets/gen/arcane/muros/costa/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_costa",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    82,
+    191,
+    602,
+    637
+   ]
+  },
+  {
+   "id": "valla_v_costa_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_costa_tramo.png",
+   "w": 685,
+   "h": 740,
+   "ancla": [
+    342,
+    740
+   ],
+   "k": 0.1401,
+   "origen": "assets/gen/arcane/muros/costa/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_costa",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    82,
+    37,
+    602,
+    740
+   ]
+  },
+  {
+   "id": "valla_v_costa_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_costa_abj.png",
+   "w": 685,
+   "h": 754,
+   "ancla": [
+    342,
+    754
+   ],
+   "k": 0.1401,
+   "origen": "assets/gen/arcane/muros/costa/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_costa",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    82,
+    37,
+    602,
+    754
+   ]
+  },
+  {
+   "id": "puente_costa_izq",
+   "tipo": "puente",
+   "archivo": "puente_costa_izq.png",
+   "w": 448,
+   "h": 494,
+   "ancla": [
+    224,
+    473
+   ],
+   "k": 0.5587,
+   "origen": "assets/gen/arcane/muros/costa/puente_s1_0.png",
+   "tira": {
+    "id": "puente_costa",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_costa_tramo",
+   "tipo": "puente",
+   "archivo": "puente_costa_tramo.png",
+   "w": 738,
+   "h": 494,
+   "ancla": [
+    369,
+    453
+   ],
+   "k": 0.5587,
+   "origen": "assets/gen/arcane/muros/costa/puente_s1_0.png",
+   "tira": {
+    "id": "puente_costa",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_costa_der",
+   "tipo": "puente",
+   "archivo": "puente_costa_der.png",
+   "w": 692,
+   "h": 494,
+   "ancla": [
+    346,
+    494
+   ],
+   "k": 0.5587,
+   "origen": "assets/gen/arcane/muros/costa/puente_s1_0.png",
+   "tira": {
+    "id": "puente_costa",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_costa_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_costa_arr.png",
+   "w": 861,
+   "h": 619,
+   "ancla": [
+    430,
+    619
+   ],
+   "k": 0.3066,
+   "origen": "assets/gen/arcane/muros/costa/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_costa",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_costa_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_costa_tramo.png",
+   "w": 861,
+   "h": 1005,
+   "ancla": [
+    430,
+    1005
+   ],
+   "k": 0.3066,
+   "origen": "assets/gen/arcane/muros/costa/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_costa",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_costa_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_costa_abj.png",
+   "w": 861,
+   "h": 621,
+   "ancla": [
+    430,
+    621
+   ],
+   "k": 0.3066,
+   "origen": "assets/gen/arcane/muros/costa/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_costa",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "acantilado_cantera_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_cantera_izq.png",
+   "w": 827,
+   "h": 1004,
+   "ancla": [
+    413,
+    997
+   ],
+   "k": 0.4542,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_cantera",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    655,
+    827,
+    997
+   ]
+  },
+  {
+   "id": "acantilado_cantera_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_cantera_tramo.png",
+   "w": 1155,
+   "h": 1004,
+   "ancla": [
+    577,
+    997
+   ],
+   "k": 0.4542,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_cantera",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    655,
+    1155,
+    997
+   ]
+  },
+  {
+   "id": "acantilado_cantera_der",
+   "tipo": "muro",
+   "archivo": "acantilado_cantera_der.png",
+   "w": 514,
+   "h": 1004,
+   "ancla": [
+    257,
+    999
+   ],
+   "k": 0.4542,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_cantera",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    657,
+    514,
+    999
+   ]
+  },
+  {
+   "id": "escalera_cantera",
+   "tipo": "muro",
+   "archivo": "escalera_cantera.png",
+   "w": 1482,
+   "h": 1004,
+   "ancla": [
+    741,
+    1004
+   ],
+   "k": 0.4542,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_cantera",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     662,
+     474,
+     1004
+    ],
+    [
+     1007,
+     662,
+     1482,
+     1004
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_cantera_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_cantera_arr.png",
+   "w": 555,
+   "h": 959,
+   "ancla": [
+    277,
+    959
+   ],
+   "k": 0.7568,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_cantera",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    66,
+    287,
+    488,
+    959
+   ]
+  },
+  {
+   "id": "acantilado_v_cantera_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_cantera_tramo.png",
+   "w": 555,
+   "h": 872,
+   "ancla": [
+    277,
+    872
+   ],
+   "k": 0.7568,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_cantera",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    66,
+    43,
+    488,
+    872
+   ]
+  },
+  {
+   "id": "acantilado_v_cantera_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_cantera_abj.png",
+   "w": 555,
+   "h": 480,
+   "ancla": [
+    277,
+    480
+   ],
+   "k": 0.7568,
+   "origen": "assets/gen/arcane/muros/cantera/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_cantera",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    66,
+    24,
+    488,
+    480
+   ]
+  },
+  {
+   "id": "montana_cantera",
+   "tipo": "roca",
+   "archivo": "montana_cantera.png",
+   "w": 1663,
+   "h": 1735,
+   "ancla": [
+    831,
+    1733
+   ],
+   "k": 0.6855,
+   "origen": "assets/gen/arcane/muros/cantera/montana_s1_0.png",
+   "sombra": {
+    "archivo": "montana_cantera_sombra.png",
+    "w": 1405,
+    "h": 1076,
+    "dx": 242,
+    "dy": 629
+   },
+   "huella": [
+    133,
+    865,
+    1529,
+    1680
+   ]
+  },
+  {
+   "id": "arboleda_cantera",
+   "tipo": "roca",
+   "archivo": "arboleda_cantera.png",
+   "w": 1765,
+   "h": 1576,
+   "ancla": [
+    882,
+    1574
+   ],
+   "k": 0.5779,
+   "origen": "assets/gen/arcane/muros/cantera/arboleda_s1_0.png",
+   "huella": [
+    141,
+    786,
+    1623,
+    1526
+   ]
+  },
+  {
+   "id": "muro_cantera_izq",
+   "tipo": "muro",
+   "archivo": "muro_cantera_izq.png",
+   "w": 999,
+   "h": 480,
+   "ancla": [
+    499,
+    474
+   ],
+   "k": 0.5,
+   "origen": "assets/gen/arcane/muros/cantera/muro_s1_0.png",
+   "tira": {
+    "id": "muro_cantera",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    272,
+    999,
+    474
+   ]
+  },
+  {
+   "id": "muro_cantera_tramo",
+   "tipo": "muro",
+   "archivo": "muro_cantera_tramo.png",
+   "w": 824,
+   "h": 480,
+   "ancla": [
+    412,
+    465
+   ],
+   "k": 0.5,
+   "origen": "assets/gen/arcane/muros/cantera/muro_s1_0.png",
+   "tira": {
+    "id": "muro_cantera",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    263,
+    824,
+    465
+   ]
+  },
+  {
+   "id": "muro_cantera_der",
+   "tipo": "muro",
+   "archivo": "muro_cantera_der.png",
+   "w": 702,
+   "h": 480,
+   "ancla": [
+    351,
+    480
+   ],
+   "k": 0.5,
+   "origen": "assets/gen/arcane/muros/cantera/muro_s1_0.png",
+   "tira": {
+    "id": "muro_cantera",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    278,
+    702,
+    480
+   ]
+  },
+  {
+   "id": "porton_cantera",
+   "tipo": "muro",
+   "archivo": "porton_cantera.png",
+   "w": 1474,
+   "h": 480,
+   "ancla": [
+    737,
+    474
+   ],
+   "k": 0.5,
+   "origen": "assets/gen/arcane/muros/cantera/muro_s1_0.png",
+   "tira": {
+    "id": "muro_cantera",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     282,
+     442,
+     474
+    ],
+    [
+     1031,
+     282,
+     1474,
+     474
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_cantera_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_cantera_arr.png",
+   "w": 811,
+   "h": 984,
+   "ancla": [
+    405,
+    984
+   ],
+   "k": 0.2219,
+   "origen": "assets/gen/arcane/muros/cantera/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_cantera",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    97,
+    295,
+    713,
+    984
+   ]
+  },
+  {
+   "id": "muro_v_cantera_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_cantera_tramo.png",
+   "w": 811,
+   "h": 743,
+   "ancla": [
+    405,
+    743
+   ],
+   "k": 0.2219,
+   "origen": "assets/gen/arcane/muros/cantera/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_cantera",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    97,
+    37,
+    713,
+    743
+   ]
+  },
+  {
+   "id": "muro_v_cantera_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_cantera_abj.png",
+   "w": 811,
+   "h": 514,
+   "ancla": [
+    405,
+    514
+   ],
+   "k": 0.2219,
+   "origen": "assets/gen/arcane/muros/cantera/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_cantera",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    97,
+    25,
+    713,
+    514
+   ]
+  },
+  {
+   "id": "valla_cantera_izq",
+   "tipo": "muro",
+   "archivo": "valla_cantera_izq.png",
+   "w": 940,
+   "h": 405,
+   "ancla": [
+    470,
+    405
+   ],
+   "k": 0.3852,
+   "origen": "assets/gen/arcane/muros/cantera/valla_s1_0.png",
+   "tira": {
+    "id": "valla_cantera",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    263,
+    940,
+    405
+   ]
+  },
+  {
+   "id": "valla_cantera_tramo",
+   "tipo": "muro",
+   "archivo": "valla_cantera_tramo.png",
+   "w": 797,
+   "h": 405,
+   "ancla": [
+    398,
+    385
+   ],
+   "k": 0.3852,
+   "origen": "assets/gen/arcane/muros/cantera/valla_s1_0.png",
+   "tira": {
+    "id": "valla_cantera",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    243,
+    797,
+    385
+   ]
+  },
+  {
+   "id": "valla_cantera_der",
+   "tipo": "muro",
+   "archivo": "valla_cantera_der.png",
+   "w": 656,
+   "h": 405,
+   "ancla": [
+    328,
+    390
+   ],
+   "k": 0.3852,
+   "origen": "assets/gen/arcane/muros/cantera/valla_s1_0.png",
+   "tira": {
+    "id": "valla_cantera",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    248,
+    656,
+    390
+   ]
+  },
+  {
+   "id": "valla_v_cantera_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_cantera_arr.png",
+   "w": 760,
+   "h": 998,
+   "ancla": [
+    380,
+    998
+   ],
+   "k": 0.1263,
+   "origen": "assets/gen/arcane/muros/cantera/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_cantera",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    91,
+    299,
+    668,
+    998
+   ]
+  },
+  {
+   "id": "valla_v_cantera_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_cantera_tramo.png",
+   "w": 760,
+   "h": 737,
+   "ancla": [
+    380,
+    737
+   ],
+   "k": 0.1263,
+   "origen": "assets/gen/arcane/muros/cantera/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_cantera",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    91,
+    36,
+    668,
+    737
+   ]
+  },
+  {
+   "id": "valla_v_cantera_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_cantera_abj.png",
+   "w": 760,
+   "h": 505,
+   "ancla": [
+    380,
+    505
+   ],
+   "k": 0.1263,
+   "origen": "assets/gen/arcane/muros/cantera/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_cantera",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    91,
+    25,
+    668,
+    505
+   ]
+  },
+  {
+   "id": "puente_cantera_izq",
+   "tipo": "puente",
+   "archivo": "puente_cantera_izq.png",
+   "w": 749,
+   "h": 395,
+   "ancla": [
+    374,
+    376
+   ],
+   "k": 0.6987,
+   "origen": "assets/gen/arcane/muros/cantera/puente_s1_0.png",
+   "tira": {
+    "id": "puente_cantera",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_cantera_tramo",
+   "tipo": "puente",
+   "archivo": "puente_cantera_tramo.png",
+   "w": 1075,
+   "h": 395,
+   "ancla": [
+    537,
+    360
+   ],
+   "k": 0.6987,
+   "origen": "assets/gen/arcane/muros/cantera/puente_s1_0.png",
+   "tira": {
+    "id": "puente_cantera",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_cantera_der",
+   "tipo": "puente",
+   "archivo": "puente_cantera_der.png",
+   "w": 592,
+   "h": 395,
+   "ancla": [
+    296,
+    395
+   ],
+   "k": 0.6987,
+   "origen": "assets/gen/arcane/muros/cantera/puente_s1_0.png",
+   "tira": {
+    "id": "puente_cantera",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_cantera_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_cantera_arr.png",
+   "w": 798,
+   "h": 687,
+   "ancla": [
+    399,
+    687
+   ],
+   "k": 0.3308,
+   "origen": "assets/gen/arcane/muros/cantera/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_cantera",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_cantera_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_cantera_tramo.png",
+   "w": 798,
+   "h": 842,
+   "ancla": [
+    399,
+    842
+   ],
+   "k": 0.3308,
+   "origen": "assets/gen/arcane/muros/cantera/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_cantera",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_cantera_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_cantera_abj.png",
+   "w": 798,
+   "h": 710,
+   "ancla": [
+    399,
+    710
+   ],
+   "k": 0.3308,
+   "origen": "assets/gen/arcane/muros/cantera/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_cantera",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "acantilado_pantano_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_pantano_izq.png",
+   "w": 891,
+   "h": 875,
+   "ancla": [
+    445,
+    875
+   ],
+   "k": 0.5211,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_pantano",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    577,
+    891,
+    875
+   ]
+  },
+  {
+   "id": "acantilado_pantano_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_pantano_tramo.png",
+   "w": 1155,
+   "h": 875,
+   "ancla": [
+    577,
+    875
+   ],
+   "k": 0.5211,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_pantano",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    577,
+    1155,
+    875
+   ]
+  },
+  {
+   "id": "acantilado_pantano_der",
+   "tipo": "muro",
+   "archivo": "acantilado_pantano_der.png",
+   "w": 514,
+   "h": 875,
+   "ancla": [
+    257,
+    875
+   ],
+   "k": 0.5211,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_pantano",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    577,
+    514,
+    875
+   ]
+  },
+  {
+   "id": "escalera_pantano",
+   "tipo": "muro",
+   "archivo": "escalera_pantano.png",
+   "w": 1364,
+   "h": 875,
+   "ancla": [
+    682,
+    875
+   ],
+   "k": 0.5211,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_pantano",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     577,
+     436,
+     875
+    ],
+    [
+     927,
+     577,
+     1364,
+     875
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_pantano_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_pantano_arr.png",
+   "w": 691,
+   "h": 715,
+   "ancla": [
+    345,
+    715
+   ],
+   "k": 0.6078,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_pantano",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    82,
+    214,
+    608,
+    715
+   ]
+  },
+  {
+   "id": "acantilado_v_pantano_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_pantano_tramo.png",
+   "w": 691,
+   "h": 794,
+   "ancla": [
+    345,
+    794
+   ],
+   "k": 0.6078,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_pantano",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    82,
+    39,
+    608,
+    794
+   ]
+  },
+  {
+   "id": "acantilado_v_pantano_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_pantano_abj.png",
+   "w": 691,
+   "h": 606,
+   "ancla": [
+    345,
+    606
+   ],
+   "k": 0.6078,
+   "origen": "assets/gen/arcane/muros/pantano/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_pantano",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    82,
+    30,
+    608,
+    606
+   ]
+  },
+  {
+   "id": "montana_pantano",
+   "tipo": "roca",
+   "archivo": "montana_pantano.png",
+   "w": 1810,
+   "h": 1700,
+   "ancla": [
+    905,
+    1698
+   ],
+   "k": 0.6298,
+   "origen": "assets/gen/arcane/muros/pantano/montana_s1_0.png",
+   "sombra": {
+    "archivo": "montana_pantano_sombra.png",
+    "w": 1627,
+    "h": 698,
+    "dx": 65,
+    "dy": 837
+   },
+   "huella": [
+    144,
+    848,
+    1665,
+    1647
+   ]
+  },
+  {
+   "id": "arboleda_pantano",
+   "tipo": "roca",
+   "archivo": "arboleda_pantano.png",
+   "w": 1785,
+   "h": 1911,
+   "ancla": [
+    892,
+    1909
+   ],
+   "k": 0.5714,
+   "origen": "assets/gen/arcane/muros/pantano/arboleda_s1_0.png",
+   "sombra": {
+    "archivo": "arboleda_pantano_sombra.png",
+    "w": 1777,
+    "h": 1426,
+    "dx": -126,
+    "dy": 398
+   },
+   "huella": [
+    142,
+    953,
+    1642,
+    1851
+   ]
+  },
+  {
+   "id": "muro_pantano_izq",
+   "tipo": "muro",
+   "archivo": "muro_pantano_izq.png",
+   "w": 934,
+   "h": 656,
+   "ancla": [
+    467,
+    656
+   ],
+   "k": 0.3659,
+   "origen": "assets/gen/arcane/muros/pantano/muro_s1_0.png",
+   "tira": {
+    "id": "muro_pantano",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    380,
+    934,
+    656
+   ]
+  },
+  {
+   "id": "muro_pantano_tramo",
+   "tipo": "muro",
+   "archivo": "muro_pantano_tramo.png",
+   "w": 981,
+   "h": 656,
+   "ancla": [
+    490,
+    635
+   ],
+   "k": 0.3659,
+   "origen": "assets/gen/arcane/muros/pantano/muro_s1_0.png",
+   "tira": {
+    "id": "muro_pantano",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    359,
+    981,
+    635
+   ]
+  },
+  {
+   "id": "muro_pantano_der",
+   "tipo": "muro",
+   "archivo": "muro_pantano_der.png",
+   "w": 522,
+   "h": 656,
+   "ancla": [
+    261,
+    633
+   ],
+   "k": 0.3659,
+   "origen": "assets/gen/arcane/muros/pantano/muro_s1_0.png",
+   "tira": {
+    "id": "muro_pantano",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    357,
+    522,
+    633
+   ]
+  },
+  {
+   "id": "porton_pantano",
+   "tipo": "muro",
+   "archivo": "porton_pantano.png",
+   "w": 1695,
+   "h": 656,
+   "ancla": [
+    847,
+    642
+   ],
+   "k": 0.3659,
+   "origen": "assets/gen/arcane/muros/pantano/muro_s1_0.png",
+   "tira": {
+    "id": "muro_pantano",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     379,
+     508,
+     642
+    ],
+    [
+     1186,
+     379,
+     1695,
+     642
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_pantano_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_pantano_arr.png",
+   "w": 544,
+   "h": 840,
+   "ancla": [
+    272,
+    840
+   ],
+   "k": 0.3309,
+   "origen": "assets/gen/arcane/muros/pantano/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_pantano",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    65,
+    252,
+    478,
+    840
+   ]
+  },
+  {
+   "id": "muro_v_pantano_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_pantano_tramo.png",
+   "w": 544,
+   "h": 795,
+   "ancla": [
+    272,
+    795
+   ],
+   "k": 0.3309,
+   "origen": "assets/gen/arcane/muros/pantano/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_pantano",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    65,
+    39,
+    478,
+    795
+   ]
+  },
+  {
+   "id": "muro_v_pantano_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_pantano_abj.png",
+   "w": 544,
+   "h": 722,
+   "ancla": [
+    272,
+    722
+   ],
+   "k": 0.3309,
+   "origen": "assets/gen/arcane/muros/pantano/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_pantano",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    65,
+    36,
+    478,
+    722
+   ]
+  },
+  {
+   "id": "valla_pantano_izq",
+   "tipo": "muro",
+   "archivo": "valla_pantano_izq.png",
+   "w": 808,
+   "h": 431,
+   "ancla": [
+    404,
+    423
+   ],
+   "k": 0.3619,
+   "origen": "assets/gen/arcane/muros/pantano/valla_s1_0.png",
+   "tira": {
+    "id": "valla_pantano",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    272,
+    808,
+    423
+   ]
+  },
+  {
+   "id": "valla_pantano_tramo",
+   "tipo": "muro",
+   "archivo": "valla_pantano_tramo.png",
+   "w": 822,
+   "h": 431,
+   "ancla": [
+    411,
+    408
+   ],
+   "k": 0.3619,
+   "origen": "assets/gen/arcane/muros/pantano/valla_s1_0.png",
+   "tira": {
+    "id": "valla_pantano",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    257,
+    822,
+    408
+   ]
+  },
+  {
+   "id": "valla_pantano_der",
+   "tipo": "muro",
+   "archivo": "valla_pantano_der.png",
+   "w": 442,
+   "h": 431,
+   "ancla": [
+    221,
+    431
+   ],
+   "k": 0.3619,
+   "origen": "assets/gen/arcane/muros/pantano/valla_s1_0.png",
+   "tira": {
+    "id": "valla_pantano",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    280,
+    442,
+    431
+   ]
+  },
+  {
+   "id": "valla_v_pantano_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_pantano_arr.png",
+   "w": 502,
+   "h": 805,
+   "ancla": [
+    251,
+    805
+   ],
+   "k": 0.1912,
+   "origen": "assets/gen/arcane/muros/pantano/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_pantano",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    60,
+    241,
+    441,
+    805
+   ]
+  },
+  {
+   "id": "valla_v_pantano_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_pantano_tramo.png",
+   "w": 502,
+   "h": 935,
+   "ancla": [
+    251,
+    935
+   ],
+   "k": 0.1912,
+   "origen": "assets/gen/arcane/muros/pantano/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_pantano",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    60,
+    46,
+    441,
+    935
+   ]
+  },
+  {
+   "id": "valla_v_pantano_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_pantano_abj.png",
+   "w": 502,
+   "h": 502,
+   "ancla": [
+    251,
+    502
+   ],
+   "k": 0.1912,
+   "origen": "assets/gen/arcane/muros/pantano/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_pantano",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    60,
+    25,
+    441,
+    502
+   ]
+  },
+  {
+   "id": "puente_pantano_izq",
+   "tipo": "puente",
+   "archivo": "puente_pantano_izq.png",
+   "w": 508,
+   "h": 829,
+   "ancla": [
+    254,
+    829
+   ],
+   "k": 0.3329,
+   "origen": "assets/gen/arcane/muros/pantano/puente_s1_0.png",
+   "tira": {
+    "id": "puente_pantano",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_pantano_tramo",
+   "tipo": "puente",
+   "archivo": "puente_pantano_tramo.png",
+   "w": 864,
+   "h": 829,
+   "ancla": [
+    432,
+    750
+   ],
+   "k": 0.3329,
+   "origen": "assets/gen/arcane/muros/pantano/puente_s1_0.png",
+   "tira": {
+    "id": "puente_pantano",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_pantano_der",
+   "tipo": "puente",
+   "archivo": "puente_pantano_der.png",
+   "w": 720,
+   "h": 829,
+   "ancla": [
+    360,
+    790
+   ],
+   "k": 0.3329,
+   "origen": "assets/gen/arcane/muros/pantano/puente_s1_0.png",
+   "tira": {
+    "id": "puente_pantano",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_pantano_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_pantano_arr.png",
+   "w": 929,
+   "h": 582,
+   "ancla": [
+    464,
+    582
+   ],
+   "k": 0.2842,
+   "origen": "assets/gen/arcane/muros/pantano/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_pantano",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_pantano_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_pantano_tramo.png",
+   "w": 929,
+   "h": 1041,
+   "ancla": [
+    464,
+    1041
+   ],
+   "k": 0.2842,
+   "origen": "assets/gen/arcane/muros/pantano/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_pantano",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_pantano_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_pantano_abj.png",
+   "w": 929,
+   "h": 472,
+   "ancla": [
+    464,
+    472
+   ],
+   "k": 0.2842,
+   "origen": "assets/gen/arcane/muros/pantano/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_pantano",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "acantilado_ruinas_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_ruinas_izq.png",
+   "w": 1141,
+   "h": 878,
+   "ancla": [
+    570,
+    878
+   ],
+   "k": 0.5194,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ruinas",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    579,
+    1141,
+    878
+   ]
+  },
+  {
+   "id": "acantilado_ruinas_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_ruinas_tramo.png",
+   "w": 803,
+   "h": 878,
+   "ancla": [
+    401,
+    876
+   ],
+   "k": 0.5194,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ruinas",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    577,
+    803,
+    876
+   ]
+  },
+  {
+   "id": "acantilado_ruinas_der",
+   "tipo": "muro",
+   "archivo": "acantilado_ruinas_der.png",
+   "w": 567,
+   "h": 878,
+   "ancla": [
+    283,
+    873
+   ],
+   "k": 0.5194,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ruinas",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    574,
+    567,
+    873
+   ]
+  },
+  {
+   "id": "escalera_ruinas",
+   "tipo": "muro",
+   "archivo": "escalera_ruinas.png",
+   "w": 935,
+   "h": 878,
+   "ancla": [
+    467,
+    877
+   ],
+   "k": 0.5194,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ruinas",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     578,
+     299,
+     877
+    ],
+    [
+     635,
+     578,
+     935,
+     877
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_ruinas_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_ruinas_arr.png",
+   "w": 545,
+   "h": 655,
+   "ancla": [
+    272,
+    655
+   ],
+   "k": 0.7706,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_ruinas",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    65,
+    196,
+    479,
+    655
+   ]
+  },
+  {
+   "id": "acantilado_v_ruinas_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_ruinas_tramo.png",
+   "w": 545,
+   "h": 1044,
+   "ancla": [
+    272,
+    1044
+   ],
+   "k": 0.7706,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_ruinas",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    65,
+    52,
+    479,
+    1044
+   ]
+  },
+  {
+   "id": "acantilado_v_ruinas_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_ruinas_abj.png",
+   "w": 545,
+   "h": 667,
+   "ancla": [
+    272,
+    667
+   ],
+   "k": 0.7706,
+   "origen": "assets/gen/arcane/muros/ruinas/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_ruinas",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    65,
+    33,
+    479,
+    667
+   ]
+  },
+  {
+   "id": "montana_ruinas",
+   "tipo": "roca",
+   "archivo": "montana_ruinas.png",
+   "w": 1690,
+   "h": 1595,
+   "ancla": [
+    845,
+    1594
+   ],
+   "k": 0.6746,
+   "origen": "assets/gen/arcane/muros/ruinas/montana_s1_0.png",
+   "huella": [
+    135,
+    796,
+    1554,
+    1546
+   ]
+  },
+  {
+   "id": "arboleda_ruinas",
+   "tipo": "roca",
+   "archivo": "arboleda_ruinas.png",
+   "w": 1844,
+   "h": 1788,
+   "ancla": [
+    922,
+    1786
+   ],
+   "k": 0.5531,
+   "origen": "assets/gen/arcane/muros/ruinas/arboleda_s1_0.png",
+   "sombra": {
+    "archivo": "arboleda_ruinas_sombra.png",
+    "w": 1718,
+    "h": 1057,
+    "dx": 55,
+    "dy": 722
+   },
+   "huella": [
+    147,
+    892,
+    1696,
+    1732
+   ]
+  },
+  {
+   "id": "muro_ruinas_izq",
+   "tipo": "muro",
+   "archivo": "muro_ruinas_izq.png",
+   "w": 477,
+   "h": 396,
+   "ancla": [
+    238,
+    394
+   ],
+   "k": 0.6061,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ruinas",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    227,
+    477,
+    394
+   ]
+  },
+  {
+   "id": "muro_ruinas_tramo",
+   "tipo": "muro",
+   "archivo": "muro_ruinas_tramo.png",
+   "w": 819,
+   "h": 396,
+   "ancla": [
+    409,
+    396
+   ],
+   "k": 0.6061,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ruinas",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    229,
+    819,
+    396
+   ]
+  },
+  {
+   "id": "muro_ruinas_der",
+   "tipo": "muro",
+   "archivo": "muro_ruinas_der.png",
+   "w": 752,
+   "h": 396,
+   "ancla": [
+    376,
+    395
+   ],
+   "k": 0.6061,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ruinas",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    228,
+    752,
+    395
+   ]
+  },
+  {
+   "id": "porton_ruinas",
+   "tipo": "muro",
+   "archivo": "porton_ruinas.png",
+   "w": 992,
+   "h": 396,
+   "ancla": [
+    496,
+    396
+   ],
+   "k": 0.6061,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ruinas",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     237,
+     297,
+     396
+    ],
+    [
+     694,
+     237,
+     992,
+     396
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_ruinas_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_ruinas_arr.png",
+   "w": 624,
+   "h": 876,
+   "ancla": [
+    312,
+    876
+   ],
+   "k": 0.2885,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_ruinas",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    74,
+    262,
+    549,
+    876
+   ]
+  },
+  {
+   "id": "muro_v_ruinas_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_ruinas_tramo.png",
+   "w": 624,
+   "h": 769,
+   "ancla": [
+    312,
+    769
+   ],
+   "k": 0.2885,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_ruinas",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    74,
+    38,
+    549,
+    769
+   ]
+  },
+  {
+   "id": "muro_v_ruinas_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_ruinas_abj.png",
+   "w": 624,
+   "h": 659,
+   "ancla": [
+    312,
+    659
+   ],
+   "k": 0.2885,
+   "origen": "assets/gen/arcane/muros/ruinas/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_ruinas",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    74,
+    32,
+    549,
+    659
+   ]
+  },
+  {
+   "id": "valla_ruinas_izq",
+   "tipo": "muro",
+   "archivo": "valla_ruinas_izq.png",
+   "w": 551,
+   "h": 487,
+   "ancla": [
+    275,
+    469
+   ],
+   "k": 0.3203,
+   "origen": "assets/gen/arcane/muros/ruinas/valla_s1_0.png",
+   "tira": {
+    "id": "valla_ruinas",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    298,
+    551,
+    469
+   ]
+  },
+  {
+   "id": "valla_ruinas_tramo",
+   "tipo": "muro",
+   "archivo": "valla_ruinas_tramo.png",
+   "w": 824,
+   "h": 487,
+   "ancla": [
+    412,
+    459
+   ],
+   "k": 0.3203,
+   "origen": "assets/gen/arcane/muros/ruinas/valla_s1_0.png",
+   "tira": {
+    "id": "valla_ruinas",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    288,
+    824,
+    459
+   ]
+  },
+  {
+   "id": "valla_ruinas_der",
+   "tipo": "muro",
+   "archivo": "valla_ruinas_der.png",
+   "w": 740,
+   "h": 487,
+   "ancla": [
+    370,
+    487
+   ],
+   "k": 0.3203,
+   "origen": "assets/gen/arcane/muros/ruinas/valla_s1_0.png",
+   "tira": {
+    "id": "valla_ruinas",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    316,
+    740,
+    487
+   ]
+  },
+  {
+   "id": "valla_v_ruinas_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_ruinas_arr.png",
+   "w": 476,
+   "h": 716,
+   "ancla": [
+    238,
+    716
+   ],
+   "k": 0.2017,
+   "origen": "assets/gen/arcane/muros/ruinas/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_ruinas",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    57,
+    214,
+    418,
+    716
+   ]
+  },
+  {
+   "id": "valla_v_ruinas_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_ruinas_tramo.png",
+   "w": 476,
+   "h": 838,
+   "ancla": [
+    238,
+    838
+   ],
+   "k": 0.2017,
+   "origen": "assets/gen/arcane/muros/ruinas/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_ruinas",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    57,
+    41,
+    418,
+    838
+   ]
+  },
+  {
+   "id": "valla_v_ruinas_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_ruinas_abj.png",
+   "w": 476,
+   "h": 690,
+   "ancla": [
+    238,
+    690
+   ],
+   "k": 0.2017,
+   "origen": "assets/gen/arcane/muros/ruinas/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_ruinas",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    57,
+    34,
+    418,
+    690
+   ]
+  },
+  {
+   "id": "puente_ruinas_izq",
+   "tipo": "puente",
+   "archivo": "puente_ruinas_izq.png",
+   "w": 738,
+   "h": 531,
+   "ancla": [
+    369,
+    527
+   ],
+   "k": 0.5198,
+   "origen": "assets/gen/arcane/muros/ruinas/puente_s1_0.png",
+   "tira": {
+    "id": "puente_ruinas",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_ruinas_tramo",
+   "tipo": "puente",
+   "archivo": "puente_ruinas_tramo.png",
+   "w": 877,
+   "h": 531,
+   "ancla": [
+    438,
+    502
+   ],
+   "k": 0.5198,
+   "origen": "assets/gen/arcane/muros/ruinas/puente_s1_0.png",
+   "tira": {
+    "id": "puente_ruinas",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_ruinas_der",
+   "tipo": "puente",
+   "archivo": "puente_ruinas_der.png",
+   "w": 727,
+   "h": 531,
+   "ancla": [
+    363,
+    531
+   ],
+   "k": 0.5198,
+   "origen": "assets/gen/arcane/muros/ruinas/puente_s1_0.png",
+   "tira": {
+    "id": "puente_ruinas",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_ruinas_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_ruinas_arr.png",
+   "w": 850,
+   "h": 600,
+   "ancla": [
+    425,
+    600
+   ],
+   "k": 0.3106,
+   "origen": "assets/gen/arcane/muros/ruinas/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_ruinas",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_ruinas_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_ruinas_tramo.png",
+   "w": 850,
+   "h": 903,
+   "ancla": [
+    425,
+    903
+   ],
+   "k": 0.3106,
+   "origen": "assets/gen/arcane/muros/ruinas/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_ruinas",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_ruinas_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_ruinas_abj.png",
+   "w": 850,
+   "h": 744,
+   "ancla": [
+    425,
+    744
+   ],
+   "k": 0.3106,
+   "origen": "assets/gen/arcane/muros/ruinas/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_ruinas",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "acantilado_volcan_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_volcan_izq.png",
+   "w": 840,
+   "h": 775,
+   "ancla": [
+    420,
+    775
+   ],
+   "k": 0.5884,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_volcan",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    511,
+    840,
+    775
+   ]
+  },
+  {
+   "id": "acantilado_volcan_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_volcan_tramo.png",
+   "w": 828,
+   "h": 775,
+   "ancla": [
+    414,
+    771
+   ],
+   "k": 0.5884,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_volcan",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    507,
+    828,
+    771
+   ]
+  },
+  {
+   "id": "acantilado_volcan_der",
+   "tipo": "muro",
+   "archivo": "acantilado_volcan_der.png",
+   "w": 808,
+   "h": 775,
+   "ancla": [
+    404,
+    775
+   ],
+   "k": 0.5884,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_volcan",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    511,
+    808,
+    775
+   ]
+  },
+  {
+   "id": "escalera_volcan",
+   "tipo": "muro",
+   "archivo": "escalera_volcan.png",
+   "w": 506,
+   "h": 775,
+   "ancla": [
+    253,
+    775
+   ],
+   "k": 0.5884,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_volcan",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     511,
+     161,
+     775
+    ],
+    [
+     344,
+     511,
+     506,
+     775
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_volcan_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_volcan_arr.png",
+   "w": 576,
+   "h": 484,
+   "ancla": [
+    288,
+    484
+   ],
+   "k": 0.7292,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_volcan",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    69,
+    145,
+    506,
+    484
+   ]
+  },
+  {
+   "id": "acantilado_v_volcan_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_volcan_tramo.png",
+   "w": 576,
+   "h": 951,
+   "ancla": [
+    288,
+    951
+   ],
+   "k": 0.7292,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_volcan",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    69,
+    47,
+    506,
+    951
+   ]
+  },
+  {
+   "id": "acantilado_v_volcan_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_volcan_abj.png",
+   "w": 576,
+   "h": 512,
+   "ancla": [
+    288,
+    512
+   ],
+   "k": 0.7292,
+   "origen": "assets/gen/arcane/muros/volcan/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_volcan",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    69,
+    25,
+    506,
+    512
+   ]
+  },
+  {
+   "id": "montana_volcan",
+   "tipo": "roca",
+   "archivo": "montana_volcan.png",
+   "w": 1584,
+   "h": 1809,
+   "ancla": [
+    792,
+    1808
+   ],
+   "k": 0.7197,
+   "origen": "assets/gen/arcane/muros/volcan/montana_s1_0.png",
+   "sombra": {
+    "archivo": "montana_volcan_sombra.png",
+    "w": 1505,
+    "h": 1756,
+    "dx": 146,
+    "dy": 0
+   },
+   "huella": [
+    126,
+    903,
+    1457,
+    1753
+   ]
+  },
+  {
+   "id": "arboleda_volcan",
+   "tipo": "roca",
+   "archivo": "arboleda_volcan.png",
+   "w": 1584,
+   "h": 1717,
+   "ancla": [
+    792,
+    1716
+   ],
+   "k": 0.6439,
+   "origen": "assets/gen/arcane/muros/volcan/arboleda_s1_0.png",
+   "huella": [
+    126,
+    857,
+    1457,
+    1664
+   ]
+  },
+  {
+   "id": "muro_volcan_izq",
+   "tipo": "muro",
+   "archivo": "muro_volcan_izq.png",
+   "w": 730,
+   "h": 473,
+   "ancla": [
+    365,
+    453
+   ],
+   "k": 0.5074,
+   "origen": "assets/gen/arcane/muros/volcan/muro_s1_0.png",
+   "tira": {
+    "id": "muro_volcan",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    254,
+    730,
+    453
+   ]
+  },
+  {
+   "id": "muro_volcan_tramo",
+   "tipo": "muro",
+   "archivo": "muro_volcan_tramo.png",
+   "w": 781,
+   "h": 473,
+   "ancla": [
+    390,
+    435
+   ],
+   "k": 0.5074,
+   "origen": "assets/gen/arcane/muros/volcan/muro_s1_0.png",
+   "tira": {
+    "id": "muro_volcan",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    236,
+    781,
+    435
+   ]
+  },
+  {
+   "id": "muro_volcan_der",
+   "tipo": "muro",
+   "archivo": "muro_volcan_der.png",
+   "w": 719,
+   "h": 473,
+   "ancla": [
+    359,
+    473
+   ],
+   "k": 0.5074,
+   "origen": "assets/gen/arcane/muros/volcan/muro_s1_0.png",
+   "tira": {
+    "id": "muro_volcan",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    274,
+    719,
+    473
+   ]
+  },
+  {
+   "id": "porton_volcan",
+   "tipo": "muro",
+   "archivo": "porton_volcan.png",
+   "w": 1325,
+   "h": 473,
+   "ancla": [
+    662,
+    463
+   ],
+   "k": 0.5074,
+   "origen": "assets/gen/arcane/muros/volcan/muro_s1_0.png",
+   "tira": {
+    "id": "muro_volcan",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     273,
+     397,
+     463
+    ],
+    [
+     927,
+     273,
+     1325,
+     463
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_volcan_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_volcan_arr.png",
+   "w": 747,
+   "h": 585,
+   "ancla": [
+    373,
+    585
+   ],
+   "k": 0.241,
+   "origen": "assets/gen/arcane/muros/volcan/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_volcan",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    89,
+    175,
+    657,
+    585
+   ]
+  },
+  {
+   "id": "muro_v_volcan_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_volcan_tramo.png",
+   "w": 747,
+   "h": 776,
+   "ancla": [
+    373,
+    776
+   ],
+   "k": 0.241,
+   "origen": "assets/gen/arcane/muros/volcan/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_volcan",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    89,
+    38,
+    657,
+    776
+   ]
+  },
+  {
+   "id": "muro_v_volcan_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_volcan_abj.png",
+   "w": 747,
+   "h": 682,
+   "ancla": [
+    373,
+    682
+   ],
+   "k": 0.241,
+   "origen": "assets/gen/arcane/muros/volcan/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_volcan",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    89,
+    34,
+    657,
+    682
+   ]
+  },
+  {
+   "id": "valla_volcan_izq",
+   "tipo": "muro",
+   "archivo": "valla_volcan_izq.png",
+   "w": 702,
+   "h": 407,
+   "ancla": [
+    351,
+    407
+   ],
+   "k": 0.3833,
+   "origen": "assets/gen/arcane/muros/volcan/valla_s1_0.png",
+   "tira": {
+    "id": "valla_volcan",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    264,
+    702,
+    407
+   ]
+  },
+  {
+   "id": "valla_volcan_tramo",
+   "tipo": "muro",
+   "archivo": "valla_volcan_tramo.png",
+   "w": 977,
+   "h": 407,
+   "ancla": [
+    488,
+    359
+   ],
+   "k": 0.3833,
+   "origen": "assets/gen/arcane/muros/volcan/valla_s1_0.png",
+   "tira": {
+    "id": "valla_volcan",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    216,
+    977,
+    359
+   ]
+  },
+  {
+   "id": "valla_volcan_der",
+   "tipo": "muro",
+   "archivo": "valla_volcan_der.png",
+   "w": 718,
+   "h": 407,
+   "ancla": [
+    359,
+    384
+   ],
+   "k": 0.3833,
+   "origen": "assets/gen/arcane/muros/volcan/valla_s1_0.png",
+   "tira": {
+    "id": "valla_volcan",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    241,
+    718,
+    384
+   ]
+  },
+  {
+   "id": "valla_v_volcan_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_volcan_arr.png",
+   "w": 451,
+   "h": 879,
+   "ancla": [
+    225,
+    879
+   ],
+   "k": 0.2129,
+   "origen": "assets/gen/arcane/muros/volcan/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_volcan",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    54,
+    263,
+    396,
+    879
+   ]
+  },
+  {
+   "id": "valla_v_volcan_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_volcan_tramo.png",
+   "w": 451,
+   "h": 870,
+   "ancla": [
+    225,
+    870
+   ],
+   "k": 0.2129,
+   "origen": "assets/gen/arcane/muros/volcan/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_volcan",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    54,
+    43,
+    396,
+    870
+   ]
+  },
+  {
+   "id": "valla_v_volcan_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_volcan_abj.png",
+   "w": 451,
+   "h": 447,
+   "ancla": [
+    225,
+    447
+   ],
+   "k": 0.2129,
+   "origen": "assets/gen/arcane/muros/volcan/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_volcan",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    54,
+    22,
+    396,
+    447
+   ]
+  },
+  {
+   "id": "puente_volcan_izq",
+   "tipo": "puente",
+   "archivo": "puente_volcan_izq.png",
+   "w": 592,
+   "h": 431,
+   "ancla": [
+    296,
+    431
+   ],
+   "k": 0.6404,
+   "origen": "assets/gen/arcane/muros/volcan/puente_s1_0.png",
+   "tira": {
+    "id": "puente_volcan",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_volcan_tramo",
+   "tipo": "puente",
+   "archivo": "puente_volcan_tramo.png",
+   "w": 1026,
+   "h": 431,
+   "ancla": [
+    513,
+    410
+   ],
+   "k": 0.6404,
+   "origen": "assets/gen/arcane/muros/volcan/puente_s1_0.png",
+   "tira": {
+    "id": "puente_volcan",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_volcan_der",
+   "tipo": "puente",
+   "archivo": "puente_volcan_der.png",
+   "w": 698,
+   "h": 431,
+   "ancla": [
+    349,
+    427
+   ],
+   "k": 0.6404,
+   "origen": "assets/gen/arcane/muros/volcan/puente_s1_0.png",
+   "tira": {
+    "id": "puente_volcan",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "acantilado_nieve_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_nieve_izq.png",
+   "w": 1019,
+   "h": 1011,
+   "ancla": [
+    509,
+    1009
+   ],
+   "k": 0.451,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_nieve",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    665,
+    1019,
+    1009
+   ]
+  },
+  {
+   "id": "acantilado_nieve_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_nieve_tramo.png",
+   "w": 835,
+   "h": 1011,
+   "ancla": [
+    417,
+    1011
+   ],
+   "k": 0.451,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_nieve",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    667,
+    835,
+    1011
+   ]
+  },
+  {
+   "id": "acantilado_nieve_der",
+   "tipo": "muro",
+   "archivo": "acantilado_nieve_der.png",
+   "w": 706,
+   "h": 1011,
+   "ancla": [
+    353,
+    1005
+   ],
+   "k": 0.451,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_nieve",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    661,
+    706,
+    1005
+   ]
+  },
+  {
+   "id": "escalera_nieve",
+   "tipo": "muro",
+   "archivo": "escalera_nieve.png",
+   "w": 1027,
+   "h": 1011,
+   "ancla": [
+    513,
+    1010
+   ],
+   "k": 0.451,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_nieve",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     666,
+     328,
+     1010
+    ],
+    [
+     698,
+     666,
+     1027,
+     1010
+    ]
+   ]
+  },
+  {
+   "id": "acantilado_v_nieve_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_nieve_arr.png",
+   "w": 677,
+   "h": 570,
+   "ancla": [
+    338,
+    570
+   ],
+   "k": 0.6204,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_nieve",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    81,
+    171,
+    595,
+    570
+   ]
+  },
+  {
+   "id": "acantilado_v_nieve_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_nieve_tramo.png",
+   "w": 677,
+   "h": 791,
+   "ancla": [
+    338,
+    791
+   ],
+   "k": 0.6204,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_nieve",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    81,
+    39,
+    595,
+    791
+   ]
+  },
+  {
+   "id": "acantilado_v_nieve_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_nieve_abj.png",
+   "w": 677,
+   "h": 764,
+   "ancla": [
+    338,
+    764
+   ],
+   "k": 0.6204,
+   "origen": "assets/gen/arcane/muros/nieve/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_nieve",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    81,
+    38,
+    595,
+    764
+   ]
+  },
+  {
+   "id": "montana_nieve",
+   "tipo": "roca",
+   "archivo": "montana_nieve.png",
+   "w": 1647,
+   "h": 1666,
+   "ancla": [
+    823,
+    1664
+   ],
+   "k": 0.6922,
+   "origen": "assets/gen/arcane/muros/nieve/montana_s1_0.png",
+   "sombra": {
+    "archivo": "montana_nieve_sombra.png",
+    "w": 926,
+    "h": 1025,
+    "dx": 2,
+    "dy": 577
+   },
+   "huella": [
+    131,
+    831,
+    1515,
+    1614
+   ]
+  },
+  {
+   "id": "arboleda_nieve",
+   "tipo": "roca",
+   "archivo": "arboleda_nieve.png",
+   "w": 1644,
+   "h": 1882,
+   "ancla": [
+    822,
+    1881
+   ],
+   "k": 0.6204,
+   "origen": "assets/gen/arcane/muros/nieve/arboleda_s1_0.png",
+   "huella": [
+    131,
+    940,
+    1512,
+    1824
+   ]
+  },
+  {
+   "id": "muro_nieve_izq",
+   "tipo": "muro",
+   "archivo": "muro_nieve_izq.png",
+   "w": 1057,
+   "h": 526,
+   "ancla": [
+    528,
+    522
+   ],
+   "k": 0.4563,
+   "origen": "assets/gen/arcane/muros/nieve/muro_s1_0.png",
+   "tira": {
+    "id": "muro_nieve",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    301,
+    1057,
+    522
+   ]
+  },
+  {
+   "id": "muro_nieve_tramo",
+   "tipo": "muro",
+   "archivo": "muro_nieve_tramo.png",
+   "w": 809,
+   "h": 526,
+   "ancla": [
+    404,
+    526
+   ],
+   "k": 0.4563,
+   "origen": "assets/gen/arcane/muros/nieve/muro_s1_0.png",
+   "tira": {
+    "id": "muro_nieve",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    305,
+    809,
+    526
+   ]
+  },
+  {
+   "id": "muro_nieve_der",
+   "tipo": "muro",
+   "archivo": "muro_nieve_der.png",
+   "w": 565,
+   "h": 526,
+   "ancla": [
+    282,
+    525
+   ],
+   "k": 0.4563,
+   "origen": "assets/gen/arcane/muros/nieve/muro_s1_0.png",
+   "tira": {
+    "id": "muro_nieve",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    304,
+    565,
+    525
+   ]
+  },
+  {
+   "id": "porton_nieve",
+   "tipo": "muro",
+   "archivo": "porton_nieve.png",
+   "w": 1094,
+   "h": 526,
+   "ancla": [
+    547,
+    526
+   ],
+   "k": 0.4563,
+   "origen": "assets/gen/arcane/muros/nieve/muro_s1_0.png",
+   "tira": {
+    "id": "muro_nieve",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     315,
+     328,
+     526
+    ],
+    [
+     765,
+     315,
+     1094,
+     526
+    ]
+   ]
+  },
+  {
+   "id": "muro_v_nieve_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_nieve_arr.png",
+   "w": 665,
+   "h": 759,
+   "ancla": [
+    332,
+    759
+   ],
+   "k": 0.2707,
+   "origen": "assets/gen/arcane/muros/nieve/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_nieve",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    79,
+    227,
+    585,
+    759
+   ]
+  },
+  {
+   "id": "muro_v_nieve_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_nieve_tramo.png",
+   "w": 665,
+   "h": 803,
+   "ancla": [
+    332,
+    803
+   ],
+   "k": 0.2707,
+   "origen": "assets/gen/arcane/muros/nieve/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_nieve",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    79,
+    40,
+    585,
+    803
+   ]
+  },
+  {
+   "id": "muro_v_nieve_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_nieve_abj.png",
+   "w": 665,
+   "h": 507,
+   "ancla": [
+    332,
+    507
+   ],
+   "k": 0.2707,
+   "origen": "assets/gen/arcane/muros/nieve/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_nieve",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    79,
+    25,
+    585,
+    507
+   ]
+  },
+  {
+   "id": "valla_nieve_izq",
+   "tipo": "muro",
+   "archivo": "valla_nieve_izq.png",
+   "w": 950,
+   "h": 358,
+   "ancla": [
+    475,
+    356
+   ],
+   "k": 0.4358,
+   "origen": "assets/gen/arcane/muros/nieve/valla_s1_0.png",
+   "tira": {
+    "id": "valla_nieve",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    230,
+    950,
+    356
+   ]
+  },
+  {
+   "id": "valla_nieve_tramo",
+   "tipo": "muro",
+   "archivo": "valla_nieve_tramo.png",
+   "w": 749,
+   "h": 358,
+   "ancla": [
+    374,
+    348
+   ],
+   "k": 0.4358,
+   "origen": "assets/gen/arcane/muros/nieve/valla_s1_0.png",
+   "tira": {
+    "id": "valla_nieve",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    222,
+    749,
+    348
+   ]
+  },
+  {
+   "id": "valla_nieve_der",
+   "tipo": "muro",
+   "archivo": "valla_nieve_der.png",
+   "w": 644,
+   "h": 358,
+   "ancla": [
+    322,
+    358
+   ],
+   "k": 0.4358,
+   "origen": "assets/gen/arcane/muros/nieve/valla_s1_0.png",
+   "tira": {
+    "id": "valla_nieve",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    232,
+    644,
+    358
+   ]
+  },
+  {
+   "id": "valla_v_nieve_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_nieve_arr.png",
+   "w": 726,
+   "h": 742,
+   "ancla": [
+    363,
+    742
+   ],
+   "k": 0.1322,
+   "origen": "assets/gen/arcane/muros/nieve/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_nieve",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    87,
+    222,
+    638,
+    742
+   ]
+  },
+  {
+   "id": "valla_v_nieve_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_nieve_tramo.png",
+   "w": 726,
+   "h": 928,
+   "ancla": [
+    363,
+    928
+   ],
+   "k": 0.1322,
+   "origen": "assets/gen/arcane/muros/nieve/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_nieve",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    87,
+    46,
+    638,
+    928
+   ]
+  },
+  {
+   "id": "valla_v_nieve_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_nieve_abj.png",
+   "w": 726,
+   "h": 550,
+   "ancla": [
+    363,
+    550
+   ],
+   "k": 0.1322,
+   "origen": "assets/gen/arcane/muros/nieve/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_nieve",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    87,
+    27,
+    638,
+    550
+   ]
+  },
+  {
+   "id": "puente_nieve_izq",
+   "tipo": "puente",
+   "archivo": "puente_nieve_izq.png",
+   "w": 642,
+   "h": 541,
+   "ancla": [
+    321,
+    541
+   ],
+   "k": 0.5102,
+   "origen": "assets/gen/arcane/muros/nieve/puente_s1_0.png",
+   "tira": {
+    "id": "puente_nieve",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_nieve_tramo",
+   "tipo": "puente",
+   "archivo": "puente_nieve_tramo.png",
+   "w": 1007,
+   "h": 541,
+   "ancla": [
+    503,
+    521
+   ],
+   "k": 0.5102,
+   "origen": "assets/gen/arcane/muros/nieve/puente_s1_0.png",
+   "tira": {
+    "id": "puente_nieve",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_nieve_der",
+   "tipo": "puente",
+   "archivo": "puente_nieve_der.png",
+   "w": 775,
+   "h": 541,
+   "ancla": [
+    387,
+    530
+   ],
+   "k": 0.5102,
+   "origen": "assets/gen/arcane/muros/nieve/puente_s1_0.png",
+   "tira": {
+    "id": "puente_nieve",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_nieve_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_nieve_arr.png",
+   "w": 887,
+   "h": 828,
+   "ancla": [
+    443,
+    828
+   ],
+   "k": 0.2976,
+   "origen": "assets/gen/arcane/muros/nieve/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_nieve",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_nieve_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_nieve_tramo.png",
+   "w": 887,
+   "h": 737,
+   "ancla": [
+    443,
+    737
+   ],
+   "k": 0.2976,
+   "origen": "assets/gen/arcane/muros/nieve/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_nieve",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_nieve_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_nieve_abj.png",
+   "w": 887,
+   "h": 709,
+   "ancla": [
+    443,
+    709
+   ],
+   "k": 0.2976,
+   "origen": "assets/gen/arcane/muros/nieve/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_nieve",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_volcan_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_volcan_arr.png",
+   "w": 812,
+   "h": 631,
+   "ancla": [
+    406,
+    631
+   ],
+   "k": 0.3251,
+   "origen": "assets/gen/arcane/muros/volcan/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_volcan",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_volcan_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_volcan_tramo.png",
+   "w": 812,
+   "h": 899,
+   "ancla": [
+    406,
+    899
+   ],
+   "k": 0.3251,
+   "origen": "assets/gen/arcane/muros/volcan/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_volcan",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null
+  },
+  {
+   "id": "puente_v_volcan_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_volcan_abj.png",
+   "w": 812,
+   "h": 586,
+   "ancla": [
+    406,
+    586
+   ],
+   "k": 0.3251,
+   "origen": "assets/gen/arcane/muros/volcan/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_volcan",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null
   }
  ]
 }

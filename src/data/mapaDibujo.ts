@@ -37,7 +37,8 @@ export const PALETA_DIBUJO: Paleta = ARCANE ? PALETA_ARCANE : PALETA_KLEIN;
 
 // rol: lo que hace en el juego (casa = tu casa, panel de dormir/cocinar; almacen = donde se dejan los recursos;
 // tienda = la caja de Pelipper, para vender). luz: tipo (src/render/luces.ts) de las farolas.
-export interface Colocado { id: string; x: number; y: number; flip?: boolean; s?: number; luz?: string; rol?: 'casa' | 'almacen' | 'tienda' }
+export interface Colocado { id: string; x: number; y: number; flip?: boolean; s?: number; luz?: string; rol?: 'casa' | 'almacen' | 'tienda';
+  tira?: { hasta: number; inserto?: string; en?: number } }   // una tira entera (muro, valla, puente…): Dibujo.expandirTiras
 
 // Manchas de arena del lab (centro y radios, coordenadas de su composición original) y alguna nueva.
 const ARENA_LAB: [number, number, number, number][] = [

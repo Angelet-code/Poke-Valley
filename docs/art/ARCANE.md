@@ -160,3 +160,51 @@ Capturas: [pueblo_vista](arcane/pueblo_vista.jpg), [pueblo_dia](arcane/pueblo_di
 - El agua lisa y la sombra doble de los árboles (pendientes de la fase 1).
 - Las manchas de arena del pueblo se ven como manchas planas.
 - Que los Pokémon se lean bien sobre el fondo oscuro, y los marcos del HUD a juego.
+
+## Muros y barreras (2026-10-15)
+Piezas grandes que no se cruzan, y piezas para construir a gusto, para las zonas de bioma y el set común (bosque,
+lago y pueblo). Para cada uno de los 7 sets (`comun`, `costa`, `cantera`, `pantano`, `ruinas`, `volcan`, `nieve`):
+
+| Pieza | Forma | Qué es |
+|---|---|---|
+| `acantilado` | tira H y V | Barrera natural: pared de roca (o talud de raíces en el pantano, columnas de basalto en el volcán) |
+| `escalera` | inserto del acantilado | El mismo acantilado con escalones: se sube por el centro |
+| `montana` | suelta (190 px) | Macizo de roca que no se cruza |
+| `arboleda` | suelta (170 px) | Grupo cerrado de árboles (en la cantera, un derrumbe; en el volcán, agujas de obsidiana) |
+| `muro` | tira H y V | Muro construido (piedra seca, rompeolas, empalizada, bloques de hielo…) |
+| `porton` | inserto del muro | El muro con una puerta abierta |
+| `valla` | tira H y V | Valla baja |
+| `puente` | tira H y V | Puente: se pisa sobre el agua |
+
+- **Generación** (`assets/gen/arcane/muros/gen.sh`, lista en `piezas.txt`): la receta de los biomas (Klein `--edit` de
+  la referencia sola). Las tiras horizontales en 1280×640 ("de borde a borde, recta, del mismo alto") y las verticales
+  en 640×1280 ("alejándose del espectador, ortográfica, bordes paralelos"). Semilla elegida en `muros/elegidos.json`
+  (`{"<bioma>/<pieza>[_v]": N}`; 1 si no está). Hojas de semillas: `muros/<bioma>/hoja.png` (`--semillas`).
+- **Recorte y kit** (`lab/tools/tiras_arcane.py`): ampliar ×2 → `recortar.py` → según la forma:
+  - **H**: se endereza (la base de cada columna a una recta) y se parte en `<pieza>_<bioma>_izq`, `_tramo` y `_der`.
+    El tramo se repite sin junta: su final vuelve a su principio por una **costura de corte mínimo** (el camino de
+    menor diferencia entre dos bandas, como en el quilting), con el color premultiplicado para que no salga halo
+    verde. El extremo derecho empieza con otra costura desde el principio del tramo. Los cortes se eligen buscando
+    el menor error.
+  - **V**: antes se corrige la perspectiva (cada fila se estira para que los bordes queden paralelos) y luego igual,
+    a lo largo de y: `<pieza>_v_<bioma>_arr`, `_tramo` y `_abj`.
+  - **Insertos**: el centro de la imagen, al alto del tramo, con costuras al tramo por los dos lados.
+  - **Sueltas**: como el resto del catálogo, con su sombra aparte. Id `<pieza>_<bioma>`.
+  - Todas las piezas de una tira tienen el mismo alto (H) o ancho (V) y la misma base. Tamaño en el mundo: muro 40,
+    acantilado 76, valla 26 y puente 46 px de alto; en vertical, 30, 70, 16 y 44 px de ancho.
+  - Hoja con cada tira montada (extremo + tramos + inserto + extremo) a su tamaño real: `elementos_arcane/hoja_muros.png`.
+- **En el juego**: un `Colocado` con `tira: {hasta, inserto?, en?}` es una tira entera de `x` a `hasta` (o de `y` a
+  `hasta` en las verticales, ids `<pieza>_v_<bioma>`); `Dibujo.expandirTiras` la cambia por sus piezas.
+  - Huella: el pie del muro (una banda de ~1/3 del alto). Los insertos tienen dos huellas, a los lados del paso.
+  - Los puentes son planos (se dibujan bajo el Pokémon) y dejan un rectángulo de paso sobre el agua.
+  - **Taller** (mapa de prueba): `?taller=<bioma>` y en la consola
+    `pv.scene.getScene('title').scene.start('aventura', {mapa: 'taller'})`.
+- **Estado (2026-10-15):** los 7 sets hechos con la semilla 1, salvo la escalera del volcán (semilla 3: la 1 salió sin
+  escalones). 85 imágenes → 196 piezas en el catálogo. Comprobado en el taller (común, volcán y nieve): muros y
+  acantilados frenan, escalera, portón y puentes dejan pasar.
+  - Flojos: el puente horizontal común no trae barandilla en el centro; los acantilados verticales se leen más como
+    una loma que como una pared, y su tramo es largo (~140 px).
+  - Ya en las zonas de bioma: puentes en los ríos y acantilados/muros en los bordes del macizo ([GDD-mundo.md](../GDD-mundo.md) §5d).
+  - Una tira puede ser solo sus dos extremos (encajan: el derecho empieza donde acaba el izquierdo); los puentes
+    cubren todo su largo y el resto cabe dentro, centrada.
+  - Pendiente: repetir con semilla 2 lo flojo.

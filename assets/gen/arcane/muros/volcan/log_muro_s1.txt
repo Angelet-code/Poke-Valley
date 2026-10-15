@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\volcan\muro_s1_0.png
+96.4s

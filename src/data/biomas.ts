@@ -34,6 +34,8 @@ import type { Alfa, ClimaBase, Llegada, MapaAventura, MapaId, Punto, Ronda, Sali
 import { rng } from '../util';
 import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 
+type Rect = { x0: number; y0: number; x1: number; y1: number };
+
 export type Bioma = 'costa' | 'cantera' | 'pantano' | 'ruinas' | 'volcan' | 'nieve';
 // Lo que no se puede cruzar: 1 en las celdas de macizo. Lo consulta la escena junto con el agua (Aventura → Mundo).
 export interface Macizo { cel: number; cols: number; filas: number; datos: Uint8Array }
@@ -271,6 +273,37 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     }
     enRio = (x, y, m) => (m > 0 || (!enClaro(x, y) && !enExplanada(x, y))) && dist(ptsRio, x, y) < 30 + m;   // claros y explanadas, secos
   }
+  // Puentes (2026-10-15): donde un camino cruza el río, un puente del bioma (tira `puente_<bioma>`, ver
+  // Dibujo.expandirTiras) en lugar del vado. El río sigue por debajo (sin vado cerca) y se pasa por la tabla, que cuenta
+  // como suelo para ver qué se alcanza. Horizontal o vertical según cruce el camino.
+  const puentes: (Rect & { c: Colocado })[] = [];
+  if (ptsRio.length) {
+    const vados: { p: Punto; dx: number; dy: number }[] = [];
+    // Cada cruce: el punto del camino más metido en el río (de cada racha de puntos junto al agua).
+    for (const ps of [puntos, ptsSecreto]) for (let k = 0; k < ps.length; k++) {
+      if (dist(ptsRio, ps[k].x, ps[k].y) >= 30) continue;
+      let mejor = -1;   // con agua de verdad (en un claro el río va seco)
+      for (let q = k; q < ps.length && dist(ptsRio, ps[q].x, ps[q].y) < 30 && (q === k || Math.hypot(ps[q].x - ps[q - 1].x, ps[q].y - ps[q - 1].y) < 20); k = q++)
+        if (enRio(ps[q].x, ps[q].y, 0) && (mejor < 0 || dist(ptsRio, ps[q].x, ps[q].y) < dist(ptsRio, ps[mejor].x, ps[mejor].y))) mejor = q;
+      if (mejor < 0) continue;
+      const pt = ps[mejor];
+      if (vados.some(v => Math.hypot(v.p.x - pt.x, v.p.y - pt.y) < 90)) continue;
+      const a = ps[Math.max(0, mejor - 3)], b = ps[Math.min(ps.length - 1, mejor + 3)];
+      vados.push({ p: pt, dx: b.x - a.x, dy: b.y - a.y });
+    }
+    for (const { p, dx, dy } of vados) {
+      const hor = Math.abs(dx) > Math.abs(dy), ux = hor ? 1 : 0, uy = hor ? 0 : 1;
+      let a = 0, b = 0;   // hasta dónde llega el agua a cada lado del cruce
+      while (a < 90 && enRio(p.x - ux * a, p.y - uy * a, 0)) a += 4;
+      while (b < 90 && enRio(p.x + ux * b, p.y + uy * b, 0)) b += 4;
+      const c: Colocado = hor ? { id: `puente_${def.bioma}`, x: Math.round(p.x - a - 10), y: Math.round(p.y + 20), tira: { hasta: Math.round(p.x + b + 10) } }
+        : { id: `puente_v_${def.bioma}`, x: Math.round(p.x), y: Math.round(p.y - a - 10), tira: { hasta: Math.round(p.y + b + 10) } };
+      puentes.push(hor ? { x0: p.x - a - 10, y0: p.y - 15, x1: p.x + b + 10, y1: p.y + 15, c } : { x0: p.x - 13, y0: p.y - a - 10, x1: p.x + 13, y1: p.y + b + 10, c });
+    }
+    const cerca = (x: number, y: number) => puentes.some(q => x > q.x0 - 40 && x < q.x1 + 40 && y > q.y0 - 40 && y < q.y1 + 40);
+    vado = (x, y) => celda(mCamino, x, y) && !(dist(ptsRio, x, y) < 60 && cerca(x, y));
+  }
+  const enPuente = (x: number, y: number) => puentes.some(q => x >= q.x0 && x <= q.x1 && y >= q.y0 && y <= q.y1);
   // Macizo: lo que no es transitable ni agua.
   const mMacizo = new Uint8Array(GC * GF);
   for (let j = 0; j < GF; j++) for (let i = 0; i < GC; i++) {
@@ -285,7 +318,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const ni = i + di, nj = j + dj, nk = nj * GC + ni;
       if (ni < 0 || nj < 0 || ni >= GC || nj >= GF || alcanzado[nk] || mMacizo[nk]) continue;
-      if (enAgua((ni + 0.5) * CEL, (nj + 0.5) * CEL)) continue;
+      if (enAgua((ni + 0.5) * CEL, (nj + 0.5) * CEL) && !enPuente((ni + 0.5) * CEL, (nj + 0.5) * CEL)) continue;
       alcanzado[nk] = 1; pila.push(nk);
     }
   }
@@ -312,6 +345,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   const libre = (x: number, y: number, rad: number) => ocupado.every(o => Math.hypot(o.x - x, (o.y - y) * 1.3) > o.r + rad);
   const poner = (c: Colocado, rad: number) => { col.push(c); ocupado.push({ x: c.x, y: c.y, r: rad }); };
   if (rellano) ocupado.push({ ...rellano, r: RELLANO.rx + 6 });   // nada encima del rellano de vuelo
+  for (const q of puentes) for (let x = q.x0; x <= q.x1; x += 24) for (let y = q.y0; y <= q.y1; y += 24) ocupado.push({ x, y, r: 20 });   // ni encima de los puentes
 
   // 5. Hito en el claro más lejano de la entrada, y el alfa delante. Postes junto a las salidas.
   const orden = [...claros].sort((a, b) => Math.hypot(a.x - claros[0].x, a.y - claros[0].y) - Math.hypot(b.x - claros[0].x, b.y - claros[0].y));
@@ -340,12 +374,8 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     const x = p.x - dy / l * 34 * lado, y = p.y + dx / l * 34 * lado;
     if (!enAgua(x, y, 8) && !enClaro(x, y)) col.push({ id: D.miga, x: Math.round(x), y: Math.round(y), flip: lado > 0 });
   }
-  // Vados: piedras donde un camino cruza el río.
-  if (ptsRio.length) {
-    const vados: Punto[] = [];
-    for (const pt of [...puntos, ...ptsSecreto]) if (dist(ptsRio, pt.x, pt.y) < 24 && vados.every(v => Math.hypot(v.x - pt.x, v.y - pt.y) > 90)) vados.push(pt);
-    for (const v of vados) col.push({ id: 'piedras_0', x: Math.round(v.x), y: Math.round(v.y) });
-  }
+  // Puentes donde un camino cruza el río (antes, vados con piedras).
+  for (const q of puentes) col.push(q.c);
   // Bolsas: un hito local al fondo y, en la mitad de ellas, un salvaje (ver los salvajes).
   bolsas.forEach((b, i) => poner({ id: D.puntos[(i + 2) % D.puntos.length], x: Math.round(b.x), y: Math.round(b.y - b.rad * 0.35), flip: r() < 0.5 }, 20));
   // Secreto: dos hitos locales y, en medio, la especie rara (ver los salvajes).

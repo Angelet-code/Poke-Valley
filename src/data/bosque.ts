@@ -13,11 +13,12 @@ import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, W as
 import { rng } from '../util';
 import { ARCANE } from '../config';
 import { esBioma, zonaBioma, type Bioma, type Macizo } from './biomas';
+import { taller } from './taller';
 import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 import type { Clima } from '../combate/reglas';
 
 export const T = 24;
-export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma;
+export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma | 'taller';   // taller: mapa de prueba de las tiras (taller.ts)
 export interface Punto { x: number; y: number }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
@@ -331,5 +332,5 @@ export function lago(semilla: number): MapaAventura {
 
 // La zona `id` del mundo de la partida (la semilla es fija: el mundo sale siempre igual).
 export function crearMapa(id: MapaId, semilla: number): MapaAventura {
-  return id === 'bosque' ? bosque(semilla) : id === 'lago' ? lago(semilla) : esBioma(id) ? zonaBioma(id, semilla) : pueblo();
+  return id === 'bosque' ? bosque(semilla) : id === 'lago' ? lago(semilla) : esBioma(id) ? zonaBioma(id, semilla) : id === 'taller' ? taller() : pueblo();
 }

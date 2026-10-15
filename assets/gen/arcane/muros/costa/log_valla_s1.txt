@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\costa\valla_s1_0.png
+112.5s

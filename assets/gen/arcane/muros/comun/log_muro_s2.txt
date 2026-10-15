@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\comun\muro_s2_0.png
+112.6s

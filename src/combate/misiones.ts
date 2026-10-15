@@ -21,7 +21,7 @@ export interface Mision {
 
 export const ZONAS_MISION: MapaId[] = ['bosque', 'lago'];
 export const NOMBRE_ZONA: Record<MapaId, string> = { pueblo: 'Pueblo', bosque: 'Bosque Verde', lago: 'Lago Celeste',
-  costa: 'Costa Brisa', cantera: 'Cantera Gris', pantano: 'Pantano Umbrío', ruinas: 'Ruinas Antiguas', volcan: 'Volcán Ascua', nieve: 'Cumbres Heladas' };
+  costa: 'Costa Brisa', cantera: 'Cantera Gris', pantano: 'Pantano Umbrío', ruinas: 'Ruinas Antiguas', volcan: 'Volcán Ascua', nieve: 'Cumbres Heladas', taller: 'Taller' };
 // Por zona: cuántos derrotar y lo que da cada misión además de la experiencia.
 const AJUSTE: Partial<Record<MapaId, { derrotar: number; items: Record<TipoMision, [string, number][]> }>> = {
   bosque: { derrotar: 5, items: { derrotar: [['oran', 3]], capturar: [['pokeball', 3]], alfa: [['superball', 2], ['sitrus', 2]] } },

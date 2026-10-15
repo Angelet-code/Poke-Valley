@@ -19,11 +19,16 @@ export interface Elemento {
   // Catálogo Arcane: ancla y escala del elemento dibujo con el mismo id. Los polígonos de SUELOS están en px de esa
   // imagen; con `ref` se pasan al mundo con su ancla y su escala, así la planta de la casa queda igual en los dos estilos.
   ref?: { ancla: [number, number]; k: number };
+  // Piezas de una tira (muros, vallas, acantilados, puentes: lab/tools/tiras_arcane.py): `id` de la tira y la parte
+  // (izq/tramo/der en las horizontales, arr/tramo/abj en las verticales, o el inserto: escalera, porton).
+  tira?: { id: string; parte: string; forma: 'H' | 'V' };
+  huellas?: [number, number, number, number][];     // varias huellas (insertos: se pasa por el centro)
 }
 // Lo dibujado: imagen, factor px PNG → mundo, alto en el mundo, base (para el orden) y huella en el mundo.
 export interface Pieza {
   el: Elemento; c: Colocado; img: Phaser.GameObjects.Image; k: number; hM: number; base: number; plano: boolean;
   huella: { x0: number; y0: number; x1: number; y1: number } | null;
+  huellas?: { x0: number; y0: number; x1: number; y1: number }[];
   partes: Phaser.GameObjects.Image[];   // la imagen y sus columnas (para hacerlas transparentes juntas)
   suelo?: [number, number][][];         // edificios: planta en perspectiva (polígonos en px de mundo), colisión y orden
   prof?: Float32Array;                  // edificios: profundidad de cada columna de la textura (borde delantero del suelo)
@@ -111,9 +116,9 @@ export function precargar(scene: Phaser.Scene, cat: { elementos: Elemento[]; vec
 export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
   const k = F / PNG_X * (c.s ?? 1) * (el.k ?? 1) * (ESCALA[el.id] ?? 1), hM = el.h * k;
   const key = screenTex(scene, 'el_' + el.id, Math.max(1, Math.round(hM * S)));
-  const [ax, ay] = el.ancla, plano = el.tipo === 'piedras' || el.tipo === 'losa' || el.tipo === 'detalle' || el.tipo === 'estanque';
+  const [ax, ay] = el.ancla, plano = el.tipo === 'piedras' || el.tipo === 'losa' || el.tipo === 'detalle' || el.tipo === 'estanque' || el.tipo === 'puente';
   // Farolas: la huella del catálogo abarca medio poste (no se podía pasar por detrás); solo la base de piedra.
-  let hu = el.huella;
+  let hu = el.huella ?? (el.huellas ? [Math.min(...el.huellas.map(q => q[0])), Math.min(...el.huellas.map(q => q[1])), Math.max(...el.huellas.map(q => q[2])), Math.max(...el.huellas.map(q => q[3]))] as Elemento['huella'] : null);
   if (hu && /^farola/.test(el.id)) hu = [hu[0], hu[3] - (hu[2] - hu[0]) * 0.45, hu[2], hu[3]];
   const base = hu ? c.y + (hu[3] - ay) * k : c.y;
   const img = scene.add.image(c.x, c.y, key).setOrigin(ax / el.w, ay / el.h).setScale(1 / S).setFlipX(!!c.flip).setDepth(plano ? -9000 + c.y : base);
@@ -136,6 +141,10 @@ export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
     if (c.flip) [hx0, hx1] = [el.w - hx1, el.w - hx0];
     pieza.huella = huella = { x0: c.x + (hx0 - ax) * k, y0: c.y + (hy0 - ay) * k, x1: c.x + (hx1 - ax) * k, y1: c.y + (hy1 - ay) * k };
   }
+  if (el.huellas) pieza.huellas = el.huellas.map(([hx0, hy0, hx1, hy1]) => {
+    if (c.flip) [hx0, hx1] = [el.w - hx1, el.w - hx0];
+    return { x0: c.x + (hx0 - ax) * k, y0: c.y + (hy0 - ay) * k, x1: c.x + (hx1 - ax) * k, y1: c.y + (hy1 - ay) * k };
+  });
   const sue = SUELOS[el.id];
   if (sue) {
     const [rx, ry] = el.ref?.ancla ?? el.ancla, rk = el.ref ? k / (el.k ?? 1) * el.ref.k : k;
@@ -190,3 +199,56 @@ export function puntoLuz(p: Pieza): [number, number] | null {
   if (p.el.id === 'hoguera') return [c.x, c.y - hM * 0.45];
   return null;
 }
+
+// Tiras: un Colocado con `tira` es una tira entera (un muro, una valla, un acantilado, un puente) de c.x a tira.hasta
+// (horizontal: id `<pieza>_<bioma>`) o de c.y a tira.hasta (vertical: id `<pieza>_v_<bioma>`). Se cambia por sus
+// piezas en fila: extremo, tramos repetidos y el otro extremo, con el inserto (escalera, portón) en el tramo más
+// cercano a tira.en. La horizontal va con la base en c.y; la vertical, centrada en c.x. Los puentes dejan además
+// rectángulos de paso sobre el agua (`pasos`). Lleva los tramos enteros que caben (los puentes, los que cubren todo).
+export function expandirTiras(cols: Colocado[], porId: Map<string, Elemento>): { colocados: Colocado[]; pasos: Rect[] } {
+  const colocados: Colocado[] = [], pasos: Rect[] = [];
+  for (const c of cols) {
+    const t = c.tira;
+    if (!t) { colocados.push(c); continue; }
+    const vert = c.id.includes('_v_'), [a, b] = vert ? ['arr', 'abj'] : ['izq', 'der'];
+    const parte = (p: string) => porId.get(`${c.id}_${p}`);
+    const ini = parte(a), tramo = parte('tramo'), fin = parte(b);
+    if (!ini || !tramo || !fin) continue;
+    const s = c.s ?? 1, u = (e: Elemento) => F / PNG_X * (e.k ?? 1) * s;   // px de mundo por px del PNG
+    const largo = (e: Elemento) => (vert ? e.h : e.w) * u(e);
+    const L = Math.abs(t.hasta - (vert ? c.y : c.x)), puente = tramo.tipo === 'puente';
+    // Los puentes cubren todo el largo (tienen que llegar a tierra); el resto cabe dentro. Centrada en su largo.
+    const n = Math.max(0, (puente ? Math.ceil : Math.floor)((L - largo(ini) - largo(fin)) / largo(tramo)));   // sin tramos: los dos extremos encajan
+    const seq: Elemento[] = [ini, ...Array(n).fill(tramo), fin];
+    const ins = t.inserto ? porId.get(t.inserto) : undefined;
+    if (ins && n > 0) {   // el tramo cuyo centro queda más cerca de tira.en
+      let pos = (vert ? c.y : c.x) + largo(ini), mejor = Math.min(1, n), dmin = Infinity;
+      for (let i = 1; i <= n; i++, pos += largo(tramo)) { const d = Math.abs(pos + largo(tramo) / 2 - (t.en ?? (c.x + t.hasta) / 2)); if (d < dmin) { dmin = d; mejor = i; } }
+      seq[mejor] = ins;
+    }
+    const real = seq.reduce((a, e) => a + largo(e), 0), ini0 = (vert ? c.y : c.x) + (L - real) / 2;
+    let cur = ini0;
+    for (const e of seq) {
+      const l = largo(e);
+      colocados.push(vert ? { id: e.id, x: c.x, y: cur + e.ancla[1] * u(e), s } : { id: e.id, x: cur + l / 2, y: c.y, s });
+      cur += l;
+    }
+    if (puente) {   // la tabla del puente: lo que se pisa sobre el agua
+      const g = vert ? tramo.w * u(tramo) : tramo.h * u(tramo);
+      pasos.push(vert ? { x0: c.x - g * 0.32, y0: ini0, x1: c.x + g * 0.32, y1: cur }
+        : { x0: ini0, y0: c.y - g * 0.78, x1: cur, y1: c.y - g * 0.12 });
+    }
+  }
+  return { colocados, pasos };
+}
+export interface Rect { x0: number; y0: number; x1: number; y1: number }
+// Medidas en el mundo de una tira (id `<pieza>_<bioma>` o `<pieza>_v_<bioma>`): largo mínimo (los dos extremos; el
+// derecho empieza donde acaba el izquierdo), largo del tramo y grueso (alto de la horizontal, ancho de la vertical). null si no está en el catálogo.
+export function medidasTira(id: string, porId: Map<string, Elemento>): { minimo: number; tramo: number; grueso: number } | null {
+  const vert = id.includes('_v_'), [a, b] = vert ? ['arr', 'abj'] : ['izq', 'der'];
+  const ini = porId.get(`${id}_${a}`), tramo = porId.get(`${id}_tramo`), fin = porId.get(`${id}_${b}`);
+  if (!ini || !tramo || !fin) return null;
+  const u = (e: Elemento) => F / PNG_X * (e.k ?? 1), largo = (e: Elemento) => (vert ? e.h : e.w) * u(e);
+  return { minimo: largo(ini) + largo(fin), tramo: largo(tramo), grueso: (vert ? tramo.w : tramo.h) * u(tramo) };
+}
+export const enRect = (rs: Rect[], x: number, y: number) => rs.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);

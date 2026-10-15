@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\comun\escalera_s1_0.png
+63.2s

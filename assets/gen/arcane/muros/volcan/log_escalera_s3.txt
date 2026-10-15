@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\volcan\escalera_s3_0.png
+117.3s

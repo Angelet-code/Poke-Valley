@@ -1,0 +1,84 @@
+comun|acantilado|H|A long section of a tall earthy cliff wall of layered brown and grey rock with roots, and grass tufts along its flat grassy top edge
+comun|acantilado|V|A long ridge of tall earthy cliffs of brown and grey rock with grass on top
+comun|escalera|H|A section of a tall earthy brown and grey rock cliff wall with wide rough stone stairs carved into its middle climbing to the top
+comun|montana|S|A huge mossy grey rock mountain outcrop with a couple of small pine trees on it, a wide impassable mound of crags and boulders
+comun|arboleda|S|A dense impassable clump of many tall round leafy teal-green trees packed tightly together, a thick forest copse
+comun|muro|H|A long low dry stone wall of stacked rounded grey fieldstones with moss
+comun|muro|V|A long low dry stone wall of stacked rounded grey fieldstones with moss
+comun|porton|H|A section of a low dry stone wall of stacked grey fieldstones with an open wooden gate in its middle
+comun|valla|H|A long rustic wooden fence of vertical posts with two horizontal rails
+comun|valla|V|A long rustic wooden fence of posts with two horizontal rails
+comun|puente|H|A long straight wooden plank footbridge with simple wooden railings on both sides
+comun|puente|V|A long straight wooden plank footbridge with simple wooden railings on both sides
+costa|acantilado|H|A long section of a tall sandy ochre sea cliff wall with eroded horizontal layers and tufts of pale dune grass on its flat top
+costa|acantilado|V|A long ridge of tall sandy ochre sea cliffs with eroded layers and pale dune grass on top
+costa|escalera|H|A section of a tall sandy ochre sea cliff wall with a wide wooden staircase climbing up its middle to the top
+costa|montana|S|A huge weathered grey coastal rock stack outcrop with barnacles, seaweed at its base and a few seabird nests, wide and impassable
+costa|arboleda|S|A dense impassable thicket of many coconut palm trees and big tropical bushes packed tightly together
+costa|muro|H|A long stone breakwater sea wall of big stacked grey blocks with barnacles and seaweed
+costa|muro|V|A long stone breakwater sea wall of big stacked grey blocks with barnacles
+costa|porton|H|A section of a stone sea wall of big grey blocks with an open archway passage in its middle
+costa|valla|H|A long weathered driftwood fence of uneven bleached wooden posts tied together with rope
+costa|valla|V|A long weathered driftwood fence of uneven bleached wooden posts tied with rope
+costa|puente|H|A long straight wooden boardwalk pier bridge on thick wooden posts with rope railings
+costa|puente|V|A long straight wooden boardwalk pier bridge on thick wooden posts with rope railings
+cantera|acantilado|H|A long section of a tall grey quarry cliff wall, a sheer rock face with layered strata and a rough flat top edge
+cantera|acantilado|V|A long ridge of tall grey quarry cliffs, a sheer rock face with layered strata
+cantera|escalera|H|A section of a tall grey quarry cliff wall with steep wooden plank steps climbing up its middle to the top
+cantera|montana|S|A huge massive craggy grey rock mountain, a wide impassable mound of stacked boulders and sharp cliffs
+cantera|arboleda|S|A huge impassable rockslide pile of big fallen grey boulders and rubble heaped together
+cantera|muro|H|A long retaining wall of stacked rough-cut grey stone blocks reinforced with vertical wooden beams
+cantera|muro|V|A long retaining wall of stacked rough-cut grey stone blocks reinforced with wooden beams
+cantera|porton|H|A section of a retaining wall of rough grey stone blocks with an open passage framed by wooden mine beams in its middle
+cantera|valla|H|A long sturdy mine fence of thick wooden posts and crossed planks
+cantera|valla|V|A long sturdy mine fence of thick wooden posts and crossed planks
+cantera|puente|H|A long rope suspension bridge of wooden planks with thick rope railings on both sides
+cantera|puente|V|A long rope suspension bridge of wooden planks with thick rope railings on both sides
+pantano|acantilado|H|A long section of a tall swamp embankment of dark wet earth and tangled gnarled tree roots with hanging grey moss along its top
+pantano|acantilado|V|A long ridge of tall dark wet earth banks with tangled gnarled roots and hanging grey moss
+pantano|escalera|H|A section of a tall bank of dark wet earth and tangled roots with crude rotten log steps climbing up its middle to the top
+pantano|montana|S|A huge impassable mound of gnarled twisted giant tree roots and dark mossy rocks with hanging grey moss
+pantano|arboleda|S|A dense impassable thicket of many gnarled dead swamp trees with hanging grey moss packed tightly together
+pantano|muro|H|A long palisade of sharpened rotten dark wooden stakes lashed together, covered with moss and small fungi
+pantano|muro|V|A long palisade of sharpened rotten dark wooden stakes lashed together, mossy
+pantano|porton|H|A section of a palisade of sharpened rotten dark wooden stakes with an open crooked gate in its middle
+pantano|valla|H|A long crooked old wooden fence with leaning posts and broken planks, mossy
+pantano|valla|V|A long crooked old wooden fence with leaning posts and broken planks, mossy
+pantano|puente|H|A long rickety rotten wooden plank bridge on crooked posts with a sagging mossy rope railing
+pantano|puente|V|A long rickety rotten wooden plank bridge on crooked posts with a sagging mossy rope railing
+ruinas|acantilado|H|A long section of a tall cliff of pale stone with ancient carved stone blocks embedded in it, ivy and small pink flowers along its flat top
+ruinas|acantilado|V|A long ridge of tall pale stone cliffs with ancient carved blocks embedded, ivy on top
+ruinas|escalera|H|A section of a tall pale stone cliff with a wide ancient carved stone staircase climbing up its middle to the top, ivy
+ruinas|montana|S|A huge overgrown hill of collapsed ancient stone ruins, fallen columns and carved blocks covered with ivy, impassable
+ruinas|arboleda|S|A dense impassable grove of many blossoming trees with pale pink flower canopies packed tightly together
+ruinas|muro|H|A long section of an ancient ruined stone brick wall with moss and ivy
+ruinas|muro|V|A long section of an ancient ruined stone brick wall with moss and ivy
+ruinas|porton|H|A section of an ancient ruined stone brick wall with a carved open stone gateway in its middle, ivy
+ruinas|valla|H|A long ancient carved stone balustrade railing with small round pillars, cracked, with ivy
+ruinas|valla|V|A long ancient carved stone balustrade railing with small round pillars, cracked, with ivy
+ruinas|puente|H|A long straight ancient carved stone bridge with low stone parapets on both sides, cracked, with ivy
+ruinas|puente|V|A long straight ancient carved stone bridge with low stone parapets on both sides, cracked, with ivy
+volcan|acantilado|H|A long section of a tall cliff wall of dark basalt columns with thin glowing orange lava cracks and a flat top
+volcan|acantilado|V|A long ridge of tall cliffs of dark basalt columns with thin glowing orange lava cracks
+volcan|escalera|H|A section of a tall dark basalt column cliff with rough dark stone stairs climbing up its middle to the top
+volcan|montana|S|A huge dark volcanic rock mountain with glowing orange lava cracks and a wisp of smoke, wide and impassable
+volcan|arboleda|S|A dense impassable cluster of jagged black obsidian and dark basalt rock spires packed tightly together
+volcan|muro|H|A long fortified wall of big dark volcanic stone blocks with faintly glowing orange cracks between them
+volcan|muro|V|A long fortified wall of big dark volcanic stone blocks with faintly glowing orange cracks
+volcan|porton|H|A section of a fortified wall of big dark volcanic stone blocks with an open dark iron gate in its middle
+volcan|valla|H|A long fence of black iron posts linked with heavy chains
+volcan|valla|V|A long fence of black iron posts linked with heavy chains
+volcan|puente|H|A long straight bridge of dark volcanic stone slabs with black iron chain railings on both sides
+volcan|puente|V|A long straight bridge of dark volcanic stone slabs with black iron chain railings on both sides
+nieve|acantilado|H|A long section of a tall grey rock cliff wall with a thick cap of snow on its flat top and icicles hanging down
+nieve|acantilado|V|A long ridge of tall grey rock cliffs with a thick snow cap and icicles
+nieve|escalera|H|A section of a tall grey rock cliff with a thick snow cap and snowy stone stairs climbing up its middle to the top
+nieve|montana|S|A huge snowy grey rock mountain with a thick snow cap and icy crags, wide and impassable
+nieve|arboleda|S|A dense impassable cluster of many tall snowy pine trees packed tightly together
+nieve|muro|H|A long wall of stacked blocks of pale blue ice with snow on top
+nieve|muro|V|A long wall of stacked blocks of pale blue ice with snow on top
+nieve|porton|H|A section of a wall of stacked pale blue ice blocks with an open icy archway in its middle, snow on top
+nieve|valla|H|A long rustic wooden log fence with snow on its rails and posts
+nieve|valla|V|A long rustic wooden log fence with snow on its rails and posts
+nieve|puente|H|A long straight wooden plank bridge covered with snow, with wooden railings on both sides
+nieve|puente|V|A long straight wooden plank bridge covered with snow, with wooden railings on both sides

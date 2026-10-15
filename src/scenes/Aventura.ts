@@ -14,7 +14,8 @@ import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
-import { dibujar, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
+import { despejarPuentes, tirasDeBorde } from '../data/bordes';
+import { dibujar, enRect, expandirTiras, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
 import { pipelineCel } from '../render/CelPipeline';
 import { Terrain } from '../render/Terrain';
@@ -179,9 +180,13 @@ export class Aventura extends Phaser.Scene {
     if (n !== this.montaje || !this.sys.isActive()) return;
     this.terrain.build(this);
     const cat = this.registry.get(REG.dibujo) as { elementos: Elemento[] }, porId = new Map(cat.elementos.map(e => [e.id, e]));
+    tirasDeBorde(this.mapa, porId, (x, y) => this.terrain.esAgua(x, y));   // acantilados y muros en el borde del macizo
+    const tiras = expandirTiras(this.mapa.colocados, porId);   // muros, vallas, acantilados y puentes en fila
+    this.mapa.colocados = tiras.colocados;
+    despejarPuentes(this.mapa, tiras.pasos);
     const bloques = this.crearEscenario(porId);
     this.mundo = new Mundo({
-      mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y),   // el macizo de las zonas de bioma bloquea como el agua
+      mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => !enRect(tiras.pasos, x, y) && (this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y)),   // el macizo de las zonas de bioma bloquea como el agua
       anatomia: this.anatomia, probShiny: this.probShiny,
     });
     this.ponerVuelo(porId, bloques);
@@ -253,7 +258,8 @@ export class Aventura extends Phaser.Scene {
     if (p.suelo) for (const poli of p.suelo) {
       const xs = poli.map(q => q[0]), ys = poli.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
       bloques.push({ x: (x0 + x1) / 2, y: y1, w: x1 - x0, h: y1 - y0, poli });
-    } else if (p.huella) { const h = p.huella; bloques.push({ x: (h.x0 + h.x1) / 2, y: h.y1, w: h.x1 - h.x0, h: h.y1 - h.y0, rombo: el.tipo === 'estanque' }); }
+    } else if (p.huellas) for (const h of p.huellas) bloques.push({ x: (h.x0 + h.x1) / 2, y: h.y1, w: h.x1 - h.x0, h: h.y1 - h.y0 });
+    else if (p.huella) { const h = p.huella; bloques.push({ x: (h.x0 + h.x1) / 2, y: h.y1, w: h.x1 - h.x0, h: h.y1 - h.y0, rombo: el.tipo === 'estanque' }); }
     const l = puntoLuz(p);
     if (l) this.encender(l[0], l[1], TIPOS_LUZ[c.luz ?? (el.id === 'hoguera' ? 'hoguera' : 'farol')], p.base + 1);
   }
