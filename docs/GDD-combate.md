@@ -233,7 +233,12 @@ a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 bot�
   son los oficiales (`data/pokedex.ts`).
 - **Aprendizaje por nivel**: es el de Escarlata/Púrpura, o el de la última generación que lo tenga. Lo genera
   `tools/datos_combate.mjs` desde Pokémon Showdown en `src/data/gen/combate.json`.
-- **Empiezas** con Bulbasaur a nivel 1 y solo su ataque básico, Placaje. El ataque básico es el primer movimiento
+- **Elección del compañero** (`scenes/Eleccion.ts`): al crear partida salen 9 Pokémon al azar, de 9 tipos distintos,
+  en su primera forma, de líneas de 3 fases (de 2 si el tipo no tiene ninguna; nunca uno que no evolucione) y ninguno
+  ultra raro (las rarezas de los biomas y los pseudolegendarios); siempre 2 o 3 de
+  ellos son iniciales de cualquier generación (`INICIALES` en `data/pokedex.ts`, que no salen como salvajes). Solo se
+  ven sus siluetas; se sabe cuál es al elegirlo, sin vuelta atrás.
+- **Empiezas** con él a nivel 1 y solo su ataque básico (Placaje en Bulbasaur). El ataque básico es el primer movimiento
   de daño que aprende. Los demás movimientos de nivel 1 se aprenden al llegar a nivel 2.
 - **Un capturado** sabe su básico y todo lo de su nivel.
 - **Evolución**: a los niveles de `data/pokedex.ts`. Cambian el sprite y los stats y aprende lo nuevo de su forma.

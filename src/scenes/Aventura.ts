@@ -81,7 +81,7 @@ function texturaPixel(scene: Phaser.Scene, clave: string, filas: string[]): void
   filas.forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COL_VUELO[ch]; g.fillRect(i, j, 1, 1); } }));
   c.refresh();
 }
-type DatosMapa = { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
+type DatosMapa = { nueva?: boolean; inicial?: string; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
 
 // Mapa (M): la zona entera desde arriba, con una segunda cámara encajada en este hueco (px de pantalla). La escena
 // MapaZona pinta el marco alrededor y las marcas encima (tú, salidas, tablón).
@@ -179,7 +179,7 @@ export class Aventura extends Phaser.Scene {
     this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null;
     this.placas.clear();
     this.red?.fuente(null);
-    if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva();
+    if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial);
     const id = data.mapa ?? 'pueblo';
     this.red?.presentar(this.partida.estado.semilla);
     this.semillaMapa = this.red?.semilla ?? this.partida.estado.semilla;

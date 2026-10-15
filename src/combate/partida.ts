@@ -60,9 +60,10 @@ export class Partida {
   estado: Estado;
   constructor(e: Estado) { this.estado = e; }
 
-  static nueva(): Partida {
+  // `inicial`: la línea elegida en scenes/Eleccion.ts (Bulbasaur si no se dice).
+  static nueva(inicial = 'bulbasaur'): Partida {
     const p = new Partida({ version: VERSION, uid: 1, equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
-    const b = p.crear('bulbasaur', 1);
+    const b = p.crear(LINEAS[inicial] ? inicial : 'bulbasaur', 1);
     p.estado.activo = b.uid;
     return p;
   }

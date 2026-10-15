@@ -61,7 +61,9 @@ export class Title extends Phaser.Scene {
         return;
       }
       if (nueva) Partida.borrar();
-      this.scene.start('aventura', { nueva: nueva || !hay });
+      // Partida nueva: antes se elige el compañero entre 9 siluetas (scenes/Eleccion.ts).
+      if (nueva || !hay) this.scene.start('eleccion');
+      else this.scene.start('aventura', { nueva: false });
     };
     const controles: Opcion = { texto: 'Controles', detalle: GRANJA ? 'WASD, F, B, M…' : 'WASD, 1-0, Tab, K…', hacer: () => this.verControles() };
     const detalle = !res ? '' : aventura ? `${aventura.nombre} Nv ${aventura.nivel} · ${aventura.equipo} Pokémon`
@@ -71,7 +73,7 @@ export class Title extends Phaser.Scene {
     const ops: Opcion[] = res
       ? [{ texto: 'Continuar', detalle, hacer: () => empezar(false) },
         { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: nueva }, controles]
-      : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'Bulbasaur y diez Poké Balls', hacer: () => empezar(true) }, controles];
+      : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'elige compañero y diez Poké Balls', hacer: () => empezar(true) }, controles];
     if (GRANJA) this.menu(ops); else this.menuAventura(ops);
     if (GRANJA) this.poke('b-Idle', 684, 640, 72, 1600, 0);
     this.pie();

@@ -6,7 +6,7 @@
 // La clave es también la de su línea evolutiva en data/pokedex.ts (stats, niveles y evoluciones).
 // Sprites PMD de SpriteCollab en assets/sprites/pokemon/<dex>/.
 // Ladrillos: los cuece el horno con piedra; platos: guiso de bayas que se cocina en la casa (GDD-pueblo §11).
-import { LINEAS, type Tipo } from './pokedex';
+import { INICIALES, LINEAS, type Tipo } from './pokedex';
 
 export type Recurso = 'madera' | 'piedra' | 'bayas' | 'ladrillos' | 'platos';
 export type TipoTarea = 'arbol' | 'roca' | 'planta';
@@ -49,7 +49,7 @@ const AFINIDAD: Record<Tipo, TipoTarea> = {
   normal: 'arbol', volador: 'arbol', veneno: 'arbol', fantasma: 'arbol', siniestro: 'arbol',
 };
 for (const l of Object.values(LINEAS)) {
-  if (ESPECIES[l.id]) continue;
+  if (ESPECIES[l.id] || (INICIALES.includes(l.id) && l.id !== 'bulbasaur')) continue;   // los iniciales no rondan como salvajes
   const f0 = l.formas[0], bst = l.formas[l.formas.length - 1].base.reduce((t, v) => t + v, 0);
   ESPECIES[l.id] = { dex: f0.dex, nombre: f0.nombre, afinidad: AFINIDAD[l.tipo], riega: l.tipos.includes('agua') || undefined,
     trabajo: 'Attack', atrapa: Math.round(Math.min(0.6, Math.max(0.1, 1.05 - bst / 600)) * 100) / 100 };
