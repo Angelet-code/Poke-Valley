@@ -15,7 +15,7 @@ Misiones y alfas: §2.
 
 | Zona | Nivel | Qué hay | Especies | Estado |
 |---|---|---|---|---|
-| **Pueblo** | — | Tu hogar. Tus Pokémon pasean por la plaza; con F te conviertes en ellos. | — | Hecho |
+| **Pueblo** | — | Tu hogar, por zonas (§1b). Tus Pokémon pasean por la plaza; con F te conviertes en ellos. | — | Hecho |
 | **Bosque Verde** | 1-7 | Claros unidos por senderos y borde espeso de árboles. Al fondo, un sendero sale por el este al lago. | 7 de `ESPECIES_BOSQUE` (Bicho, Planta, Volador…) | Hecho |
 | **Lago Celeste** | 5-10 | Lago con islote, playas a trozos, un camino que lo rodea, rocas y arbustos en la orilla. | 7 de `ESPECIES_LAGO` (Psyduck, Marill, Magikarp, Pachirisu…) | Hecho con arte provisional |
 
@@ -29,6 +29,26 @@ Misiones y alfas: §2.
   pixel art (`Paleta.sinPared` en la paleta dibujo).
 - **Cambio de zona**: andando hasta el borde, con un fundido. El suelo tarda 1-2 s en calcularse (consola: "Suelo
   listo en X ms").
+
+### 1b. El pueblo, por zonas (2026-10-15)
+Código: [src/data/puebloAventura.ts](../src/data/puebloAventura.ts). Solo es el pueblo del modo aventura; el del modo
+granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de noche](img/pueblo_v2_noche.jpg) y
+[el huerto](img/pueblo_v2_huerto.jpg).
+
+- **Plaza central** (losas): la hoguera en medio, el tablón de misiones al oeste, el pozo al este y farolas alrededor.
+  Apareces al sur de la hoguera.
+- **Avenida** (losas): de la boca sur del pueblo (salida al bosque, con su poste) a la plaza.
+- **Calle del norte** (tierra): las casas en fila con la puerta a la calle. De oeste a este: la cabaña, **tu casa**
+  (sobre la plaza) y la casa larga.
+- **Oeste:**
+  - la casa de la chimenea;
+  - el **huerto**: 6 parcelas, cada una un corral de valla, sobre una mancha de tierra orgánica. Es el sitio para
+    sembrar bayas cuando el modo aventura las tenga (`MapaAventura.parcelas`);
+  - el estanque al lado para regar.
+- **Este, el mercado:** la tienda y el almacén, unidos a la plaza por una calle.
+- **Solares libres** (`SOLARES`): dos trozos de césped al sur, para edificios futuros.
+- **Borde:** dos filas de árboles, con la boca del sur libre. Junto al huerto y al mercado la fila interior se aparta
+  para no taparlos.
 
 ### Formato de una zona (`MapaAventura`)
 `id`, `nombre`, `lema` (lo que dice el rótulo), `bienvenida` (aviso al entrar), `datos` (suelo: 0 césped, 1 tierra o
@@ -75,6 +95,13 @@ Uno por zona (`MapaAventura.alfa`, data/bosque.ts), con una forma fija aunque no
 Cómo es (constantes `ALFA_*` en Aventura.ts):
 - Sprite ×1,4, aura rojiza que late (resplandor + anillo en el suelo), barra de vida más ancha con borde dorado y el
   triple de vida. Siempre peleón. No se deja capturar.
+- En el HUD, su marco es dorado con el **sprite pixel art de Aerodactyl** (PMD, mirando a la derecha) entero de color
+  tierra, pequeño, con la esquina que forman su mandíbula y su cuerpo en la esquina del hueco del retrato (el marco
+  de un alfa baja un poco para que el ala quepa), como el dragón del marco de élite del WoW
+  (`assets/game/pixel/ui/aerodactyl_alfa.png`, de `assets/gen/pixel/ui_dragon/tierra.py`; `ADORNO_*` en
+  HudAventura.ts). Se pinta a escala S − 1, porque reducido a menos píxeles perdía la forma. A color, en
+  `assets/game/pixel/ui/v1_aerodactyl/`. Descartados: el dragón dibujado a código (`assets/gen/pixel/ui_dragon/v1_codigo/`)
+  y los aros con un Aerodactyl dorado de Klein (`assets/gen/pixel/ui_dragon/final/`).
 - **Golpe anunciado**: cada 8-11 s, si estás a menos de 190 px, se para a cargar y marca un círculo rojo en el suelo
   donde estás; se llena en 1,8 s y, si sigues dentro, te quita el 35 % de la vida. Si sales: "¡Esquivado!".
 - Da el triple de experiencia y suelta siempre una Super Ball (bosque) o Ultra Ball (lago) y una Baya Zidra.

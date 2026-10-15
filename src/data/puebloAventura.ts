@@ -1,0 +1,133 @@
+// El pueblo del modo aventura (docs/GDD-mundo.md §1), distribuido por zonas (2026-10-15). El del modo granja sigue en
+// mapaDibujo.ts, sin cambios. Mismo tamaño (42×38 casillas) y la misma boca al sur, por donde se sale al bosque.
+//
+//   ┌──────────────────── bosque ────────────────────┐
+//   │  cabaña        TU CASA          casa larga     │   ← calle del norte (tierra), con las puertas
+//   │      ╲            │                  ╱         │
+//   │ chimenea ── PLAZA (hoguera, tablón, pozo) ── tienda
+//   │      │            │                  │         │
+//   │  HUERTO (6        │     solar          almacén │
+//   │  parcelas)  estanque   avenida                 │
+//   │      solar        │                            │
+//   └─────────────────── salida ─────────────────────┘
+//
+// Suelo: 2 (losas) en la plaza y la avenida principal, 1 (tierra) en las calles y dentro de las parcelas del huerto.
+// Las parcelas son corrales de valla con tierra dentro: el sitio para sembrar bayas cuando el modo aventura las tenga.
+// Los solares quedan libres (césped) para edificios futuros.
+import type { MapData } from './types';
+import type { Colocado } from './mapaDibujo';
+
+export const T = 24;
+export const MW = 42, MH = 38;
+export const W = MW * T, H = MH * T;
+
+type P = [number, number];
+interface Rect { x0: number; y0: number; x1: number; y1: number }
+
+// ---- Puntos clave (px de mundo) ----
+export const PLAZA: P = [504, 470];                 // centro de la plaza
+const R_PLAZA = 78;
+export const TABLON = { x: 440, y: 452 };           // tablón de misiones, al oeste de la hoguera
+export const INICIO: P = [504, 540];                // donde apareces (en la plaza, al sur de la hoguera)
+export const SALIDA_X: [number, number] = [520, 600]; // boca sur del pueblo
+// Parcelas del huerto (centro de cada corral) y solares libres para construir.
+export const PARCELAS: P[] = [[150, 640], [222, 640], [294, 640], [150, 712], [222, 712], [294, 712]];
+export const SOLARES: Rect[] = [{ x0: 640, y0: 760, x1: 900, y1: 870 }, { x0: 330, y0: 760, x1: 480, y1: 870 }];
+
+// ---- Calles (polilíneas) ----
+const AVENIDA: P[] = [[560, H + 10], [556, 800], [540, 640], [510, 540]];                                // losas
+const CALLES: P[][] = [
+  [[110, 334], [300, 330], [470, 326], [640, 330], [900, 334]],      // calle del norte, delante de las puertas
+  [[504, 392], [500, 334]],                                          // plaza → calle del norte (tu casa)
+  [[582, 478], [700, 500], [780, 548], [800, 620], [800, 780]],      // plaza → tienda → almacén
+  [[426, 478], [330, 520], [262, 560], [222, 600]],                  // plaza → huerto
+  [[330, 520], [250, 500], [190, 500]],                              // → casa de la chimenea
+  [[222, 600], [360, 600], [430, 700], [540, 700]],                  // huerto → avenida (pasando junto al estanque)
+];
+
+function distSeg(x: number, y: number, [ax, ay]: P, [bx, by]: P): number {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)) : 0;
+  return Math.hypot(x - ax - t * dx, y - ay - t * dy);
+}
+const distLinea = (x: number, y: number, l: P[]) => Math.min(...l.slice(1).map((b, i) => distSeg(x, y, l[i], b)));
+// Ondulación suave del borde de las calles (que no queden como tubos).
+const onda = (x: number, y: number) => Math.sin(x * 0.031 + y * 0.017) * 3 + Math.sin(x * 0.011 - y * 0.027) * 2;
+
+export function terrenoPueblo(): MapData {
+  const vert: number[][] = [];
+  for (let vy = 0; vy <= MH; vy++) {
+    const fila: number[] = [];
+    for (let vx = 0; vx <= MW; vx++) {
+      const x = vx * T, y = vy * T, o = onda(x, y);
+      const plaza = Math.hypot(x - PLAZA[0], (y - PLAZA[1]) * 1.25) < R_PLAZA + o;
+      const avenida = distLinea(x, y, AVENIDA) < 26 + o;
+      const calle = CALLES.some(l => distLinea(x, y, l) < 17 + o);
+      // El huerto: una mancha de tierra orgánica bajo los seis corrales (no casillas rectangulares).
+      const parcela = Math.hypot((x - 222) / 140, (y - 664) / 78) < 1 + o * 0.03;
+      fila.push(plaza || avenida ? 2 : calle || parcela ? 1 : 0);
+    }
+    vert.push(fila);
+  }
+  return { mw: MW, mh: MH, vert, inicio: INICIO, entrada: [560, H - 20], solares: SOLARES.map(s => [s.x0, s.y0, s.x1, s.y1]) };
+}
+
+// ---- Lo colocado ----
+const EDIFICIOS: Colocado[] = [
+  // Calle del norte: las puertas dan a la calle (quedan ~30 px a la izquierda y ~15 por encima del pie de la casa).
+  { id: 'casa_cabana', x: 220, y: 306 },
+  { id: 'casa_grande', x: 530, y: 304, rol: 'casa' },     // tu casa, sobre la plaza
+  { id: 'casa_larga', x: 800, y: 306 },
+  // Oeste: la casa de la chimenea. Este: el mercado.
+  { id: 'casa_chimenea', x: 150, y: 486 },
+  { id: 'tienda', x: 836, y: 540, rol: 'tienda' },
+  { id: 'almacen', x: 850, y: 744, rol: 'almacen' },
+];
+const PLAZA_COSAS: Colocado[] = [
+  { id: 'hoguera', x: PLAZA[0], y: PLAZA[1] + 6 },
+  { id: 'pozo', x: 574, y: 452 },
+  // Farolas alrededor de la plaza y a la entrada de cada calle.
+  { id: 'farola', x: 436, y: 404 }, { id: 'farola', x: 574, y: 404, flip: true },
+  { id: 'farola', x: 432, y: 530 }, { id: 'farola', x: 580, y: 530, flip: true },
+  { id: 'farola_madera', x: 640, y: 352 }, { id: 'farola_madera', x: 360, y: 352, flip: true },
+  { id: 'farola_madera', x: 760, y: 610 }, { id: 'farola_madera', x: 300, y: 560, flip: true },
+  { id: 'farola', x: 520, y: 878 }, { id: 'farola', x: 602, y: 878, flip: true },   // boca del pueblo
+  { id: 'farola', x: 520, y: 700 },
+  { id: 'poste', x: 500, y: H - 40 },
+];
+// Huerto: un corral de valla por parcela (con tierra dentro), el estanque para regar y algún detalle.
+const HUERTO: Colocado[] = [
+  ...PARCELAS.map(([x, y]) => ({ id: 'valla', x, y })),
+  { id: 'estanque', x: 380, y: 680 },
+  { id: 'tocon', x: 96, y: 590 }, { id: 'arbusto', x: 100, y: 760 }, { id: 'flores', x: 340, y: 620 },
+];
+// Verde: árboles en grupos por los rincones y entre zonas, arbustos junto a las casas, flores a los lados de las calles.
+const VERDE: Colocado[] = [
+  { id: 'arbol_alto', x: 380, y: 250 }, { id: 'arbol_bajo', x: 676, y: 246, flip: true },
+  { id: 'arbol_alto', x: 660, y: 440 }, { id: 'arbol_bajo', x: 690, y: 690, flip: true },
+  { id: 'arbol_alto', x: 340, y: 450, flip: true }, { id: 'arbol_bajo', x: 440, y: 800 },
+  { id: 'arbusto', x: 300, y: 300 }, { id: 'arbusto', x: 640, y: 296, flip: true }, { id: 'arbusto', x: 940, y: 640 },
+  { id: 'flores', x: 470, y: 360 }, { id: 'flores', x: 610, y: 600, flip: true }, { id: 'flores', x: 460, y: 620 },
+  { id: 'flores', x: 760, y: 380 }, { id: 'flores', x: 250, y: 380, flip: true }, { id: 'flores', x: 620, y: 760 },
+  { id: 'roca_4', x: 720, y: 830 }, { id: 'roca_6', x: 860, y: 860, s: 0.8 }, { id: 'roca_1', x: 380, y: 840, s: 0.8 },
+  { id: 'tocon', x: 700, y: 400 },
+];
+// Borde: dos filas de árboles (y alguna roca) alrededor, con la boca del sur libre.
+function borde(): Colocado[] {
+  const out: Colocado[] = [];
+  let n = 0;
+  const id = () => (n++ % 3 === 0 ? 'arbol_bajo' : 'arbol_alto');
+  for (let x = 20; x <= W - 10; x += 44) {
+    out.push({ id: id(), x, y: 40 + (n % 2) * 14, flip: n % 2 === 0 }, { id: id(), x: x + 22, y: 96 + (n % 3) * 8 });
+    if (x < SALIDA_X[0] - 70 || x > SALIDA_X[1] + 50) out.push({ id: id(), x, y: H + 10 - (n % 2) * 10, flip: n % 2 === 1 });
+  }
+  for (let y = 150; y <= H - 30; y += 46) {
+    out.push({ id: id(), x: 24 + (n % 2) * 8, y }, { id: id(), x: W - 20 - (n % 2) * 8, y, flip: true });
+    // Fila interior, salvo donde están la casa de la chimenea y el huerto (oeste) y el mercado (este).
+    if (y < 360 || y > 800) out.push({ id: id(), x: 64, y: y + 22, flip: true });
+    if (y < 400 || y > 820) out.push({ id: id(), x: W - 62, y: y + 22 });
+  }
+  out.push({ id: 'roca_0', x: 120, y: 880, s: 0.9 }, { id: 'roca_2', x: 940, y: 190, s: 0.8 }, { id: 'roca_5', x: 70, y: 200 });
+  return out;
+}
+
+export const COLOCADOS_PUEBLO: Colocado[] = [...EDIFICIOS, ...PLAZA_COSAS, ...HUERTO, ...VERDE, ...borde()];

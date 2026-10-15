@@ -8,7 +8,8 @@
 // - Lago Celeste (nv 5-10): un lago de agua del suelo (Terrain, vértices 3) con playas, un islote y un camino que lo
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
-import { COLOCADOS, H as H_PUEBLO, W as W_PUEBLO, terrenoDibujo, type Colocado } from './mapaDibujo';
+import type { Colocado } from './mapaDibujo';
+import { COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, TABLON, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { ARCANE } from '../config';
 
@@ -31,14 +32,14 @@ export interface MapaAventura {
   salvajes: Ronda[];
   alfa?: Alfa;
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
+  parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
 }
 
-const TABLON: Punto = { x: 392, y: 436 };
 
 export function pueblo(): MapaAventura {
-  const datos = terrenoDibujo(), [ix, iy] = datos.inicio ?? [469, 400];
+  const datos = terrenoPueblo(), [ix, iy] = datos.inicio ?? [504, 540];
   return {
-    id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS, { id: ARCANE ? 'tablon' : 'valla', x: TABLON.x, y: TABLON.y }, { id: 'poste', x: 500, y: H_PUEBLO - 40 }], detalles: 70,
+    id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS_PUEBLO, { id: ARCANE ? 'tablon' : 'valla', x: TABLON.x, y: TABLON.y }], detalles: 40,
     lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del sur lleva al bosque.',
     llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: H_PUEBLO - 46, dir: 4 } },
     salidas: [{ x0: 520, y0: H_PUEBLO - 14, x1: 600, y1: H_PUEBLO, a: 'bosque', texto: 'Al bosque' }],
@@ -46,6 +47,7 @@ export function pueblo(): MapaAventura {
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,
+    parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };
 }
 
