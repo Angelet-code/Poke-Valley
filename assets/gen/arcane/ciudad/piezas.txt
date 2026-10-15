@@ -1,0 +1,32 @@
+centro_pokemon|edificio|180|A Pokemon Center building: a two-storey building with a red roof, white walls, big glass sliding doors, a large Poke Ball emblem sign above the entrance
+tienda_pokemon|edificio|150|A Poke Mart shop building: a one-storey shop with a blue roof, white walls, glass doors and a blue sign with a Poke Ball symbol
+gimnasio|edificio|220|A Pokemon Gym building: a wide imposing hall with a domed copper roof, stone columns at the entrance and a big double door
+ayuntamiento|edificio|220|A grand town hall with a clock tower in the middle, a pale stone facade, tall windows and wide entrance steps
+casa_ciudad_1|edificio|110|A narrow three-storey town house with pale yellow plaster walls, a slate roof with a dormer window, a wooden door and window flower boxes
+casa_ciudad_2|edificio|120|A two-storey brick town house with a red tiled roof, white window frames, a chimney and a small porch over the door
+casa_ciudad_3|edificio|130|A two-storey half-timbered town house with white plaster, dark wooden beams, a steep brown roof and a shop window on the ground floor
+torre_reloj|edificio|80|A tall slender stone clock tower with a big round clock face and a pointed copper green roof
+mercado_cubierto|edificio|200|A covered market hall: an open-sided roofed structure on iron columns with a glass and iron roof
+kiosko_musica|edificio|110|An octagonal park bandstand gazebo with a wrought iron frame and a pointed green roof
+fuente|roca|110|A round stone plaza fountain with a central tiered basin spraying water into a wide circular pool
+estatua_ciudad|roca|60|A bronze statue of a heroic Pokemon on a tall square stone pedestal
+farola_ciudad|farola|26|A tall ornate black cast iron street lamp post with a single glass lantern on top
+farola_doble|farola|34|A tall ornate black cast iron street lamp post with two glass lanterns on curved arms
+banco|roca|50|An ornate park bench with wooden slats and black cast iron armrests and legs
+maceta|roca|30|A big round terracotta street planter pot full of colorful flowers
+arbol_alcorque|arbol|70|A neat round-crowned young city tree in a square stone planter with an iron grate
+puesto_mercado|roca|80|A market stall with a striped canvas awning over a wooden counter piled with fruit and vegetables crates
+puesto_flores|roca|80|A flower market stall with a green awning and buckets full of colorful bouquets
+cajas_barriles|roca|56|A small pile of wooden crates and two wooden barrels stacked together
+buzon|roca|22|A red cylindrical street mailbox post box
+poste_indicador|poste|30|A wooden signpost with three blank arrow signs pointing different ways
+columna_anuncios|roca|36|A round green advertising column covered with colorful blank posters and a small dome on top
+papelera|roca|20|A small black cast iron street litter bin
+fuente_beber|roca|24|A small stone drinking fountain with a little basin
+parterre|losa|90|A rectangular raised flower bed bordered with low stone edging, full of colorful flowers
+alcantarilla|losa|26|A round iron manhole cover set flat in the ground
+escudo_suelo|losa|90|A large circular decorative mosaic of colored stones set flat into the plaza paving, with a Poke Ball pattern
+pozo_ciudad|roca|50|A round stone well with a small tiled roof on two wooden posts and a bucket
+toldo_cafe|roca|90|A small outdoor cafe terrace: two round tables with chairs under a big striped parasol
+carro|roca|70|A wooden market cart with two big wheels loaded with sacks and crates
+escalera_plaza|losa|90|A wide monumental flight of five pale grey stone steps climbing away from the viewer up to a raised stone terrace, flanked on both sides by low carved stone side walls with a round finial on each end, solid masonry, seen from the front

@@ -6,6 +6,7 @@ import { L, precargar } from '../render/Dibujo';
 import type { BayasData, ObjCatalog } from '../data/types';
 import { Terrain } from '../render/Terrain';
 import { BIOMAS, SUELO_BIOMA } from '../data/biomas';
+import { SUELOS_CIUDAD } from '../data/ciudad';
 import { TRABAJOS } from '../data/especies';
 import { FORMAS } from '../data/pokedex';
 
@@ -27,6 +28,8 @@ export class Preload extends Phaser.Scene {
     else Terrain.preload(this, A);
     // Suelos de las zonas de bioma del modo aventura (data/biomas.ts): solo existen en estilo Arcane, se usan con los dos.
     for (const b of BIOMAS) for (const [k, f] of [['a', SUELO_BIOMA[b].a], ['b', SUELO_BIOMA[b].b]]) this.load.image(`suelo_${b}_${k}`, `${L}suelo_arcane/${b}/${f}.png`);
+    // Pavimentos de la ciudad (data/ciudad.ts, MapaAventura.pavimentos): texturas repetibles.
+    for (const t of SUELOS_CIUDAD) this.load.image(`ciudad_${t}`, `${L}suelo_arcane/ciudad/${t}.png`);
     for (let i = 0; i < TREE_N; i++) this.load.image('arbol' + i, `${A}game/arboles/arbol_${i}.png`);
     // Pantalla de título (Title.ts): césped de fondo y flores.
     this.load.image('tit-cesped', `${A}game/cesped_0.png`);

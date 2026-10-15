@@ -1,0 +1,15 @@
+muro|H|A long tall city rampart wall of big cut pale stone blocks with crenellations along its top walkway
+muro|V|A long tall city rampart wall of big cut pale stone blocks with crenellations along its top walkway
+porton|H|A section of a tall city rampart wall of big cut pale stone blocks with a big open arched stone gateway in its middle
+acantilado|H|A long tall stone canal quay wall of big cut grey blocks with a stone curb along its flat paved top edge and moss near its base
+acantilado|V|A long tall stone canal quay wall of big cut grey blocks with a stone curb along its flat paved top edge
+escalera|H|A section of a tall stone canal quay wall of big cut grey blocks with wide stone stairs carved into its middle climbing to the top
+valla|H|A long elegant black wrought iron city fence with pointed spear tips between short stone pillars
+valla|V|A long elegant black wrought iron city fence with pointed spear tips between short stone pillars
+puente|H|A long straight arched stone city bridge with carved stone balustrades on both sides
+puente|V|A long straight stone city bridge with carved stone balustrades on both sides
+seto|H|A long neatly trimmed rectangular green box hedge
+seto|V|A long neatly trimmed rectangular green box hedge
+fachada|H|A long continuous row of narrow attached two-storey town houses with different pastel plaster facades, wooden doors, shuttered windows, flower boxes and red and slate tiled roofs, seen from the street
+fachada_tienda|H|A long continuous row of attached town house shops with colorful striped awnings over shop windows on the ground floor, wooden doors and tiled roofs, seen from the street
+bordillo|H|A long straight raised stone curb edge of a sidewalk, a narrow strip of grey cut stone

@@ -15,7 +15,7 @@ import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
 import { despejarPuentes, tirasDeBorde, vestirMacizo } from '../data/bordes';
-import { dibujar, enRect, expandirTiras, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
+import { dibujar, enRect, ponerTinteSombra, expandirTiras, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
 import { pipelineCel } from '../render/CelPipeline';
 import { Terrain } from '../render/Terrain';
@@ -211,6 +211,8 @@ export class Aventura extends Phaser.Scene {
     const tiras = expandirTiras(this.mapa.colocados, porId);   // muros, vallas, acantilados y puentes en fila
     this.mapa.colocados = tiras.colocados;
     despejarPuentes(this.mapa, tiras.pasos);
+    this.pavimentar();
+    ponerTinteSombra(this.mapa.pavimentos ? 0xffb7ff : 0xffffff);
     const bloques = this.crearEscenario(porId);
     this.abrirMacizoVacio();
     this.mundo = new Mundo({
@@ -419,6 +421,21 @@ export class Aventura extends Phaser.Scene {
     grad.addColorStop(0, 'rgba(255,255,255,0.9)'); grad.addColorStop(0.35, 'rgba(255,255,255,0.35)'); grad.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = grad; g.fillRect(0, 0, n, n); c.refresh(); c.setFilter(Phaser.Textures.FilterMode.LINEAR);
   }
+  // Pavimentos (la ciudad): cada rectángulo es una imagen propia con la textura repetida a la resolución de pantalla
+  // (S px por px de mundo), así lleva Light2D como el resto y se ve de noche con las farolas. Entre el Terrain (-10000)
+  // y los planos (-9000 + y).
+  private pavimentar(): void {
+    for (const [i, p] of (this.mapa.pavimentos ?? []).entries()) {
+      const src = this.textures.get(`ciudad_${p.tex}`).getSourceImage() as HTMLImageElement, key = `pav_${this.mapa.id}_${i}`;
+      if (this.textures.exists(key)) this.textures.remove(key);
+      const cv = this.textures.createCanvas(key, Math.ceil(p.w * S), Math.ceil(p.h * S))!, ctx = cv.getContext();
+      const pat = ctx.createPattern(src, 'repeat')!;
+      pat.setTransform(new DOMMatrix().translate(-p.x * S, -p.y * S).scale(p.escala * S));   // anclado al mundo: dos pavimentos iguales casan
+      ctx.fillStyle = pat; ctx.fillRect(0, 0, cv.width, cv.height); cv.refresh();
+      this.add.image(p.x, p.y, key).setOrigin(0).setScale(1 / S).setDepth(-9500);
+    }
+  }
+
   private iluminar(go: Phaser.GameObjects.GameObject): void {
     if (go instanceof Phaser.GameObjects.Image || go instanceof Phaser.GameObjects.Sprite) go.setPipeline(go.texture.dataSource.length ? 'Cel' : 'Light2D');
   }

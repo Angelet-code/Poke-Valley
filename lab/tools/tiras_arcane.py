@@ -43,12 +43,18 @@ sys.path.insert(0, str(RAIZ / "tools"))
 from recortar import recortar  # noqa: E402
 
 # Alto en el mundo (px) de cada tira horizontal, ancho de cada vertical y ancho de las sueltas.
-ALTO = {"acantilado": 76, "muro": 40, "valla": 26, "puente": 46}
-ANCHO_V = {"acantilado": 70, "muro": 30, "valla": 16, "puente": 44}
+ALTO = {"acantilado": 76, "muro": 40, "valla": 26, "puente": 46, "seto": 30, "fachada": 120, "fachada_tienda": 120,
+        "bordillo": 12}
+ANCHO_V = {"acantilado": 70, "muro": 30, "valla": 16, "puente": 44, "seto": 24}
+# Medidas propias de un bioma ("<bioma>/<pieza>"): la muralla de la ciudad es más alta que un muro de piedra seca y el
+# muro del canal, más bajo que un acantilado.
+ALTO_BIO = {"ciudad/muro": 64, "ciudad/acantilado": 56, "ciudad/valla": 34}
+ANCHO_V_BIO = {"ciudad/muro": 40, "ciudad/acantilado": 50}
+TIRAS = ("acantilado", "muro", "valla", "puente", "seto", "fachada", "fachada_tienda", "bordillo")
 ANCHO_S = {"montana": 190, "arboleda": 170}
 INSERTO = {"escalera": "acantilado", "porton": "muro"}   # inserto → la tira donde va
 HUECOS = {"valla", "puente", "arboleda"}                 # se abren los huecos de fondo entre tablas, postes y ramas
-TIPO = {"puente": "puente", "montana": "roca", "arboleda": "roca"}   # el resto, "muro"
+TIPO = {"puente": "puente", "bordillo": "puente", "montana": "roca", "arboleda": "roca"}   # el resto, "muro"
 
 
 # ---------- utilidades de imagen (RGBA float, color premultiplicado para mezclar sin halo verde) ----------
@@ -150,7 +156,8 @@ def recorte_x2(img, tipo_hueco, min_hueco=None):
     if not x2.exists():
         subprocess.run([sys.executable, "-I", str(RAIZ / "tools/ampliar.py"), "--modelo", "RealESRGAN_x4plus_anime_6B.safetensors",
                         "--entrada", str(img), "--salida", str(x2)], check=True)
-    tmp = MUROS / "_recortes"
+    tmp = MUROS / "_recortes" / img.parent.name   # por bioma: los nombres (muro_s1_0…) se repiten entre biomas
+    tmp.mkdir(parents=True, exist_ok=True)
     e = recortar(x2, img.stem, "roca", tmp, abrir_huecos=tipo_hueco, min_hueco=min_hueco or (40 if tipo_hueco else 1500))
     return np.asarray(Image.open(tmp / e["archivo"]).convert("RGBA")).copy(), e, tmp
 
@@ -230,9 +237,9 @@ def guardar(id_, f, tipo, k, out, extra):
 
 def huella_h(pieza, w, h, base):
     """Banda del suelo que ocupa una tira horizontal en 3/4: el pie del muro (un tercio del alto en el acantilado)."""
-    if pieza == "puente":
+    if pieza in ("puente", "bordillo"):   # se pisan
         return None
-    prof = {"acantilado": 0.34, "muro": 0.42, "valla": 0.35}.get(pieza, 0.4)
+    prof = {"acantilado": 0.34, "muro": 0.42, "valla": 0.35, "fachada": 0.3, "fachada_tienda": 0.3, "bordillo": 0.6}.get(pieza, 0.4)
     return [0, int(base - h * prof), w, base]
 
 
@@ -263,7 +270,7 @@ def procesar(bio, pieza, forma, sel, hechos):
         return
     if forma == "H":
         izq, tramo, der, cos = kit_h(nivelar(rgba))
-        k = ALTO[pieza] / (tramo.shape[0] * F / PNG_X)
+        k = ALTO_BIO.get(f"{bio}/{pieza}", ALTO[pieza]) / (tramo.shape[0] * F / PNG_X)
         partes = {"izq": izq, "tramo": tramo, "der": der}
         # insertos de esta tira
         for ins, tira in INSERTO.items():
@@ -279,7 +286,7 @@ def procesar(bio, pieza, forma, sel, hechos):
         # la tira vertical es una horizontal traspuesta (sin nivelar: ya está enderezada)
         izq, tramo, der, cos = kit_h(np.ascontiguousarray(np.transpose(rv, (1, 0, 2))))
         partes = {"arr": tr(izq), "tramo": tr(tramo), "abj": tr(der)}
-        k = ANCHO_V[pieza] / (partes["tramo"].shape[1] * F / PNG_X)
+        k = ANCHO_V_BIO.get(f"{bio}/{pieza}", ANCHO_V[pieza]) / (partes["tramo"].shape[1] * F / PNG_X)
         base_id = f"{pieza}_v_{bio}"
     for nom, f in partes.items():
         id_ = f"{base_id}_{nom}" if nom in ("izq", "tramo", "der", "arr", "abj") else f"{nom}_{bio}"
@@ -302,12 +309,12 @@ def hoja_muros(hechos):
     """Cada tira montada: H = izq + tramo×3 + der (y una fila con su inserto), V = arr + tramo×3 + abj; sueltas aparte."""
     Z = 2.0   # px de la hoja por px de mundo (cada pieza a su tamaño real)
     filas = []
-    bios = ["comun", "costa", "cantera", "pantano", "ruinas", "volcan", "nieve"]
+    bios = ["comun", "costa", "cantera", "pantano", "ruinas", "volcan", "nieve", "ciudad"]
     bios += sorted({e["id"].rsplit("_", 1)[-1] for e in hechos.values() if "tira" in e and e["tira"]["forma"] == "S"} - set(bios))
     bios += sorted({e["tira"]["id"].rsplit("_", 1)[-1] for e in hechos.values() if "tira" in e} - set(bios))
     for bio in bios:
         ims = []
-        for p in ("acantilado", "muro", "valla", "puente"):
+        for p in TIRAS:
             g = lambda s: hechos.get(f"{p}_{bio}_{s}")
             if g("tramo"):
                 seq = [g("izq")] + [g("tramo")] * 3 + [g("der")]
@@ -315,7 +322,7 @@ def hoja_muros(hechos):
                 if ins:
                     seq = [g("izq"), g("tramo"), hechos[f"{ins[0]}_{bio}"], g("tramo"), g("der")]
                 ims.append(montar(seq, 1, Z))
-        for p in ("acantilado", "muro", "valla", "puente"):
+        for p in TIRAS:
             g = lambda s: hechos.get(f"{p}_v_{bio}_{s}")
             if g("tramo"):
                 ims.append(montar([g("arr")] + [g("tramo")] * 3 + [g("abj")], 0, Z))

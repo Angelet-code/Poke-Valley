@@ -14,11 +14,15 @@ import { rng } from '../util';
 import { ARCANE } from '../config';
 import { esBioma, zonaBioma, type Bioma, type Macizo } from './biomas';
 import { taller } from './taller';
+import { ciudad } from './ciudad';
 import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 import type { Clima } from '../combate/reglas';
 
 export const T = 24;
-export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma | 'taller';   // taller: mapa de prueba de las tiras (taller.ts)
+export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma | 'taller' | 'ciudad';   // taller: mapa de prueba de las tiras (taller.ts); ciudad: el kit de la ciudad (ciudad.ts)
+// Pavimento: un rectángulo de suelo con una textura repetible (lab/assets/suelo_arcane/ciudad/<tex>.png) a `escala` px de
+// mundo por px de textura, sobre el césped del Terrain y bajo todo lo demás.
+export interface Pavimento { tex: string; x: number; y: number; w: number; h: number; escala: number }
 export interface Punto { x: number; y: number }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
@@ -44,6 +48,7 @@ export interface MapaAventura {
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
   suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo
+  pavimentos?: Pavimento[];       // ciudad: suelos pavimentados (adoquín, losas…) encima del Terrain
   macizo?: Macizo;                // zonas de bioma: lo que no se puede cruzar (bosque cerrado, roca…), ver biomas.ts
 }
 
@@ -332,5 +337,5 @@ export function lago(semilla: number): MapaAventura {
 
 // La zona `id` del mundo de la partida (la semilla es fija: el mundo sale siempre igual).
 export function crearMapa(id: MapaId, semilla: number): MapaAventura {
-  return id === 'bosque' ? bosque(semilla) : id === 'lago' ? lago(semilla) : esBioma(id) ? zonaBioma(id, semilla) : id === 'taller' ? taller() : pueblo();
+  return id === 'bosque' ? bosque(semilla) : id === 'lago' ? lago(semilla) : esBioma(id) ? zonaBioma(id, semilla) : id === 'taller' ? taller() : id === 'ciudad' ? ciudad() : pueblo();
 }

@@ -8151,6 +8151,2133 @@
     "f": 9,
     "b": "011111111111011111111111011111111110011111111111011111111110011111111111011111111111011111111111001111111110"
    }
+  },
+  {
+   "id": "muro_ciudad_izq",
+   "tipo": "muro",
+   "archivo": "muro_ciudad_izq.png",
+   "w": 496,
+   "h": 592,
+   "ancla": [
+    248,
+    551
+   ],
+   "k": 0.6486,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    302,
+    496,
+    551
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000111000000000111100000000111111101000111111111000011111111000011111111111111111111011111111111011111111111001111111111000111111111000001111111000000111111000000000000"
+   }
+  },
+  {
+   "id": "muro_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "muro_ciudad_tramo.png",
+   "w": 839,
+   "h": 592,
+   "ancla": [
+    419,
+    549
+   ],
+   "k": 0.6486,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    300,
+    839,
+    549
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000000000000111111100011111111111111111111111111111111111111111111111111111111111111000000000000"
+   }
+  },
+  {
+   "id": "muro_ciudad_der",
+   "tipo": "muro",
+   "archivo": "muro_ciudad_der.png",
+   "w": 584,
+   "h": 592,
+   "ancla": [
+    292,
+    592
+   ],
+   "k": 0.6486,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    343,
+    584,
+    592
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000000000000000100000001000111111111110111111111111111111111111111111111111111111111110111111111110111111111110111111111110000000000111"
+   }
+  },
+  {
+   "id": "porton_ciudad",
+   "tipo": "muro",
+   "archivo": "porton_ciudad.png",
+   "w": 1331,
+   "h": 592,
+   "ancla": [
+    665,
+    581
+   ],
+   "k": 0.6486,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_s1_0.png",
+   "tira": {
+    "id": "muro_ciudad",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     344,
+     399,
+     581
+    ],
+    [
+     931,
+     344,
+     1331,
+     581
+    ]
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 5,
+    "b": "000011000000111111111101111110011111111110011111111111111111"
+   }
+  },
+  {
+   "id": "muro_v_ciudad_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_ciudad_arr.png",
+   "w": 746,
+   "h": 776,
+   "ancla": [
+    373,
+    776
+   ],
+   "k": 0.3217,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_ciudad",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    89,
+    232,
+    656,
+    776
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "001010110101001111111111001111111111001111111110111111111110111111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "muro_v_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_ciudad_tramo.png",
+   "w": 746,
+   "h": 759,
+   "ancla": [
+    373,
+    759
+   ],
+   "k": 0.3217,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_ciudad",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    89,
+    37,
+    656,
+    759
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "muro_v_ciudad_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_ciudad_abj.png",
+   "w": 746,
+   "h": 723,
+   "ancla": [
+    373,
+    723
+   ],
+   "k": 0.3217,
+   "origen": "assets/gen/arcane/muros/ciudad/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_ciudad",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    89,
+    36,
+    656,
+    723
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111111011111111111111111111111011111111110001111111110"
+   }
+  },
+  {
+   "id": "acantilado_ciudad_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_ciudad_izq.png",
+   "w": 749,
+   "h": 559,
+   "ancla": [
+    374,
+    555
+   ],
+   "k": 0.6011,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    364,
+    749,
+    555
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 9,
+    "b": "111111000000111111111111111111111111111111111111011111111111011111111111111111111111011111111111001111111111"
+   }
+  },
+  {
+   "id": "acantilado_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_ciudad_tramo.png",
+   "w": 800,
+   "h": 559,
+   "ancla": [
+    400,
+    559
+   ],
+   "k": 0.6011,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    368,
+    800,
+    559
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000000000000111111110011111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "acantilado_ciudad_der",
+   "tipo": "muro",
+   "archivo": "acantilado_ciudad_der.png",
+   "w": 759,
+   "h": 559,
+   "ancla": [
+    379,
+    557
+   ],
+   "k": 0.6011,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    366,
+    759,
+    557
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 9,
+    "b": "000000000000110000000000111110000000111111111110111111111111111111111111111111111110111111111110111111111110"
+   }
+  },
+  {
+   "id": "escalera_ciudad",
+   "tipo": "muro",
+   "archivo": "escalera_ciudad.png",
+   "w": 1097,
+   "h": 559,
+   "ancla": [
+    548,
+    559
+   ],
+   "k": 0.6011,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_s1_0.png",
+   "tira": {
+    "id": "acantilado_ciudad",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     368,
+     351,
+     559
+    ],
+    [
+     745,
+     368,
+     1097,
+     559
+    ]
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 6,
+    "b": "000000000000111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "acantilado_v_ciudad_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_ciudad_arr.png",
+   "w": 741,
+   "h": 878,
+   "ancla": [
+    370,
+    878
+   ],
+   "k": 0.4049,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_ciudad",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    88,
+    263,
+    652,
+    878
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "acantilado_v_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_ciudad_tramo.png",
+   "w": 741,
+   "h": 741,
+   "ancla": [
+    370,
+    741
+   ],
+   "k": 0.4049,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_ciudad",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    88,
+    37,
+    652,
+    741
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111111111111111111"
+   }
+  },
+  {
+   "id": "acantilado_v_ciudad_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_ciudad_abj.png",
+   "w": 741,
+   "h": 666,
+   "ancla": [
+    370,
+    666
+   ],
+   "k": 0.4049,
+   "origen": "assets/gen/arcane/muros/ciudad/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_ciudad",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    88,
+    33,
+    652,
+    666
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "111111111110111111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111011111111110"
+   }
+  },
+  {
+   "id": "valla_ciudad_izq",
+   "tipo": "muro",
+   "archivo": "valla_ciudad_izq.png",
+   "w": 543,
+   "h": 504,
+   "ancla": [
+    271,
+    489
+   ],
+   "k": 0.4048,
+   "origen": "assets/gen/arcane/muros/ciudad/valla_s1_0.png",
+   "tira": {
+    "id": "valla_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    312,
+    543,
+    489
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000010000000000110000000000111111011000111000000000111000000000111100000000011100000000011100000000111111111011111111111000011110000"
+   }
+  },
+  {
+   "id": "valla_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "valla_ciudad_tramo.png",
+   "w": 808,
+   "h": 504,
+   "ancla": [
+    404,
+    476
+   ],
+   "k": 0.4048,
+   "origen": "assets/gen/arcane/muros/ciudad/valla_s1_0.png",
+   "tira": {
+    "id": "valla_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    299,
+    808,
+    476
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 7,
+    "b": "000000000000111010000011000000101111000000000010000010000010111111111111111000000011"
+   }
+  },
+  {
+   "id": "valla_ciudad_der",
+   "tipo": "muro",
+   "archivo": "valla_ciudad_der.png",
+   "w": 718,
+   "h": 504,
+   "ancla": [
+    359,
+    504
+   ],
+   "k": 0.4048,
+   "origen": "assets/gen/arcane/muros/ciudad/valla_s1_0.png",
+   "tira": {
+    "id": "valla_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    327,
+    718,
+    504
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000000000000000000000000001000000000001011111110000000001110000000001110111111111100111111111110"
+   }
+  },
+  {
+   "id": "valla_v_ciudad_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_ciudad_arr.png",
+   "w": 491,
+   "h": 459,
+   "ancla": [
+    245,
+    459
+   ],
+   "k": 0.1955,
+   "origen": "assets/gen/arcane/muros/ciudad/valla_v_s2_0.png",
+   "tira": {
+    "id": "valla_v_ciudad",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    58,
+    137,
+    432,
+    459
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000000000000000001000010010001100010111111101111110101101010011101101110011111111110011111111110011111111110111111111110011111111110"
+   }
+  },
+  {
+   "id": "valla_v_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_ciudad_tramo.png",
+   "w": 491,
+   "h": 816,
+   "ancla": [
+    245,
+    816
+   ],
+   "k": 0.1955,
+   "origen": "assets/gen/arcane/muros/ciudad/valla_v_s2_0.png",
+   "tira": {
+    "id": "valla_v_ciudad",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    58,
+    40,
+    432,
+    816
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 20,
+    "b": "111111111110111111111111111111111111111111111111111111111111011111111110011111111110011111111110011111111110011111111110111111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "valla_v_ciudad_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_ciudad_abj.png",
+   "w": 491,
+   "h": 619,
+   "ancla": [
+    245,
+    619
+   ],
+   "k": 0.1955,
+   "origen": "assets/gen/arcane/muros/ciudad/valla_v_s2_0.png",
+   "tira": {
+    "id": "valla_v_ciudad",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    58,
+    30,
+    432,
+    619
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 15,
+    "b": "011111111110111111111111011111111110011111111110011111111110011111111110111111111111111111111111111111111111111111111111011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "puente_ciudad_izq",
+   "tipo": "puente",
+   "archivo": "puente_ciudad_izq.png",
+   "w": 716,
+   "h": 472,
+   "ancla": [
+    358,
+    449
+   ],
+   "k": 0.5847,
+   "origen": "assets/gen/arcane/muros/ciudad/puente_s1_0.png",
+   "tira": {
+    "id": "puente_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "100011111111111111111111111111111111011111111111011111111111011111111111001111111111000100000000"
+   }
+  },
+  {
+   "id": "puente_ciudad_tramo",
+   "tipo": "puente",
+   "archivo": "puente_ciudad_tramo.png",
+   "w": 745,
+   "h": 472,
+   "ancla": [
+    372,
+    416
+   ],
+   "k": 0.5847,
+   "origen": "assets/gen/arcane/muros/ciudad/puente_s1_0.png",
+   "tira": {
+    "id": "puente_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000"
+   }
+  },
+  {
+   "id": "puente_ciudad_der",
+   "tipo": "puente",
+   "archivo": "puente_ciudad_der.png",
+   "w": 723,
+   "h": 472,
+   "ancla": [
+    361,
+    472
+   ],
+   "k": 0.5847,
+   "origen": "assets/gen/arcane/muros/ciudad/puente_s1_0.png",
+   "tira": {
+    "id": "puente_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000000000000111100000000111111110000111111111000111111111110111111111111111111111110000000001111"
+   }
+  },
+  {
+   "id": "puente_v_ciudad_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_ciudad_arr.png",
+   "w": 724,
+   "h": 869,
+   "ancla": [
+    362,
+    869
+   ],
+   "k": 0.3646,
+   "origen": "assets/gen/arcane/muros/ciudad/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_ciudad",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "110000000011110000010011011111111110111111111110011111111110011111111110011111111110011111111110011111111110011111111110111111111110111111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "puente_v_ciudad_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_ciudad_tramo.png",
+   "w": 724,
+   "h": 719,
+   "ancla": [
+    362,
+    719
+   ],
+   "k": 0.3646,
+   "origen": "assets/gen/arcane/muros/ciudad/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_ciudad",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "puente_v_ciudad_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_ciudad_abj.png",
+   "w": 724,
+   "h": 613,
+   "ancla": [
+    362,
+    613
+   ],
+   "k": 0.3646,
+   "origen": "assets/gen/arcane/muros/ciudad/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_ciudad",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111110111111111111111111111111111111111111011000111110"
+   }
+  },
+  {
+   "id": "seto_ciudad_izq",
+   "tipo": "muro",
+   "archivo": "seto_ciudad_izq.png",
+   "w": 754,
+   "h": 473,
+   "ancla": [
+    377,
+    473
+   ],
+   "k": 0.3805,
+   "origen": "assets/gen/arcane/muros/ciudad/seto_s1_0.png",
+   "tira": {
+    "id": "seto_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    283,
+    754,
+    473
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "011111111111011111111111011111111111011111111111111111111111111111111111011111111111011111111111"
+   }
+  },
+  {
+   "id": "seto_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "seto_ciudad_tramo.png",
+   "w": 760,
+   "h": 473,
+   "ancla": [
+    380,
+    469
+   ],
+   "k": 0.3805,
+   "origen": "assets/gen/arcane/muros/ciudad/seto_s1_0.png",
+   "tira": {
+    "id": "seto_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    279,
+    760,
+    469
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 7,
+    "b": "111111000011111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "seto_ciudad_der",
+   "tipo": "muro",
+   "archivo": "seto_ciudad_der.png",
+   "w": 735,
+   "h": 473,
+   "ancla": [
+    367,
+    469
+   ],
+   "k": 0.3805,
+   "origen": "assets/gen/arcane/muros/ciudad/seto_s1_0.png",
+   "tira": {
+    "id": "seto_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    279,
+    735,
+    469
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000000000000111111110000111111111100111111111111111111111111111111111111111111111110111111111110"
+   }
+  },
+  {
+   "id": "seto_v_ciudad_arr",
+   "tipo": "muro",
+   "archivo": "seto_v_ciudad_arr.png",
+   "w": 654,
+   "h": 635,
+   "ancla": [
+    327,
+    635
+   ],
+   "k": 0.2202,
+   "origen": "assets/gen/arcane/muros/ciudad/seto_v_s1_0.png",
+   "tira": {
+    "id": "seto_v_ciudad",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    78,
+    190,
+    575,
+    635
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "001111111111001111111111001111111111001111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "seto_v_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "seto_v_ciudad_tramo.png",
+   "w": 654,
+   "h": 894,
+   "ancla": [
+    327,
+    894
+   ],
+   "k": 0.2202,
+   "origen": "assets/gen/arcane/muros/ciudad/seto_v_s1_0.png",
+   "tira": {
+    "id": "seto_v_ciudad",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    78,
+    44,
+    575,
+    894
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 16,
+    "b": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "seto_v_ciudad_abj",
+   "tipo": "muro",
+   "archivo": "seto_v_ciudad_abj.png",
+   "w": 654,
+   "h": 558,
+   "ancla": [
+    327,
+    558
+   ],
+   "k": 0.2202,
+   "origen": "assets/gen/arcane/muros/ciudad/seto_v_s1_0.png",
+   "tira": {
+    "id": "seto_v_ciudad",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    78,
+    27,
+    575,
+    558
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111110000111111110"
+   }
+  },
+  {
+   "id": "fachada_ciudad_izq",
+   "tipo": "muro",
+   "archivo": "fachada_ciudad_izq.png",
+   "w": 520,
+   "h": 963,
+   "ancla": [
+    260,
+    963
+   ],
+   "k": 0.7477,
+   "origen": "assets/gen/arcane/muros/ciudad/fachada_s2_0.png",
+   "tira": {
+    "id": "fachada_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    674,
+    520,
+    963
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 22,
+    "b": "010000000000111000000000111000011000111111111100111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "fachada_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "fachada_ciudad_tramo.png",
+   "w": 860,
+   "h": 963,
+   "ancla": [
+    430,
+    958
+   ],
+   "k": 0.7477,
+   "origen": "assets/gen/arcane/muros/ciudad/fachada_s2_0.png",
+   "tira": {
+    "id": "fachada_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    669,
+    860,
+    958
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000000000000000000000111100000011111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "fachada_ciudad_der",
+   "tipo": "muro",
+   "archivo": "fachada_ciudad_der.png",
+   "w": 808,
+   "h": 963,
+   "ancla": [
+    404,
+    960
+   ],
+   "k": 0.7477,
+   "origen": "assets/gen/arcane/muros/ciudad/fachada_s2_0.png",
+   "tira": {
+    "id": "fachada_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    671,
+    808,
+    960
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000000000000000000000000000000000000100000000000100000000000110000000000111111110000111111111100111111111110111111111111111111111110111111111110111111111110111111111110"
+   }
+  },
+  {
+   "id": "fachada_tienda_ciudad_izq",
+   "tipo": "muro",
+   "archivo": "fachada_tienda_ciudad_izq.png",
+   "w": 853,
+   "h": 776,
+   "ancla": [
+    426,
+    774
+   ],
+   "k": 0.9278,
+   "origen": "assets/gen/arcane/muros/ciudad/fachada_tienda_s1_0.png",
+   "tira": {
+    "id": "fachada_tienda_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    541,
+    853,
+    774
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "011100000000011111111111011111111111011111111111111111111111111111111111111111111111111111111111111111111111011111111111000111111111"
+   }
+  },
+  {
+   "id": "fachada_tienda_ciudad_tramo",
+   "tipo": "muro",
+   "archivo": "fachada_tienda_ciudad_tramo.png",
+   "w": 835,
+   "h": 776,
+   "ancla": [
+    417,
+    768
+   ],
+   "k": 0.9278,
+   "origen": "assets/gen/arcane/muros/ciudad/fachada_tienda_s1_0.png",
+   "tira": {
+    "id": "fachada_tienda_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    535,
+    835,
+    768
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000000000000100000000111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "fachada_tienda_ciudad_der",
+   "tipo": "muro",
+   "archivo": "fachada_tienda_ciudad_der.png",
+   "w": 786,
+   "h": 776,
+   "ancla": [
+    393,
+    776
+   ],
+   "k": 0.9278,
+   "origen": "assets/gen/arcane/muros/ciudad/fachada_tienda_s1_0.png",
+   "tira": {
+    "id": "fachada_tienda_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    543,
+    786,
+    776
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000000000000000100000000000110000000000111111111000111111111100111111111110111111111111111111111110111111111110111111111110111111111110"
+   }
+  },
+  {
+   "id": "bordillo_ciudad_izq",
+   "tipo": "puente",
+   "archivo": "bordillo_ciudad_izq.png",
+   "w": 938,
+   "h": 226,
+   "ancla": [
+    469,
+    226
+   ],
+   "k": 0.3186,
+   "origen": "assets/gen/arcane/muros/ciudad/bordillo_s1_0.png",
+   "tira": {
+    "id": "bordillo_ciudad",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 3,
+    "b": "011111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "bordillo_ciudad_tramo",
+   "tipo": "puente",
+   "archivo": "bordillo_ciudad_tramo.png",
+   "w": 831,
+   "h": 226,
+   "ancla": [
+    415,
+    225
+   ],
+   "k": 0.3186,
+   "origen": "assets/gen/arcane/muros/ciudad/bordillo_s1_0.png",
+   "tira": {
+    "id": "bordillo_ciudad",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 3,
+    "b": "111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "bordillo_ciudad_der",
+   "tipo": "puente",
+   "archivo": "bordillo_ciudad_der.png",
+   "w": 613,
+   "h": 226,
+   "ancla": [
+    306,
+    223
+   ],
+   "k": 0.3186,
+   "origen": "assets/gen/arcane/muros/ciudad/bordillo_s1_0.png",
+   "tira": {
+    "id": "bordillo_ciudad",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 4,
+    "b": "111111111110111111111110111111111111111111111111"
+   }
+  },
+  {
+   "id": "centro_pokemon",
+   "tipo": "casa",
+   "archivo": "centro_pokemon.png",
+   "w": 1624,
+   "h": 1684,
+   "ancla": [
+    812,
+    1682
+   ],
+   "huella": [
+    73,
+    1089,
+    1528,
+    1554
+   ],
+   "origen": "assets/gen/arcane/ciudad/centro_pokemon_s3_0.png",
+   "sombra": {
+    "archivo": "centro_pokemon_sombra.png",
+    "w": 1803,
+    "h": 815,
+    "dx": -206,
+    "dy": 860
+   },
+   "k": 0.665,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000001110000000111111100011111111110011111111110011111111111111111111110011111111110011111111110011111111110001111111000000111110000000001000000"
+   }
+  },
+  {
+   "id": "tienda_pokemon",
+   "tipo": "casa",
+   "archivo": "tienda_pokemon.png",
+   "w": 1667,
+   "h": 1612,
+   "ancla": [
+    833,
+    1610
+   ],
+   "huella": [
+    100,
+    1035,
+    1654,
+    1479
+   ],
+   "origen": "assets/gen/arcane/ciudad/tienda_pokemon_s3_0.png",
+   "sombra": {
+    "archivo": "tienda_pokemon_sombra.png",
+    "w": 1622,
+    "h": 771,
+    "dx": -174,
+    "dy": 839
+   },
+   "k": 0.5399,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000110000000111111100011111111111011111111111011111111110011111111110011111111110011111111110001111111110000111111100001111110000000001100000"
+   }
+  },
+  {
+   "id": "gimnasio",
+   "tipo": "casa",
+   "archivo": "gimnasio.png",
+   "w": 1742,
+   "h": 1567,
+   "ancla": [
+    871,
+    1566
+   ],
+   "huella": [
+    62,
+    1016,
+    1683,
+    1436
+   ],
+   "origen": "assets/gen/arcane/ciudad/gimnasio_s3_0.png",
+   "sombra": {
+    "archivo": "gimnasio_sombra.png",
+    "w": 1979,
+    "h": 738,
+    "dx": -125,
+    "dy": 836
+   },
+   "k": 0.7577,
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000000100000000011110000000111111000011111111110111111111111011111111110011111111110011111111110001111111100000011111000000000110000"
+   }
+  },
+  {
+   "id": "ayuntamiento",
+   "tipo": "casa",
+   "archivo": "ayuntamiento.png",
+   "w": 1722,
+   "h": 1756,
+   "ancla": [
+    861,
+    1755
+   ],
+   "huella": [
+    48,
+    1273,
+    1547,
+    1627
+   ],
+   "origen": "assets/gen/arcane/ciudad/ayuntamiento_s3_0.png",
+   "sombra": {
+    "archivo": "ayuntamiento_sombra.png",
+    "w": 1949,
+    "h": 874,
+    "dx": -199,
+    "dy": 896
+   },
+   "k": 0.7666,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000000001000000000011000000000011100000111111111110111111111110111111111110111111111110011111111100000111111100000111110000000011000000"
+   }
+  },
+  {
+   "id": "casa_ciudad_1",
+   "tipo": "casa",
+   "archivo": "casa_ciudad_1.png",
+   "w": 1468,
+   "h": 1700,
+   "ancla": [
+    734,
+    1699
+   ],
+   "huella": [
+    139,
+    1151,
+    1403,
+    1666
+   ],
+   "origen": "assets/gen/arcane/ciudad/casa_ciudad_1_s1_0.png",
+   "sombra": {
+    "archivo": "casa_ciudad_1_sombra.png",
+    "w": 1200,
+    "h": 613,
+    "dx": -230,
+    "dy": 1080
+   },
+   "k": 0.4496,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000100001100000101111100001111111110001111111111011111111111001111111110001111111110001111111110001111111110001111111110111111111110011111111100001111111000000011100000"
+   }
+  },
+  {
+   "id": "casa_ciudad_2",
+   "tipo": "casa",
+   "archivo": "casa_ciudad_2.png",
+   "w": 1543,
+   "h": 1640,
+   "ancla": [
+    771,
+    1639
+   ],
+   "huella": [
+    293,
+    1117,
+    1500,
+    1584
+   ],
+   "origen": "assets/gen/arcane/ciudad/casa_ciudad_2_s3_0.png",
+   "sombra": {
+    "archivo": "casa_ciudad_2_sombra.png",
+    "w": 1596,
+    "h": 878,
+    "dx": -87,
+    "dy": 801
+   },
+   "k": 0.4666,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000000100000000111100000011111110000111111111001111111111001111111111001111111111000111111111001111111111000111111111001111111110000011111100000000111000"
+   }
+  },
+  {
+   "id": "casa_ciudad_3",
+   "tipo": "casa",
+   "archivo": "casa_ciudad_3.png",
+   "w": 1507,
+   "h": 1638,
+   "ancla": [
+    753,
+    1637
+   ],
+   "huella": [
+    75,
+    1096,
+    1429,
+    1593
+   ],
+   "origen": "assets/gen/arcane/ciudad/casa_ciudad_3_s1_0.png",
+   "sombra": {
+    "archivo": "casa_ciudad_3_sombra.png",
+    "w": 1300,
+    "h": 617,
+    "dx": -188,
+    "dy": 1015
+   },
+   "k": 0.5176,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000111100000111111110001111111110001111111111001111111110001111111110001111111110001111111110001111111110011111111110111111111100001111111000000111100000"
+   }
+  },
+  {
+   "id": "torre_reloj",
+   "tipo": "casa",
+   "archivo": "torre_reloj.png",
+   "w": 748,
+   "h": 1862,
+   "ancla": [
+    374,
+    1860
+   ],
+   "huella": [
+    195,
+    1324,
+    722,
+    1816
+   ],
+   "origen": "assets/gen/arcane/ciudad/torre_reloj_s3_0.png",
+   "sombra": {
+    "archivo": "torre_reloj_sombra.png",
+    "w": 1574,
+    "h": 1505,
+    "dx": -563,
+    "dy": 441
+   },
+   "k": 0.6417,
+   "cubre": {
+    "c": 12,
+    "f": 30,
+    "b": "000000000000000000010000000000010000000000111000000000111000000001111100000001111100000011111110000111111111000111111111000011111111000011111111000011111111000011111111000011111110000011111110000011111110000011111110000011111110000011111110000011111110000001111110000001111110000011111110000011111110111111111111011111111111000111111110000011111000000000010000"
+   }
+  },
+  {
+   "id": "mercado_cubierto",
+   "tipo": "casa",
+   "archivo": "mercado_cubierto.png",
+   "w": 1763,
+   "h": 1578,
+   "ancla": [
+    881,
+    1576
+   ],
+   "huella": [
+    73,
+    859,
+    1676,
+    1234
+   ],
+   "origen": "assets/gen/arcane/ciudad/mercado_cubierto_s3_0.png",
+   "sombra": {
+    "archivo": "mercado_cubierto_sombra.png",
+    "w": 1826,
+    "h": 1494,
+    "dx": -136,
+    "dy": 89
+   },
+   "k": 0.6807,
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000000111000000111111100001111111110111111111111011111111110011111111110011111111110000111111000000011100000000000000000000001000000"
+   }
+  },
+  {
+   "id": "kiosko_musica",
+   "tipo": "casa",
+   "archivo": "kiosko_musica.png",
+   "w": 1498,
+   "h": 1634,
+   "ancla": [
+    749,
+    1633
+   ],
+   "huella": [
+    148,
+    1199,
+    1449,
+    1620
+   ],
+   "origen": "assets/gen/arcane/ciudad/kiosko_musica_s3_0.png",
+   "sombra": {
+    "archivo": "kiosko_musica_sombra.png",
+    "w": 1361,
+    "h": 536,
+    "dx": -4,
+    "dy": 1013
+   },
+   "k": 0.4406,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000000000000000010000000000111000000011111110000111111111000011111110000011111110000011111110001011111110100011111110010111111111001111111110000011111100"
+   }
+  },
+  {
+   "id": "fuente",
+   "tipo": "roca",
+   "archivo": "fuente.png",
+   "w": 1907,
+   "h": 1681,
+   "ancla": [
+    953,
+    1679
+   ],
+   "huella": [
+    228,
+    972,
+    1678,
+    1611
+   ],
+   "origen": "assets/gen/arcane/ciudad/fuente_s3_0.png",
+   "sombra": {
+    "archivo": "fuente_sombra.png",
+    "w": 1102,
+    "h": 1442,
+    "dx": -5,
+    "dy": 218
+   },
+   "k": 0.3461,
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000000000000000001100000000001100000001111111100011111111110111111111111111111111111111111111111011111111110001111111110000111111000"
+   }
+  },
+  {
+   "id": "estatua_ciudad",
+   "tipo": "roca",
+   "archivo": "estatua_ciudad.png",
+   "w": 976,
+   "h": 1741,
+   "ancla": [
+    488,
+    1739
+   ],
+   "huella": [
+    117,
+    1007,
+    858,
+    1669
+   ],
+   "origen": "assets/gen/arcane/ciudad/estatua_ciudad_s3_0.png",
+   "sombra": {
+    "archivo": "estatua_ciudad_sombra.png",
+    "w": 1723,
+    "h": 1410,
+    "dx": -387,
+    "dy": 328
+   },
+   "k": 0.3689,
+   "cubre": {
+    "c": 12,
+    "f": 21,
+    "b": "000000000000000001100000000111111000000111111000000111111000000111101100000011110100000011111100000011110000000011110000000011110000001111111100011111111110011111111110011111111110011111111110011111111111111111111111001111111100000011111000000001110000"
+   }
+  },
+  {
+   "id": "farola_ciudad",
+   "tipo": "arbol",
+   "archivo": "farola_ciudad.png",
+   "w": 691,
+   "h": 1878,
+   "ancla": [
+    345,
+    1877
+   ],
+   "huella": [
+    262,
+    1614,
+    428,
+    1877
+   ],
+   "origen": "assets/gen/arcane/ciudad/farola_ciudad_s1_0.png",
+   "sombra": {
+    "archivo": "farola_ciudad_sombra.png",
+    "w": 1014,
+    "h": 1805,
+    "dx": -502,
+    "dy": 67
+   },
+   "k": 0.2258,
+   "cubre": {
+    "c": 12,
+    "f": 33,
+    "b": "000000000000000000001100000000011110000000111111000000011110000000011110000000011110000000011110000000001100000000001100000000001100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000000100000000001100000000001100000000001110000000001110000000001110011111111110000111111111000001111110000000001100"
+   }
+  },
+  {
+   "id": "farola_doble",
+   "tipo": "arbol",
+   "archivo": "farola_doble.png",
+   "w": 924,
+   "h": 1862,
+   "ancla": [
+    462,
+    1860
+   ],
+   "huella": [
+    351,
+    1599,
+    572,
+    1860
+   ],
+   "origen": "assets/gen/arcane/ciudad/farola_doble_s1_0.png",
+   "sombra": {
+    "archivo": "farola_doble_sombra.png",
+    "w": 1083,
+    "h": 1652,
+    "dx": -563,
+    "dy": 204
+   },
+   "k": 0.2208,
+   "cubre": {
+    "c": 12,
+    "f": 24,
+    "b": "000000000000000001100000010000100010011000000111111100101111011011110110011001100110000000000000000000000000000000000000000000000000000000100000000000100000000000000000000000000000000000100000000000100000000000100000000001100000000001100000000001100000000011110000000011110000000001100000"
+   }
+  },
+  {
+   "id": "banco",
+   "tipo": "roca",
+   "archivo": "banco.png",
+   "w": 1535,
+   "h": 1628,
+   "ancla": [
+    767,
+    1626
+   ],
+   "huella": [
+    184,
+    942,
+    1350,
+    1560
+   ],
+   "origen": "assets/gen/arcane/ciudad/banco_s3_0.png",
+   "sombra": {
+    "archivo": "banco_sombra.png",
+    "w": 1620,
+    "h": 1094,
+    "dx": -191,
+    "dy": 513
+   },
+   "k": 0.1954,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000001000000001111000001111111000111111111000111111111100011111111111011111111111011111111001011111100000010111000000000110000000000010000000000010000000"
+   }
+  },
+  {
+   "id": "maceta",
+   "tipo": "roca",
+   "archivo": "maceta.png",
+   "w": 1554,
+   "h": 1627,
+   "ancla": [
+    777,
+    1625
+   ],
+   "huella": [
+    186,
+    941,
+    1367,
+    1559
+   ],
+   "origen": "assets/gen/arcane/ciudad/maceta_s1_0.png",
+   "sombra": {
+    "archivo": "maceta_sombra.png",
+    "w": 1592,
+    "h": 1548,
+    "dx": -132,
+    "dy": 80
+   },
+   "k": 0.1158,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000010000000011111100000111111110001111111111001111111110001111111110001111111110000111111110011111111100011111111100111111111110111111111110000111110000"
+   }
+  },
+  {
+   "id": "arbol_alcorque",
+   "tipo": "arbol",
+   "archivo": "arbol_alcorque.png",
+   "w": 1187,
+   "h": 1803,
+   "ancla": [
+    593,
+    1801
+   ],
+   "huella": [
+    451,
+    1548,
+    735,
+    1801
+   ],
+   "origen": "assets/gen/arcane/ciudad/arbol_alcorque_s1_0.png",
+   "sombra": {
+    "archivo": "arbol_alcorque_sombra.png",
+    "w": 1534,
+    "h": 1697,
+    "dx": -429,
+    "dy": 61
+   },
+   "k": 0.3538,
+   "cubre": {
+    "c": 12,
+    "f": 18,
+    "b": "000001100000000111111100001111111100011111111110011111111111011111111111011111111111011111111111001111111110000101110000000001100000000011110000001111111100011111111100011111111100011111111100011111110000000011100000"
+   }
+  },
+  {
+   "id": "puesto_mercado",
+   "tipo": "roca",
+   "archivo": "puesto_mercado.png",
+   "w": 1602,
+   "h": 1673,
+   "ancla": [
+    801,
+    1672
+   ],
+   "huella": [
+    192,
+    969,
+    1409,
+    1605
+   ],
+   "origen": "assets/gen/arcane/ciudad/puesto_mercado_s1_0.png",
+   "sombra": {
+    "archivo": "puesto_mercado_sombra.png",
+    "w": 591,
+    "h": 508,
+    "dx": 61,
+    "dy": 1165
+   },
+   "k": 0.2996,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000011000000001111110001111111111001111111110001111111110001111111110001111111111001111111110001111111110011111111110101111111100000111110000000011000000"
+   }
+  },
+  {
+   "id": "puesto_flores",
+   "tipo": "roca",
+   "archivo": "puesto_flores.png",
+   "w": 1297,
+   "h": 1597,
+   "ancla": [
+    648,
+    1595
+   ],
+   "huella": [
+    155,
+    924,
+    1141,
+    1531
+   ],
+   "origen": "assets/gen/arcane/ciudad/puesto_flores_s2_0.png",
+   "sombra": {
+    "archivo": "puesto_flores_sombra.png",
+    "w": 1514,
+    "h": 770,
+    "dx": -372,
+    "dy": 803
+   },
+   "k": 0.3701,
+   "cubre": {
+    "c": 12,
+    "f": 15,
+    "b": "000000111000000111111111111111111111111111111111111111111111011111111111011111111111011111111111011111111111011111111110011111111110011111111110001111111000000111100000000011000000"
+   }
+  },
+  {
+   "id": "cajas_barriles",
+   "tipo": "roca",
+   "archivo": "cajas_barriles.png",
+   "w": 1269,
+   "h": 1076,
+   "ancla": [
+    634,
+    1075
+   ],
+   "huella": [
+    152,
+    623,
+    1116,
+    1031
+   ],
+   "origen": "assets/gen/arcane/ciudad/cajas_barriles_s3_0.png",
+   "sombra": {
+    "archivo": "cajas_barriles_sombra.png",
+    "w": 1401,
+    "h": 871,
+    "dx": -63,
+    "dy": 221
+   },
+   "k": 0.2648,
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "000000010000000001111100000011111100000011111110000111111111011111111111111111111111001111111111000111111111000001011110"
+   }
+  },
+  {
+   "id": "buzon",
+   "tipo": "roca",
+   "archivo": "buzon.png",
+   "w": 1169,
+   "h": 1435,
+   "ancla": [
+    584,
+    1434
+   ],
+   "huella": [
+    140,
+    831,
+    1028,
+    1376
+   ],
+   "origen": "assets/gen/arcane/ciudad/buzon_s1_0.png",
+   "sombra": {
+    "archivo": "buzon_sombra.png",
+    "w": 1037,
+    "h": 308,
+    "dx": -2,
+    "dy": 1107
+   },
+   "k": 0.1129,
+   "cubre": {
+    "c": 12,
+    "f": 15,
+    "b": "000000011110000001111111000001111111000000111111000000111111000000111110000000111110000000111110000000111110000000111110000000111110011111111110111111111111111111111110001111111100"
+   }
+  },
+  {
+   "id": "poste_indicador",
+   "tipo": "arbol",
+   "archivo": "poste_indicador.png",
+   "w": 1223,
+   "h": 1571,
+   "ancla": [
+    611,
+    1570
+   ],
+   "huella": [
+    464,
+    1350,
+    758,
+    1570
+   ],
+   "origen": "assets/gen/arcane/ciudad/poste_indicador_s3_0.png",
+   "sombra": {
+    "archivo": "poste_indicador_sombra.png",
+    "w": 1273,
+    "h": 1215,
+    "dx": -322,
+    "dy": 412
+   },
+   "k": 0.1472,
+   "cubre": {
+    "c": 12,
+    "f": 15,
+    "b": "000001100000000001100000111111100000011111111111000111111110000011111100000111111100001111111000001111111100000011111100000111110000000011100000000001100000001111100000000011100000"
+   }
+  },
+  {
+   "id": "columna_anuncios",
+   "tipo": "roca",
+   "archivo": "columna_anuncios.png",
+   "w": 925,
+   "h": 1734,
+   "ancla": [
+    462,
+    1733
+   ],
+   "huella": [
+    111,
+    1004,
+    814,
+    1663
+   ],
+   "origen": "assets/gen/arcane/ciudad/columna_anuncios_s3_0.png",
+   "sombra": {
+    "archivo": "columna_anuncios_sombra.png",
+    "w": 1464,
+    "h": 657,
+    "dx": -537,
+    "dy": 1077
+   },
+   "k": 0.2335,
+   "cubre": {
+    "c": 12,
+    "f": 22,
+    "b": "000000100000000000100000000011110000000011111000001111111110011111111111011111111111011111111111011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111111111111111111011111111110000111111000"
+   }
+  },
+  {
+   "id": "papelera",
+   "tipo": "roca",
+   "archivo": "papelera.png",
+   "w": 1283,
+   "h": 1357,
+   "ancla": [
+    641,
+    1355
+   ],
+   "huella": [
+    153,
+    785,
+    1129,
+    1300
+   ],
+   "origen": "assets/gen/arcane/ciudad/papelera_s1_0.png",
+   "sombra": {
+    "archivo": "papelera_sombra.png",
+    "w": 804,
+    "h": 380,
+    "dx": -193,
+    "dy": 1014
+   },
+   "k": 0.0935,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000111000000111111110000111111111000111111110000111111110000111111110000111111110000111111110000111111110001111111110111111111110001111111100000111110000"
+   }
+  },
+  {
+   "id": "fuente_beber",
+   "tipo": "roca",
+   "archivo": "fuente_beber.png",
+   "w": 1177,
+   "h": 1255,
+   "ancla": [
+    588,
+    1253
+   ],
+   "huella": [
+    141,
+    725,
+    1035,
+    1202
+   ],
+   "origen": "assets/gen/arcane/ciudad/fuente_beber_s3_0.png",
+   "sombra": {
+    "archivo": "fuente_beber_sombra.png",
+    "w": 1081,
+    "h": 513,
+    "dx": 91,
+    "dy": 711
+   },
+   "k": 0.1223,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000001110000000001110000000001110000000011111000001111111110001111111110011111111111011111111111111111111110111111111111111111111111011111111110001111111000"
+   }
+  },
+  {
+   "id": "parterre",
+   "tipo": "losa",
+   "archivo": "parterre.png",
+   "w": 1718,
+   "h": 1451,
+   "ancla": [
+    859,
+    1450
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/ciudad/parterre_s2_0.png",
+   "sombra": {
+    "archivo": "parterre_sombra.png",
+    "w": 1767,
+    "h": 1396,
+    "dx": -115,
+    "dy": 57
+   },
+   "k": 0.3143,
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "000000110000000001111000000111111110011111111111111111111111111111111110011111111100001111111000000011110000000001000000"
+   }
+  },
+  {
+   "id": "alcantarilla",
+   "tipo": "losa",
+   "archivo": "alcantarilla.png",
+   "w": 1583,
+   "h": 1289,
+   "ancla": [
+    791,
+    1287
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/ciudad/alcantarilla_s1_0.png",
+   "sombra": {
+    "archivo": "alcantarilla_sombra.png",
+    "w": 1167,
+    "h": 1042,
+    "dx": 57,
+    "dy": 234
+   },
+   "k": 0.0985,
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "000011111000001111111100011111111110111111111111111111111111111111111111111111111111011111111110001111111100000111110000"
+   }
+  },
+  {
+   "id": "escudo_suelo",
+   "tipo": "losa",
+   "archivo": "escudo_suelo.png",
+   "w": 1816,
+   "h": 1616,
+   "ancla": [
+    908,
+    1614
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/ciudad/escudo_suelo_s1_0.png",
+   "k": 0.2974,
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000011110000001111111100011111111110011111111111111111111111111111111111111111111111111111111110011111111110001111111100000011110000"
+   }
+  },
+  {
+   "id": "pozo_ciudad",
+   "tipo": "roca",
+   "archivo": "pozo_ciudad.png",
+   "w": 1377,
+   "h": 1588,
+   "ancla": [
+    688,
+    1586
+   ],
+   "huella": [
+    165,
+    919,
+    1211,
+    1522
+   ],
+   "origen": "assets/gen/arcane/ciudad/pozo_ciudad_s3_0.png",
+   "sombra": {
+    "archivo": "pozo_ciudad_sombra.png",
+    "w": 1612,
+    "h": 869,
+    "dx": -300,
+    "dy": 748
+   },
+   "k": 0.2179,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000000111000000011111100011111111111011111111111001111111100001111111100001111111100001111111110001111111110001111111110011111111110011111111110001111111100000011111000"
+   }
+  },
+  {
+   "id": "toldo_cafe",
+   "tipo": "roca",
+   "archivo": "toldo_cafe.png",
+   "w": 1340,
+   "h": 1618,
+   "ancla": [
+    670,
+    1617
+   ],
+   "huella": [
+    160,
+    937,
+    1179,
+    1552
+   ],
+   "origen": "assets/gen/arcane/ciudad/toldo_cafe_s1_0.png",
+   "sombra": {
+    "archivo": "toldo_cafe_sombra.png",
+    "w": 1194,
+    "h": 1045,
+    "dx": 25,
+    "dy": 521
+   },
+   "k": 0.403,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000011111000001111111110001111111111001111111111000111111110000011111000000000000000001000000011001111111111011111111110111111111111011111111110001111111110000111101100"
+   }
+  },
+  {
+   "id": "carro",
+   "tipo": "roca",
+   "archivo": "carro.png",
+   "w": 1294,
+   "h": 1401,
+   "ancla": [
+    647,
+    1399
+   ],
+   "huella": [
+    155,
+    810,
+    1138,
+    1342
+   ],
+   "origen": "assets/gen/arcane/ciudad/carro_s2_0.png",
+   "sombra": {
+    "archivo": "carro_sombra.png",
+    "w": 1190,
+    "h": 779,
+    "dx": 65,
+    "dy": 615
+   },
+   "k": 0.3246,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000000110000000001111100001111111111011111111111111111111111011111111111011111111111111111111111111111111111011111111110001111110000000011100000000011000000"
+   }
+  },
+  {
+   "id": "escalera_plaza",
+   "tipo": "losa",
+   "archivo": "escalera_plaza.png",
+   "w": 1314,
+   "h": 1560,
+   "ancla": [
+    657,
+    1558
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/ciudad/escalera_plaza_s2_0.png",
+   "sombra": {
+    "archivo": "escalera_plaza_sombra.png",
+    "w": 1302,
+    "h": 1294,
+    "dx": -206,
+    "dy": 265
+   },
+   "k": 0.411,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "001000000100001111111100001111111100001111111100011111111110011111111110011111111110011111111110011111111110111111111111111111111111111111111111011111111110011111111110"
+   }
   }
  ]
 }

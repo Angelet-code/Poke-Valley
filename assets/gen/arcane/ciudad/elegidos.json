@@ -1,0 +1,7 @@
+{
+ "centro_pokemon": 3, "tienda_pokemon": 3, "gimnasio": 3, "ayuntamiento": 3, "casa_ciudad_1": 1, "casa_ciudad_2": 3, "casa_ciudad_3": 1,
+ "torre_reloj": 3, "mercado_cubierto": 3, "kiosko_musica": 3, "fuente": 3, "estatua_ciudad": 3, "farola_ciudad": 1, "farola_doble": 1,
+ "banco": 3, "maceta": 1, "arbol_alcorque": 1, "puesto_mercado": 1, "puesto_flores": 2, "cajas_barriles": 3, "buzon": 1,
+ "poste_indicador": 3, "columna_anuncios": 3, "papelera": 1, "fuente_beber": 3, "parterre": 2, "alcantarilla": 1, "escudo_suelo": 1,
+ "pozo_ciudad": 3, "toldo_cafe": 1, "carro": 2, "escalera_plaza": 2
+}

@@ -210,3 +210,46 @@ lago y pueblo). Para cada uno de los 7 sets (`comun`, `costa`, `cantera`, `panta
   - Silueta de cada pieza para colocarlas sin tapar lo pisable: `python -I lab/tools/mascaras_arcane.py` añade `cubre`
     a elementos.json. Hay que ejecutarlo de nuevo tras `catalogo_arcane.py` o `tiras_arcane.py`.
   - Pendiente: repetir con semilla 2 lo flojo.
+
+## Ciudad (2026-10-15)
+Kit para construir una ciudad: suelos repetibles, tiras que se encadenan y piezas sueltas. Misma receta que los biomas
+y los muros (Klein `--edit` de la referencia sola, fondo verde liso).
+
+- **Generación** (`assets/gen/arcane/ciudad/gen.sh`): `piezas.txt` (sueltas, `id|tipo|ancho|descripción`; tipo
+  `edificio` → huella de casa, `farola`/`poste` → huella de árbol, `losa` → se pisa), `suelos.txt` y `tiras.txt`.
+  Las tiras van a `assets/gen/arcane/muros/ciudad/` y también están en `muros/piezas.txt` como bioma `ciudad`.
+  Hojas de semillas: `python -I assets/gen/arcane/ciudad/hoja.py` → `ciudad/hoja_piezas.png`, `hoja_suelos.png`,
+  `hoja_tiras.png`. Semilla elegida: `ciudad/elegidos.json` (sueltas) y `muros/elegidos.json` (`"ciudad/<pieza>"`);
+  1 si no está. ~95 s por imagen en la 3060 Ti (más lento que el lago).
+- **Sueltas** (32): centro Pokémon, tienda, gimnasio, ayuntamiento, 3 casas de ciudad, torre del reloj, mercado
+  cubierto, quiosco de música, fuente, `estatua_ciudad`, 2 farolas de hierro, banco, maceta, árbol en alcorque, puestos
+  de fruta y de flores, cajas y barriles, buzón, poste indicador, columna de anuncios, papelera, fuente para beber,
+  parterre, alcantarilla, mosaico Poké Ball, pozo, terraza de café, carro y escalinata. Catálogo:
+  `lab/tools/catalogo_arcane.py` las lee de `ciudad/piezas.txt`.
+- **Tiras** (`lab/tools/tiras_arcane.py`, bioma `ciudad`): muralla con almenas + portón en arco, muro de canal
+  (`acantilado`) + escalinata, verja de hierro, puente de piedra, seto, **fachada** (casas adosadas) y
+  **fachada_tienda** (tiendas con toldos), bordillo (se pisa). H y V salvo portón, escalera, fachadas y bordillo.
+  Medidas propias de la ciudad en `ALTO_BIO`/`ANCHO_V_BIO` (muralla 64, muro de canal 56, verja 34; fachadas 120).
+- **Suelos** (`lab/assets/suelo_arcane/ciudad/`, hoja `hoja_suelos.png`): adoquín, losas de plaza, ladrillo en espiga,
+  calzada, baldosa a cuadros, tierra batida, césped de parque y agua de canal. Los de dibujo regular no pasan por
+  quilt (torcía las juntas): `tools/repetible_periodo.py` recorta la imagen a un ancho y alto en los que la textura
+  vuelve a empezar y cierra los bordes con una costura de corte mínimo (`--size` fija la escala: 256 adoquín y
+  ladrillo, 220 losas y calzada, 360 los orgánicos con `--min 0.8`).
+- **Mapa de prueba** (`src/data/ciudad.ts`): `pv.scene.getScene('title').scene.start('aventura', {mapa: 'ciudad'})`.
+  Muralla con portón, casas adosadas, centro Pokémon, tienda, torre, plaza con fuente, gimnasio, parque con seto y
+  quiosco, calle, mercado, casas, ayuntamiento y canal con muro, escalera, verja y puente. Capturas:
+  [ciudad_dia](arcane/ciudad_dia.jpg), [ciudad_noche](arcane/ciudad_noche.jpg) y [ciudad_plaza](arcane/ciudad_plaza.jpg).
+  - **Pavimentos**: `MapaAventura.pavimentos` (rectángulos `{tex, x, y, w, h, escala}`). `Aventura.pavimentar` pinta
+    cada uno en un lienzo a resolución de pantalla con la textura repetida y anclada al mundo, entre el Terrain y los
+    planos, con Light2D (las farolas los iluminan). El agua del canal es agua del Terrain (vértices 3) con la textura
+    `canal` encima.
+  - **Sombras**: la máscara de sombra es verde oscuro (para el césped). En los mapas con pavimento se tiñe a gris
+    (`ponerTinteSombra` en `Dibujo.ts`).
+  - Farolas de ciudad: luz en `puntoLuz` (`farola_ciudad`, `farola_doble`).
+- **Semillas elegidas** (2026-10-15): sueltas en `ciudad/elegidos.json` (sobre todo la 3, más de frente: centro
+  Pokémon, tienda, gimnasio, ayuntamiento, torre…); tiras: la 1, salvo `fachada` y `valla_v` (2, en
+  `muros/elegidos.json`); suelos: `ciudad/suelos.sh` (adoquín y calzada de la 2, el resto de la 1; el adoquín de la 2
+  es más menudo, escala 0.75 en el mapa). Las piezas sueltas anteriores están en `elementos_arcane/v1_ciudad/`.
+- **Escalinata** rehecha (la v1, que parecía un palé, en `ciudad/v1_escalera_plaza/`): "monumental flight of five
+  steps… flanked by low carved stone side walls", semilla 2. En el mapa sube de la plaza a la acera del norte.
+- Pendiente: las casas sueltas quizá algo pequeñas frente a las fachadas.

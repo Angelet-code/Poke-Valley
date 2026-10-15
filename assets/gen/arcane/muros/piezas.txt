@@ -82,3 +82,18 @@ nieve|valla|H|A long rustic wooden log fence with snow on its rails and posts
 nieve|valla|V|A long rustic wooden log fence with snow on its rails and posts
 nieve|puente|H|A long straight wooden plank bridge covered with snow, with wooden railings on both sides
 nieve|puente|V|A long straight wooden plank bridge covered with snow, with wooden railings on both sides
+ciudad|muro|H|A long tall city rampart wall of big cut pale stone blocks with crenellations along its top walkway
+ciudad|muro|V|A long tall city rampart wall of big cut pale stone blocks with crenellations along its top walkway
+ciudad|porton|H|A section of a tall city rampart wall of big cut pale stone blocks with a big open arched stone gateway in its middle
+ciudad|acantilado|H|A long tall stone canal quay wall of big cut grey blocks with a stone curb along its flat paved top edge and moss near its base
+ciudad|acantilado|V|A long tall stone canal quay wall of big cut grey blocks with a stone curb along its flat paved top edge
+ciudad|escalera|H|A section of a tall stone canal quay wall of big cut grey blocks with wide stone stairs carved into its middle climbing to the top
+ciudad|valla|H|A long elegant black wrought iron city fence with pointed spear tips between short stone pillars
+ciudad|valla|V|A long elegant black wrought iron city fence with pointed spear tips between short stone pillars
+ciudad|puente|H|A long straight arched stone city bridge with carved stone balustrades on both sides
+ciudad|puente|V|A long straight stone city bridge with carved stone balustrades on both sides
+ciudad|seto|H|A long neatly trimmed rectangular green box hedge
+ciudad|seto|V|A long neatly trimmed rectangular green box hedge
+ciudad|fachada|H|A long continuous row of narrow attached two-storey town houses with different pastel plaster facades, wooden doors, shuttered windows, flower boxes and red and slate tiled roofs, seen from the street
+ciudad|fachada_tienda|H|A long continuous row of attached town house shops with colorful striped awnings over shop windows on the ground floor, wooden doors and tiled roofs, seen from the street
+ciudad|bordillo|H|A long straight raised stone curb edge of a sidewalk, a narrow strip of grey cut stone

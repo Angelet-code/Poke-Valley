@@ -94,6 +94,21 @@ if (_BIO / "elegidos.json").exists():
             ANCHO[_id] = int(_ancho)
             if _tipo in ("losa", "detalle"):   # a ras de suelo, pero fuera del reparto de detalles por el césped
                 TIPO_JUEGO[_id] = "losa"
+# La ciudad (docs/art/ARCANE.md, "Ciudad"): assets/gen/arcane/ciudad/piezas.txt (id|tipo|ancho|descripción) y la semilla
+# elegida en ciudad/elegidos.json ({id: semilla}, 1 si no está). Tipo de la lista → tipo de la huella: los edificios
+# como casa (el cuerpo), farolas y postes como árbol (solo el pie).
+_CIU = REPO / "assets/gen/arcane/ciudad"
+_HUELLA_CIU = {"edificio": "casa", "farola": "arbol", "poste": "arbol"}
+if (_CIU / "piezas.txt").exists():
+    _sel = json.loads((_CIU / "elegidos.json").read_text(encoding="utf-8")) if (_CIU / "elegidos.json").exists() else {}
+    for _l in (_CIU / "piezas.txt").read_text(encoding="utf-8").splitlines():
+        if not _l.strip():
+            continue
+        _id, _tipo, _ancho, _ = _l.split("|", 3)
+        ELEGIDOS[_id] = (_HUELLA_CIU.get(_tipo, _tipo), f"assets/gen/arcane/ciudad/{_id}_s{_sel.get(_id, 1)}_0.png")
+        ANCHO[_id] = int(_ancho)
+        if _tipo == "losa":
+            TIPO_JUEGO[_id] = "losa"
 
 
 def alinear(id_, klein, e):

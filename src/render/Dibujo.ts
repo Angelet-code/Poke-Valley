@@ -112,6 +112,11 @@ export function precargar(scene: Phaser.Scene, cat: { elementos: Elemento[]; vec
   }
 }
 
+// Tinte de las sombras pintadas (su máscara es verde oscuro, 40,56,40, para el césped). Sobre pavimento (la ciudad) se
+// veían verdes: con 0xffb7ff quedan grises neutras. Aventura lo pone al montar cada mapa.
+let tinteSombra = 0xffffff;
+export function ponerTinteSombra(t: number): void { tinteSombra = t; }
+
 // Dibuja un elemento a su tamaño de mundo, reducido de antemano al tamaño exacto en pantalla (screenTex) y
 // ordenado por la base de su huella; los planos (caminos, detalles, estanque) van a ras de suelo.
 export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
@@ -131,7 +136,7 @@ export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
   } else if (el.sombra) {
     const so = el.sombra, keyS = screenTex(scene, 'so_' + el.id, Math.max(1, Math.round(so.h * k * S)));
     const sx = c.flip ? c.x + (ax - so.dx - so.w) * k : c.x + (so.dx - ax) * k, sy = c.y + (so.dy - ay) * k;
-    const sombra = scene.add.image(sx, sy, keyS).setOrigin(0, 0).setScale(1 / S).setFlipX(!!c.flip).setAlpha(SOMBRA_ALFA)
+    const sombra = scene.add.image(sx, sy, keyS).setOrigin(0, 0).setScale(1 / S).setFlipX(!!c.flip).setAlpha(SOMBRA_ALFA).setTint(tinteSombra)
       .setBlendMode(Phaser.BlendModes.MULTIPLY).setDepth(-8000 + sy + so.h * k);
     sombra.resetPipeline();   // multiply sobre el suelo ya iluminado: sin luz propia
   }
@@ -198,6 +203,8 @@ export function puntoLuz(p: Pieza): [number, number] | null {
   if (p.el.id === 'farola') return [c.x, c.y - hM * 0.82];
   if (p.el.id === 'farola_madera') return [c.x + (c.flip ? -1 : 1) * hM * 0.17, c.y - hM * 0.74];
   if (p.el.id === 'hoguera') return [c.x, c.y - hM * 0.45];
+  if (p.el.id === 'farola_ciudad') return [c.x, c.y - hM * 0.86];
+  if (p.el.id === 'farola_doble') return [c.x, c.y - hM * 0.78];
   return null;
 }
 

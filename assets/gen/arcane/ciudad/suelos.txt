@@ -1,0 +1,8 @@
+adoquin|old worn grey cobblestone street paving of small rounded stones
+losas_plaza|large square pale stone plaza flagstones with thin mortar joints
+ladrillo|warm red brick sidewalk paving laid in a herringbone pattern
+calzada|smooth worn dark grey stone road paving of long rectangular setts
+baldosa|decorative plaza paving of alternating pale and slate grey square tiles
+tierra_batida|packed beige dirt path of a city park with tiny pebbles
+cesped_parque|short neatly mowed bright park lawn grass
+canal|calm dark teal canal water with soft painted ripples
