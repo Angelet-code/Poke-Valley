@@ -273,6 +273,12 @@ a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 bot�
     de tipo, el nuevo empieza a mitad (al empezar las siluetas) y el que pierde se acaba en el estallido.
   - Sonido sintetizado con Web Audio (`src/fx/sonidoEvolucion.ts`): zumbido creciente, campanitas, truenos, golpes,
     explosión y fanfarria.
+- **Evolución con piedra** (Eevee): Piedra Agua → Vaporeon, Trueno → Jolteon, Fuego → Flareon, Hoja → Leafeon y
+  Hielo → Glaceon (`EVO_OBJETO` en `data/pokedex.ts`; cada evolución es una línea aparte de una forma, que no sale como
+  salvaje). Se usa desde el inventario (I; la ficha dice a quién hace evolucionar) o desde la barra, fuera de combate,
+  y lanza la misma cinemática. Aprende lo de la forma nueva hasta su nivel que Eevee no aprende nunca (Pistola
+  Agua, Niebla…). Las piedras salen en el suelo de las zonas (12 % de cada hallazgo) y del alfa (30 %), en
+  `combate/botin.ts`; iconos de `tools/iconos_piedras.py`. Falta: Espeon, Umbreon y Sylveon (amistad).
 
 ## 6. Pueblo y cambiar de Pokémon
 Tus otros Pokémon pasean por la plaza. Con F a su lado te conviertes en él e intercambiáis el sitio. El que dejas

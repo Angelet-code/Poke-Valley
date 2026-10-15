@@ -2,7 +2,7 @@
 // `icono` es la clave de textura (los recolectables usan su propio sprite pixel art;
 // las bayas, el icono de 24×24 de Esmeralda).
 
-export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina' | 'equipable';   // equipable: combate/objetos.ts
+export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina' | 'equipable' | 'evolutivo';   // equipable: combate/objetos.ts; evolutivo: data/pokedex.ts EVO_OBJETO
 
 export interface ItemDef {
   id: string;
@@ -39,6 +39,12 @@ export const ITEMS: Record<string, ItemDef> = {
   pocion: { id: 'pocion', nombre: 'Poción', precio: 30, tipo: 'medicina', icono: 'icono_pocion', cura: 20 },
   superpocion: { id: 'superpocion', nombre: 'Superpoción', precio: 70, tipo: 'medicina', icono: 'icono_superpocion', cura: 60 },
   hiperpocion: { id: 'hiperpocion', nombre: 'Hiperpoción', precio: 120, tipo: 'medicina', icono: 'icono_hiperpocion', cura: 120 },
+  // Piedras evolutivas (modo aventura): se usan desde el inventario (I) o la barra; iconos de tools/iconos_piedras.py.
+  waterstone: { id: 'waterstone', nombre: 'Piedra Agua', precio: 200, tipo: 'evolutivo', icono: 'icono_waterstone' },
+  thunderstone: { id: 'thunderstone', nombre: 'Piedra Trueno', precio: 200, tipo: 'evolutivo', icono: 'icono_thunderstone' },
+  firestone: { id: 'firestone', nombre: 'Piedra Fuego', precio: 200, tipo: 'evolutivo', icono: 'icono_firestone' },
+  leafstone: { id: 'leafstone', nombre: 'Piedra Hoja', precio: 200, tipo: 'evolutivo', icono: 'icono_leafstone' },
+  icestone: { id: 'icestone', nombre: 'Piedra Hielo', precio: 200, tipo: 'evolutivo', icono: 'icono_icestone' },
 };
 
 // Las bayas del catálogo se registran al cargar bayas.json (una entrada por baya).

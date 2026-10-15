@@ -15,7 +15,7 @@ import { dentroDe } from '../util';
 import { HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
-import { MEJOR, nivelZona, sortear, tierDe } from './botin';
+import { MEJOR, PROB_PIEDRA_ALFA, PROB_PIEDRA_SUELO, nivelZona, sortear, sortearPiedra, tierDe } from './botin';
 import { EQUIPABLES, POTENCIA_TIPO, RECARGA_BANDA, sortearEquipable } from './objetos';
 import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
@@ -258,7 +258,8 @@ export class Mundo {
   private reponerHallazgo(h: Mundo['hallazgos'][number]): void {
     const g = this.partida.estado.hallados?.[`${this.mapa.id}:${h.i}`];
     if (g && Date.now() - g.t < HALLAZGO_VUELVE) return;
-    h.item = sortear(nivelZona(this.mapa), rng(this.sueloSemilla + h.i * 7919 + (g?.n ?? 0) * 104729));
+    const r = rng(this.sueloSemilla + h.i * 7919 + (g?.n ?? 0) * 104729);
+    h.item = r() < PROB_PIEDRA_SUELO ? sortearPiedra(r) : sortear(nivelZona(this.mapa), r);
   }
   private pasoHallazgos(): void {
     const p = this.jugador;
@@ -823,8 +824,9 @@ export class Mundo {
     if (t.alfa) {   // el alfa suelta siempre lo mejor de su nivel: dos Balls y dos curas (combate/botin.ts)
       const { ball, cura } = MEJOR[tierDe(t.nivel)];
       const eq = sortearEquipable(this.rnd);   // y un objeto equipable (inventario, I)
-      this.partida.dar(ball, 2); this.partida.dar(cura, 2); this.partida.dar(eq);
-      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2, ${ITEMS[cura].nombre} ×2 y ${ITEMS[eq].nombre} (equípalo con I)`);
+      const piedra = this.rnd() < PROB_PIEDRA_ALFA ? sortearPiedra(this.rnd) : null;   // y a veces una piedra evolutiva
+      this.partida.dar(ball, 2); this.partida.dar(cura, 2); this.partida.dar(eq); if (piedra) this.partida.dar(piedra);
+      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2, ${ITEMS[cura].nombre} ×2${piedra ? `, ${ITEMS[piedra].nombre}` : ''} y ${ITEMS[eq].nombre} (equípalo con I)`);
     } else if (r < 0.02) {   // muy de vez en cuando, un equipable
       const eq = sortearEquipable(this.rnd);
       this.partida.dar(eq); this.aviso(`${t.nombre} ha soltado: ${ITEMS[eq].nombre} (equípalo con I)`);
@@ -877,7 +879,7 @@ export class Mundo {
   // fracción), estado, cambios y enfriamientos.
   cambiarForma(): void {
     const p = this.jugador, m = p.miembro!, f = formaDe(m.linea, m.nivel), frac = p.ps / p.stats.hp;
-    p.nivel = m.nivel; p.dex = idSprite(f.dex, m.shiny); p.nombre = f.nombre; p.tipos = tiposDe(f.id);
+    p.linea = m.linea; p.nivel = m.nivel; p.dex = idSprite(f.dex, m.shiny); p.nombre = f.nombre; p.tipos = tiposDe(f.id);
     p.stats = statsDe(f.base, m.nivel); p.ps = Math.max(1, Math.round(p.stats.hp * frac));
     const as = this.anatomia.alto(p.dex);
     p.escala = escalaEspecie(f.id, as); p.alto = Math.min(ALTO_MAX, as * p.escala);
@@ -1002,6 +1004,7 @@ export class Mundo {
     if (this.partida.tiene(id) <= 0) { this.aviso(`No te quedan: ${def.nombre}`); return; }
     if (l.gcd > this.ahora || l.lanza) return;
     if (def.tipo === 'pokeball') { this.lanzarBall(id); return; }
+    if (def.tipo === 'evolutivo') { this.evolucionarCon(id); return; }
     if (def.tipo === 'baya' || def.tipo === 'medicina') {
       // Bayas: una parte de la vida; pociones: PS fijos (Poción 20, Superpoción 60, Hiperpoción 120).
       const cura = def.cura ?? Math.ceil(l.stats.hp * (id === 'sitrus' ? 0.5 : id === 'oran' ? 0.3 : 0.15));
@@ -1012,6 +1015,17 @@ export class Mundo {
       return;
     }
     this.aviso(`${def.nombre}: aquí no sirve`);
+  }
+  // Piedra evolutiva en el que manejas (Eevee + Piedra Agua → Vaporeon): la cinemática de la evolución (procesar) y,
+  // al acabar, cambiarForma. No en combate, como cambiar de objeto.
+  private evolucionarCon(id: string): void {
+    const l = this.jugador, m = this.partida.activo, nombre = ITEMS[id]?.nombre ?? id;
+    if (!this.partida.evoCon(m, id)) { this.aviso(`${nombre}: no le hace nada a ${l.nombre}`); return; }
+    if (this.ahora - l.ultimoCombate < 6) { this.aviso('No puedes evolucionar en combate'); return; }
+    const av = this.partida.evolucionarCon(m, id);
+    if (!av) return;
+    this.procesar(av);
+    this.guardar();
   }
   // Poké Ball al objetivo: vuela, el salvaje entra, se mueve tres veces y se queda (o sale).
   private lanzarBall(id: string): void {

@@ -2,7 +2,7 @@
 // pueblo), lo que llevas en la mochila y la hora. Se guarda en localStorage aparte de la partida del pueblo.
 // Cada Pokémon tiene su nivel, su experiencia, los movimientos que sabe y su barra de atajos (10 casillas:
 // movimientos u objetos, colocados al gusto).
-import { LINEAS } from '../data/pokedex';
+import { EVO_OBJETO, LINEAS } from '../data/pokedex';
 import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimientos';
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, nivelPorExp } from './reglas';
@@ -133,12 +133,30 @@ export class Partida {
       if (f.id !== antes.id) av.push({ tipo: 'evoluciona', uid: m.uid, de: antes.nombre, a: f.nombre });
       for (const [nv, mov] of aprendizaje(f.id)) {
         if (m.movs.includes(mov) || !getMove(mov) || !(nv === m.nivel || (nv === 1 && m.nivel === 2) || (f.id !== antes.id && nv <= m.nivel))) continue;
-        m.movs.push(mov);
-        const libre = m.barra.findIndex(a => !a);
-        if (libre >= 0) m.barra[libre] = { m: mov };
-        av.push({ tipo: 'aprende', uid: m.uid, mov, casilla: libre });
+        this.aprender(m, mov, av);
       }
     }
+    return av;
+  }
+  private aprender(m: Miembro, mov: string, av: Aviso[]): void {
+    m.movs.push(mov);
+    const libre = m.barra.findIndex(a => !a);
+    if (libre >= 0) m.barra[libre] = { m: mov };
+    av.push({ tipo: 'aprende', uid: m.uid, mov, casilla: libre });
+  }
+  // La línea a la que pasaría con un objeto (Eevee + Piedra Agua → Vaporeon; data/pokedex.ts EVO_OBJETO), o nada.
+  evoCon(m: Miembro, item: string): string | undefined { return EVO_OBJETO[m.linea]?.[item]; }
+  // Evolucionar con un objeto: gasta el objeto y pasa a la otra línea con el mismo nivel. Aprende lo de la forma nueva
+  // hasta su nivel que la de antes no aprende nunca (Pistola Agua, Niebla…): sus movimientos de nivel 1 repiten los de
+  // Eevee y llenarían la barra.
+  evolucionarCon(m: Miembro, item: string): Aviso[] | null {
+    const dest = this.evoCon(m, item);
+    if (!dest || !this.gastar(item)) return null;
+    const antes = this.forma(m), suyos = new Set(aprendizaje(antes.id).map(([, mov]) => mov));
+    m.linea = dest;
+    m.exp = Math.max(m.exp, expDeNivel(dest, m.nivel));
+    const f = this.forma(m), av: Aviso[] = [{ tipo: 'evoluciona', uid: m.uid, de: antes.nombre, a: f.nombre }];
+    for (const [nv, mov] of aprendizaje(f.id)) if (nv <= m.nivel && !suyos.has(mov) && !m.movs.includes(mov) && getMove(mov)) this.aprender(m, mov, av);
     return av;
   }
 

@@ -46,7 +46,7 @@ export class Preload extends Phaser.Scene {
     }
 
     // Pociones (modo aventura): la de Klein con el tono girado (tools/iconos_pociones.py).
-    for (const id of ['pocion', 'superpocion', 'hiperpocion']) this.load.image('icono_' + id, `${A}game/pixel/items/iconos/${id}.png`);
+    for (const id of ['pocion', 'superpocion', 'hiperpocion', 'waterstone', 'thunderstone', 'firestone', 'leafstone', 'icestone']) this.load.image('icono_' + id, `${A}game/pixel/items/iconos/${id}.png`);
     // Objetos equipables (modo aventura, combate/objetos.ts): los iconos de Pokémon Colleja.
     for (const id in EQUIPABLES) this.load.image('icono_' + id, `${A}game/pixel/items/equipables/${id}.png`);
     this.load.image('icono_hogar',`${A}game/pixel/items/piedra_hogar.png`);   // piedra de hogar (tools/icono_hogar.py)

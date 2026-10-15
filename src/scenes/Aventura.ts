@@ -695,6 +695,7 @@ export class Aventura extends Phaser.Scene {
   auras(l: Luchador): Aura[] { return this.mundo?.auras(l) ?? []; }
   aceptarMision(m: Mision): void { this.mundo?.aceptarMision(m); }
   equipar(id: string | null, hueco: number): void { if (this.listo) this.mundo?.equipar(id, hueco); }
+  usarItem(id: string): void { if (this.listo && !this.evolucionando) this.mundo?.usarItem(id); }
   entregarMision(m: Mision): void { this.mundo?.entregarMision(m); }
   hogarFalta(): number { return this.mundo?.hogarFalta() ?? 0; }
   hogarFrac(): number { return this.mundo?.hogarFrac() ?? 0; }

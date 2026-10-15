@@ -19,6 +19,7 @@ import { type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES } from '../combate/objetos';
+import { EVO_OBJETO, LINEAS } from '../data/pokedex';
 import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
@@ -613,6 +614,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       this.invElegido = null;
       return;
     }
+    if (z.id && ITEMS[z.id]?.tipo === 'evolutivo') { av.usarItem(z.id); return; }   // piedra: en el que manejas
     if (!z.id || !EQUIPABLES[z.id]) return;
     const libre = obs.indexOf(null);
     if (obs.includes(z.id)) av.equipar(z.id, obs.indexOf(z.id));   // ya lo lleva: lo dice el aviso
@@ -623,7 +625,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
   // debajo, los equipables de la mochila (las Balls y las curas siguen en el panel K).
   private pintarInventario(): void {
     const av = this.av, m = av.partida.activo, obs = av.partida.objetos(m), dex = av.jugador?.dex ?? '';
-    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && EQUIPABLES[id]);
+    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && (EQUIPABLES[id] || ITEMS[id]?.tipo === 'evolutivo'));   // y las piedras evolutivas
     if (av.panel !== 'inv') this.invElegido = null;
     const k = av.panel === 'inv' ? `${m.uid}|${dex}|${m.nivel}|${JSON.stringify(av.jugador?.boosts)}|${obs.join()}|${JSON.stringify(eq)}|${this.invElegido}|${listo(this, dex)}` : '';
     if (k === this.invClave) return;
@@ -695,7 +697,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       t(cx + fw / 2 - 8, cy, String(v), 5, n > 0 ? 0x3f8a2f : n < 0 ? 0xc0453a : C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
     });
     const ye = ys + STATS + 6;
-    t(x + 6, ye, 'EQUIPABLES', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    t(x + 6, ye, 'OBJETOS', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
     if (!eq.length) t(x + 7, ye + 11 + CS / 2, 'Ninguno: los sueltan los alfas', 5, C.tinta).setOrigin(0, 0.5).setAlpha(0.7);
     eq.forEach(([id, n], i) => casilla(x + 7 + (i % COLS) * PASO, ye + 11 + Math.floor(i / COLS) * PASO, CS, id, { id }, this.invElegido === id, n));
     t(x + w / 2, y + h - 9, this.invElegido ? 'Ahora elige qué objeto cambiar' : 'Clic: ponérselo · en el suyo: quitar', 5, C.maderaClara).setOrigin(0.5, 0);
@@ -707,8 +709,13 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.fichaTipo.setVisible(false);
     if (!id) { this.ficha.setVisible(false); return; }
     const eq = EQUIPABLES[id];
-    const uso = z.hueco !== undefined ? (this.invElegido ? 'Clic: cambiarlo' : 'Clic: quitárselo') : 'Clic: ponérselo';
-    this.ficha.setText(`${ITEMS[id]?.nombre ?? id}\n${eq?.desc ?? ''}\n${uso}`).setVisible(true);
+    let desc = eq?.desc ?? '', uso = z.hueco !== undefined ? (this.invElegido ? 'Clic: cambiarlo' : 'Clic: quitárselo') : 'Clic: ponérselo';
+    if (ITEMS[id]?.tipo === 'evolutivo') {   // piedra: a quién hace evolucionar y si le sirve al que manejas
+      const nom = (l: string) => LINEAS[l].formas[0].nombre, dest = this.av.partida.evoCon(this.av.partida.activo, id);
+      desc = `Hace evolucionar a ${Object.entries(EVO_OBJETO).filter(([, o]) => o[id]).map(([l, o]) => `${nom(l)} en ${nom(o[id])}`).join(', ')}`;
+      uso = dest ? `Clic: usarla (${this.av.jugador.nombre} → ${nom(dest)})` : `A ${this.av.jugador.nombre} no le hace nada`;
+    }
+    this.ficha.setText(`${ITEMS[id]?.nombre ?? id}\n${desc}\n${uso}`).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, c = this.invCaja;
     const x = c ? c.x + c.w + 3 : z.x + z.w + 3, y = Math.max(4, Math.min(VH - h - 4, z.y + z.h / 2 - h / 2));
     marco(g, x, y, w, h, PANEL);

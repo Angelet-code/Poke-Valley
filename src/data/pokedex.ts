@@ -157,6 +157,13 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
     ['0212', 'Scizor', 40, [70, 130, 100, 55, 80, 65], 'intercambio con Revestimiento Metálico']),
   heracross: L('bicho', ['bicho', 'lucha'], 'lento', ['0214', 'Heracross', 1, [80, 125, 75, 40, 95, 85]]),
   eevee: L('normal', ['normal'], 'medio', ['0133', 'Eevee', 1, [55, 55, 50, 45, 65, 55]]),
+  // Las evoluciones de Eevee por piedra (EVO_OBJETO): líneas aparte de una sola forma, a las que se pasa usando la
+  // piedra (no salen como salvajes ni como visitantes).
+  vaporeon: L('agua', ['agua'], 'medio', ['0134', 'Vaporeon', 1, [130, 65, 60, 110, 95, 65], 'piedra agua']),
+  jolteon: L('electrico', ['electrico'], 'medio', ['0135', 'Jolteon', 1, [65, 65, 60, 110, 95, 130], 'piedra trueno']),
+  flareon: L('fuego', ['fuego'], 'medio', ['0136', 'Flareon', 1, [65, 130, 60, 95, 110, 65], 'piedra fuego']),
+  leafeon: L('planta', ['planta'], 'medio', ['0470', 'Leafeon', 1, [65, 110, 130, 60, 65, 95], 'piedra hoja']),
+  glaceon: L('hielo', ['hielo'], 'medio', ['0471', 'Glaceon', 1, [65, 60, 110, 130, 95, 65], 'piedra hielo']),
   wooper: L('agua', ['agua', 'tierra'], 'medio', ['0194', 'Wooper', 1, [55, 45, 45, 25, 25, 15]],
     ['0195', 'Quagsire', 20, [95, 85, 85, 65, 65, 35]]),
   lotad: L('agua', ['agua', 'planta'], 'parabolico', ['0270', 'Lotad', 1, [40, 30, 30, 40, 50, 30]],
@@ -310,6 +317,13 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
 export const INICIALES = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'cyndaquil', 'totodile', 'treecko', 'torchic', 'mudkip',
   'turtwig', 'chimchar', 'piplup', 'snivy', 'tepig', 'oshawott', 'chespin', 'fennekin', 'froakie', 'rowlet', 'litten', 'popplio',
   'grookey', 'scorbunny', 'sobble', 'sprigatito', 'fuecoco', 'quaxly'];
+
+// Evoluciones con objeto (modo aventura): línea de origen → objeto → línea a la que pasa. Las de destino son ramas:
+// no salen como salvajes, ni como visitantes del pueblo, ni para elegir al empezar.
+export const EVO_OBJETO: Record<string, Record<string, string>> = {
+  eevee: { waterstone: 'vaporeon', thunderstone: 'jolteon', firestone: 'flareon', leafstone: 'leafeon', icestone: 'glaceon' },
+};
+export const RAMAS = new Set(Object.values(EVO_OBJETO).flatMap(o => Object.values(o)));
 
 export const LINEAS: Record<string, Linea> = Object.fromEntries(Object.entries(DATOS).map(([id, l]) => [id, { id, ...l }]));
 // Cada forma con su línea (bibarel → bidoof), para buscar sprites y nombres.
