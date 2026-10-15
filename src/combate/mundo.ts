@@ -1109,7 +1109,6 @@ export class Mundo {
     this.despues(VUELO_BALL, () => {
       if (t.muerto) { this.lanzando = false; this.emitir({ tipo: 'ballFin', n, ok: null }); return; }
       t.enBall = true; t.meta = null;
-      if (this.objetivo === t) this.objetivo = null;
       if (this.espejo) { this.miBall = t.uid; this.salir({ tipo: 'ball', a: t.uid, dentro: true }); }
       this.despues(MENEOS_BALL, () => {
         this.lanzando = false;
@@ -1119,6 +1118,7 @@ export class Mundo {
         if (ok) this.capturado(t, id);
         else {
           t.enBall = false;
+          if (!this.objetivo) this.objetivo = t;   // si se escapa, sigues con él fijado
           this.emitir({ tipo: 'destello', uid: t.uid, ms: 200 });
           this.aviso(`¡${t.nombre} ha salido de la ${ITEMS[id]?.nombre ?? 'Ball'}!`);
           this.provocar(t, p);
