@@ -19,7 +19,7 @@ import { MEJOR, nivelZona, sortear, tierDe } from './botin';
 import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
-  CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
+  CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
   TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
   velAndar, type Clima, type Golpe, type Perfil, type Stats,
 } from './reglas';
@@ -82,7 +82,7 @@ const CUENTA = 3;                  // s de cuenta atrás al aceptar un duelo
 const DUELO_RADIO = 300;           // px desde donde empezó el duelo: más lejos, lo abandonas
 
 // Lo que un movimiento cambia en alguien además del daño: stats o un estado.
-interface Efecto { quien: Luchador; boosts?: Boosts; estado?: string }
+interface Efecto { quien: Luchador; boosts?: Boosts; estado?: string; semilla?: boolean }
 
 export interface Luchador {
   uid: string; rol: 'jugador' | 'salvaje' | 'vecino' | 'remoto';   // remoto: otro jugador (multijugador)
@@ -90,6 +90,7 @@ export interface Luchador {
   dex: string; nombre: string; tipos: TypeName[];       // dex: el de su sprite (con `s` si es shiny)
   stats: Stats; ps: number; boosts: Boosts; boostHasta: Partial<Record<Stat6, number>>;
   estado: string | null; estadoHasta: number; ticEstado: number; toxN: number;
+  semilla?: { de: string; hasta: number; tic: number };   // Drenadoras: quién la sembró (le cura), hasta cuándo y el próximo turno
   x: number; y: number; dir: number; anda: boolean; alto: number;
   movs: string[]; cd: Record<string, number>; gcd: number;
   cdDura: Record<string, number>; gcdDura: number;   // lo que duró cada enfriamiento al ponerse (con la celeridad de entonces)
@@ -127,7 +128,7 @@ const redDe = (uid: string) => uid.slice('remoto-'.length);
 // fotos (`foto`/`aplicarFoto`) y lo que les hacen se lo mandan al dueño (`Salida`). Cada jugador manda en su propio
 // Pokémon: el daño que recibe se lo aplica él (`recibirGolpe`). La escena lleva los mensajes (src/combate/red.ts).
 export type Salida =
-  | { tipo: 'golpe'; de: string; a: string; mov: string; golpe: Golpe; efectos: { boosts?: Boosts; estado?: string }[] }
+  | { tipo: 'golpe'; de: string; a: string; mov: string; golpe: Golpe; efectos: { boosts?: Boosts; estado?: string; semilla?: boolean }[] }
   | { tipo: 'ball'; a: string; dentro: boolean; ok?: boolean }
   | { tipo: 'muere'; a: string; para: string[]; linea: string; nivel: number; alfa: boolean; nombre: string }
   | { tipo: 'clima'; clima: Clima }
@@ -152,13 +153,14 @@ export type Suceso =
   | { tipo: 'rotulo'; uid: string; txt: string; tono: LabelTone; retraso?: number; azar?: boolean }
   | { tipo: 'destello'; uid: string; ms: number }
   | { tipo: 'temblor' }
-  | { tipo: 'mov'; n: number; de: string; a: string; mov: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string }[] }
+  | { tipo: 'mov'; n: number; de: string; a: string; mov: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[] }
   | { tipo: 'ball'; n: number; item: string; a: string; x0: number; y0: number; x1: number; y1: number }
   | { tipo: 'ballFin'; n: number; ok: boolean | null }
   | { tipo: 'debilitado'; uid: string }
   | { tipo: 'clima'; clima: Clima | null }
   | { tipo: 'evoluciona'; antes: ReturnType<typeof formaDe>; aprende: string[] }
-  | { tipo: 'ir'; mapa: MapaId; desde: MapaId | 'inicio' };
+  | { tipo: 'ir'; mapa: MapaId; desde: MapaId | 'inicio' }
+  | { tipo: 'drena'; de: string; a: string };   // Drenadoras: la vida va de `de` (el sembrado) a `a` (quien sembró)
 
 export interface OpcionesMundo {
   mapa: MapaAventura; partida: Partida; desde: MapaId | 'inicio';
@@ -614,7 +616,7 @@ export class Mundo {
     const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(m, l, t, this.clima?.tipo ?? null, this.rnd);
     const ef = this.efectos(m, l, t, r), n = ++this.n;
     this.pendientes.set(n, { l, id, t, r, ef, hasta: this.ahora + IMPACTO_MAX });
-    this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado })) });
+    this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
   }
   impacto(n: number): void {
     const p = this.pendientes.get(n);
@@ -631,6 +633,7 @@ export class Mundo {
     if (m.boosts) out.push({ quien: t, boosts: m.boosts });
     if (m.selfBoosts) out.push({ quien: l, boosts: m.selfBoosts });
     if (m.status) estado(t, m.status);
+    if (m.id === 'leechseed' && t !== l && !t.tipos.includes('Grass')) out.push({ quien: t, semilla: true });   // a los de Planta no les prende
     const s = m.secondary;
     if (s && this.rnd() * 100 < s.chance) {
       if (s.status) estado(t, s.status);
@@ -655,7 +658,7 @@ export class Mundo {
     if (t !== l) { l.ultimoCombate = t.ultimoCombate = this.ahora; this.provocar(t, l); }
     // Lo que le pasa a quien no llevas tú (un remoto, o un salvaje en espejo) se lo aplica quien lo lleva.
     const ajeno = this.ajeno(t);
-    if (ajeno) this.salir({ tipo: 'golpe', de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.filter(e => e.quien === t).map(e => ({ boosts: e.boosts, estado: e.estado })) });
+    if (ajeno) this.salir({ tipo: 'golpe', de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.filter(e => e.quien === t).map(e => ({ boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
     if (r.falla) return;
     if (r.dano > 0) {
       // Los que hacen retroceder interrumpen: lo cortado tarda INTERRUMPIDO s en volver.
@@ -679,6 +682,7 @@ export class Mundo {
       if (e.quien.muerto || (ajeno && e.quien === t)) continue;
       if (e.boosts) this.cambiarStats(e.quien, e.boosts);
       if (e.estado) this.ponerEstado(e.quien, e.estado, false);
+      if (e.semilla) this.sembrar(e.quien, l);
     }
   }
   private danar(t: Luchador, n: number, de: Luchador | null): void {
@@ -712,6 +716,12 @@ export class Mundo {
     l.estado = s; l.estadoHasta = this.ahora + DURA_ESTADO[s]; l.ticEstado = this.ahora + TURNO; l.toxN = 0;
     if (rotulo) this.rotulo(l, NOMBRE_ESTADO[s], 'bad', 200);
     if (s === 'slp' || s === 'frz') { l.meta = null; this.reproducir(l, 'Sleep', DURA_ESTADO[s]); }
+  }
+  // Drenadoras: no es un estado (convive con uno) y otra semilla solo renueva la que hay.
+  private sembrar(t: Luchador, de: Luchador): void {
+    if (t.muerto || t.tipos.includes('Grass')) return;
+    t.semilla = { de: de.uid, hasta: this.ahora + DURA_SEMILLA, tic: t.semilla?.tic ?? this.ahora + TURNO };
+    this.rotulo(t, '¡Drenadoras!', 'bad', 200);
   }
   private curarEstado(l: Luchador): void {
     if (l.estado === 'slp' && l.anim === 'Sleep') l.animHasta = 0;
@@ -897,6 +907,7 @@ export class Mundo {
     if (avisar) this.salir({ tipo: 'duelo', para: redDe(d.con), fase: 'fin', gana: ganas ? this.miRed : redDe(d.con), abandona });
     const p = this.jugador;
     if (p.estado) this.curarEstado(p);
+    p.semilla = undefined;
     p.boosts = {}; p.boostHasta = {};
     if (p.lanza) this.cortarLanza(p);
     this.aviso(txt);
@@ -1089,9 +1100,25 @@ export class Mundo {
         if (l.muerto) return;
       }
     }
+    // Drenadoras: cada turno le quita 1/8 de su vida y se la da a quien la sembró (si sigue en pie y es de los tuyos).
+    const sem = l.semilla;
+    if (sem && this.ahora > sem.hasta) l.semilla = undefined;
+    else if (sem && this.ahora > sem.tic) {
+      sem.tic = this.ahora + TURNO;
+      const n = Math.max(1, Math.floor(l.stats.hp * DANO_SEMILLA));
+      const tope = enCombate || this.ahora - l.ultimoCombate < 6 ? n : Math.min(n, Math.ceil(l.ps) - 1);
+      const quita = Math.min(tope, Math.ceil(l.ps));
+      if (quita > 0) {
+        const de = this.luchador(sem.de);
+        if (!this.ajeno(l)) this.danar(l, quita, null);
+        if (de && !de.muerto && !this.ajeno(de)) this.curar(de, quita);
+        if (de && !de.muerto) this.emitir({ tipo: 'drena', de: l.uid, a: de.uid });
+      }
+      if (l.muerto) return;
+    }
     for (const [s, h] of Object.entries(l.boostHasta) as [Stat6, number][]) if (this.ahora > h) { delete l.boosts[s]; delete l.boostHasta[s]; }
     // Solo se cura fuera de combate: nadie le persigue, lleva 6 s sin pegar ni recibir y no tiene un estado que dañe.
-    if (!enCombate && this.ahora - l.ultimoCombate > 6 && !(l.estado && DANO_ESTADO[l.estado]) && l.ps < l.stats.hp) l.ps = Math.min(l.stats.hp, l.ps + l.stats.hp * CURA_FUERA * dt);
+    if (!enCombate && this.ahora - l.ultimoCombate > 6 && !(l.estado && DANO_ESTADO[l.estado]) && !l.semilla && l.ps < l.stats.hp) l.ps = Math.min(l.stats.hp, l.ps + l.stats.hp * CURA_FUERA * dt);
   }
 
   // Bufos y debufos de un luchador: su estado y sus cambios de stats, con la fracción de tiempo que les queda.
@@ -1099,6 +1126,11 @@ export class Mundo {
     const out: Aura[] = [];
     if (l.estado) out.push({ txt: CORTO_ESTADO[l.estado] ?? l.estado, nombre: NOMBRE_ESTADO[l.estado] ?? l.estado, color: COLOR_ESTADO[l.estado] ?? 0x888888,
       frac: Math.max(0, Math.min(1, (l.estadoHasta - this.ahora) / (DURA_ESTADO[l.estado] ?? 1))) });
+    if (l.semilla) out.push({ txt: 'DRE', nombre: 'Drenadoras', color: 0xc0453a, frac: Math.max(0, Math.min(1, (l.semilla.hasta - this.ahora) / DURA_SEMILLA)) });
+    // Y a quien sembró, un bufo por cada uno que está drenando (el que más dure manda la barra).
+    const drena = [...this.todos(), ...this.remotos].filter(o => o.semilla?.de === l.uid && !o.muerto);
+    if (drena.length) out.push({ txt: drena.length > 1 ? `DRE×${drena.length}` : 'DRE', nombre: drena.length > 1 ? `Drenando a ${drena.length}` : `Drenando a ${drena[0].nombre}`,
+      color: 0x4fae4a, frac: Math.max(0, Math.min(1, (Math.max(...drena.map(o => o.semilla!.hasta)) - this.ahora) / DURA_SEMILLA)) });
     for (const [s, n] of Object.entries(l.boosts) as [Stat6, number][]) {
       if (!n) continue;
       out.push({ txt: `${CORTO_STAT[s]}${n > 0 ? '+' : ''}${n}`, nombre: `${NOMBRE_STAT[s]} ${n > 0 ? '+' : ''}${n}`, color: n > 0 ? 0x4fae4a : 0xc0453a,
@@ -1341,7 +1373,7 @@ export class Mundo {
 
   // ---- Lo que llega de los demás ----
   // Un golpe a uno de los tuyos (tu Pokémon o, si eres el dueño, un salvaje): uids ya traducidos.
-  recibirGolpe(deUid: string, aUid: string, r: Golpe, efectos: { boosts?: Boosts; estado?: string }[]): void {
+  recibirGolpe(deUid: string, aUid: string, r: Golpe, efectos: { boosts?: Boosts; estado?: string; semilla?: boolean }[]): void {
     const l = this.luchador(deUid) ?? null, t = this.luchador(aUid);
     if (!t || t.muerto || t.enBall || this.ajeno(t)) return;
     if (l?.rol === 'remoto' && t.rol === 'jugador' && !this.luchandoCon(l)) return;   // otro jugador solo te pega en un duelo
@@ -1352,6 +1384,7 @@ export class Mundo {
     for (const e of efectos) {
       if (e.boosts) this.cambiarStats(t, e.boosts);
       if (e.estado) this.ponerEstado(t, e.estado, false);
+      if (e.semilla && l) this.sembrar(t, l);
     }
   }
   // Otro jugador le tira una Ball a uno de tus salvajes: dentro (se queda quieto), y luego si se queda o sale.

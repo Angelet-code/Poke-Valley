@@ -156,6 +156,10 @@ export const TURNO = 3;
 export const DURA_ESTADO: Record<string, number> = { slp: 4, frz: 4, par: 30, psn: 24, tox: 21, brn: 30 };
 export const DANO_ESTADO: Record<string, number> = { psn: 1 / 8, tox: 1 / 16, brn: 1 / 16 };
 export const VEL_PARALIZADO = 0.5;
+// Drenadoras: no es un estado (puede ir con uno). Cada turno quita 1/8 de la vida y cura eso a quien la sembró; a los
+// de Planta no les prende. En los juegos dura hasta que cambias de Pokémon; aquí, DURA_SEMILLA s (7 turnos).
+export const DURA_SEMILLA = 21;
+export const DANO_SEMILLA = 1 / 8;
 export const NOMBRE_ESTADO: Record<string, string> = { slp: 'Dormido', frz: 'Congelado', par: 'Paralizado', psn: 'Envenenado', tox: 'Gravemente envenenado', brn: 'Quemado' };
 export const CORTO_ESTADO: Record<string, string> = { slp: 'DOR', frz: 'CON', par: 'PAR', psn: 'ENV', tox: 'TÓX', brn: 'QUE' };
 export const COLOR_ESTADO: Record<string, number> = { slp: 0x8a93a8, frz: 0x7cc8f0, par: 0xe8c22c, psn: 0xa04fc0, tox: 0x7a2f9a, brn: 0xe0602c };

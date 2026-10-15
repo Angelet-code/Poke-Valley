@@ -34,7 +34,7 @@ import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, t
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
-import { ESTADO_CADA, TINTE_ESTADO, auraEstado } from '../fx/estados';
+import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
 import type { DatosEvolucion } from './Evolucion';
 
@@ -103,7 +103,7 @@ interface Luz { luz: Phaser.GameObjects.Light; halo: Phaser.GameObjects.Image; t
 interface Vista {
   dex: string; logico: string; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; fx: FxSprite;
   aura?: Phaser.GameObjects.Image; auraSuelo?: Phaser.GameObjects.Ellipse;
-  animN: number; auraEn: number; visto: boolean;   // visto: el shiny ya ha destellado al entrar en pantalla
+  animN: number; auraEn: number; semillaEn: number; visto: boolean;   // visto: el shiny ya ha destellado al entrar en pantalla
 }
 
 export class Aventura extends Phaser.Scene {
@@ -486,7 +486,7 @@ export class Aventura extends Phaser.Scene {
     const ancho = Math.max(10, Math.min(34, an.ancho * 0.75)) * l.escala;
     const sombra = this.add.ellipse(l.x, l.y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3);
     sombra.resetPipeline();
-    const nv: Vista = { dex, logico: l.dex, spr, sombra, fx: fxSprite(spr), animN: l.animN, auraEn: 0, visto: false };
+    const nv: Vista = { dex, logico: l.dex, spr, sombra, fx: fxSprite(spr), animN: l.animN, auraEn: 0, semillaEn: 0, visto: false };
     if (l.alfa) {
       this.halo();
       nv.aura = this.add.image(l.x, l.y, 'halo').setTint(0xff6a3a).setBlendMode(Phaser.BlendModes.ADD);
@@ -694,6 +694,11 @@ export class Aventura extends Phaser.Scene {
       }
       case 'destello': { const l = mundo.luchador(s.uid); if (l) void this.stage.hitFlash(this.vistaDe(l).fx, s.ms); break; }
       case 'temblor': this.cameras.main.shake(180, 0.004); break;
+      case 'drena': {
+        const de = mundo.luchador(s.de), a = mundo.luchador(s.a);
+        if (de && a && !de.muerto && !a.muerto) drenaje(this.stage, this.geo(de), this.geo(a));
+        break;
+      }
       case 'mov': void this.animarMov(mundo, s); break;
       case 'ball': this.lanzarBall(s); break;
       case 'ballFin': this.finBall(s); break;
@@ -829,7 +834,7 @@ export class Aventura extends Phaser.Scene {
     // Golpe: silueta blanca. Si no, el tinte de su estado (quemado rojizo, envenenado morado, congelado azul…).
     if (f.flash > 0.5) { if (!spr.tintFill) spr.setTintFill(0xffffff); }
     else {
-      const tinte = l.estado && !l.muerto ? TINTE_ESTADO[l.estado] ?? 0xffffff : 0xffffff;
+      const tinte = l.muerto ? 0xffffff : l.estado ? TINTE_ESTADO[l.estado] ?? 0xffffff : l.semilla ? TINTE_SEMILLA : 0xffffff;
       const parpadeo = l.estado === 'par' && Math.sin(ahora * 23) > 0.6 ? 0xffffa0 : tinte;   // paralizado: chispazos
       if (spr.tintFill || spr.tintTopLeft !== parpadeo) spr.setTint(parpadeo);
     }
@@ -841,6 +846,8 @@ export class Aventura extends Phaser.Scene {
       auraEstado(this.stage, this.geo(l), l.estado);
       if (l.estado === 'slp' && Math.random() < 0.6) this.stage.label(this.geo(l).top, 'z', 'weak');
     }
+    // Drenadoras: hojitas alrededor mientras dura (con su propio ritmo, para no pisar la ráfaga del estado).
+    if (l.semilla && !l.muerto && !l.enBall && ahora >= v.semillaEn) { v.semillaEn = ahora + ESTADO_CADA / 1000; auraSemilla(this.stage, this.geo(l)); }
     v.sombra.setPosition(l.x, l.y - 1).setDepth(l.y - 1).setVisible(!l.enBall).setAlpha(l.muerto ? f.alpha : 1);
     // Aura del alfa: un resplandor rojizo que late detrás del cuerpo y un anillo en el suelo.
     if (v.aura && v.auraSuelo) {

@@ -60,6 +60,9 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
     con sol no se congela.
   - Las inmunidades de tipo se respetan: Veneno y Acero no se envenenan, Fuego no se quema, Eléctrico no se
     paraliza y Hielo no se congela.
+  - **Drenadoras** (21 s, no es un estado: convive con uno): cada turno quita 1/8 de la vida y se la cura a quien la
+    sembró. A los de Planta no les prende. El sembrado lleva el debufo `DRE` (rojo), tinte verdoso y hojitas; quien
+    sembró, el bufo `DRE` (verde); en cada turno vuelan orbes verdes del uno al otro (`fx/estados.ts`, `drenaje`).
   - **Se ven mientras duran** (`fx/estados.ts`):
     - Tinte del sprite: rojizo, amarillo con chispazos, morado o azul.
     - Una ráfaga cada 0,7 s: llamitas, chispas, burbujas o destellos de hielo; dormido, "z".

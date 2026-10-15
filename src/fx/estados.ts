@@ -9,6 +9,37 @@ export const ESTADO_CADA = 700;
 // Tinte del sprite mientras dura (multiplica sus colores).
 export const TINTE_ESTADO: Record<string, number> = { brn: 0xffb49c, par: 0xfff09a, psn: 0xdcb0ff, tox: 0xc89cff, frz: 0x9fd8ff, slp: 0xd8dcf0 };
 
+// Drenadoras en el que la sufre: hojitas y motas verdes que giran alrededor del cuerpo y bajan hacia él.
+export const TINTE_SEMILLA = 0xc8ecb0;   // Drenadoras, si no hay un estado que tiña
+export function auraSemilla(stage: Stage, at: SlotGeometry): void {
+  const s = at.size, p = TYPE_FX.Grass;
+  stage.fx.burst(3, (i) => {
+    const a = rand(0, Math.PI * 2), r = s * rand(0.3, 0.45);
+    return {
+      x: at.center.x + Math.cos(a) * r, y: at.center.y + Math.sin(a) * r * 0.7, vx: -Math.cos(a) * 30, vy: -Math.sin(a) * 22 + 8,
+      life: rand(450, 650), delay: i * 120, size: rand(3.5, 5), sizeEnd: 1.5, color: pick([p.core, p.glow, p.dark]), shape: i ? 'leaf' : 'glow', spin: rand(-6, 6),
+    };
+  });
+}
+// Un turno de Drenadoras: orbes verdes que salen del sembrado y vuelan hasta quien sembró (y un destello al llegar).
+export function drenaje(stage: Stage, de: SlotGeometry, a: SlotGeometry): void {
+  const p = TYPE_FX.Grass, dx = a.center.x - de.center.x, dy = a.center.y - de.center.y;
+  const life = Math.max(350, Math.min(900, Math.hypot(dx, dy) * 2.2));
+  stage.fx.burst(10, (i) => {
+    const ox = rand(-de.size * 0.2, de.size * 0.2), oy = rand(-de.size * 0.2, de.size * 0.2);
+    return { x: de.center.x + ox, y: de.center.y + oy, vx: (dx - ox) / life * 1000, vy: (dy - oy) / life * 1000, life, delay: i * 50,
+      size: rand(7, 10), sizeEnd: 4, color: pick([p.core, p.glow, p.hot]), fadeIn: 0.15, shape: 'glow' };
+  });
+  stage.fx.burst(6, (i) => ({
+    x: de.center.x, y: de.center.y, vx: dx / life * 1000 + rand(-25, 25), vy: dy / life * 1000 + rand(-25, 25), life, delay: 20 + i * 80,
+    size: rand(3, 4), sizeEnd: 2, color: pick([p.core, p.dark]), shape: 'leaf', spin: rand(-8, 8),
+  }));
+  stage.fx.burst(5, (i) => ({
+    x: a.center.x + rand(-a.size * 0.25, a.size * 0.25), y: a.center.y + rand(-a.size * 0.1, a.size * 0.25), vy: -rand(30, 60),
+    life: 500, delay: life + i * 60, size: rand(2.5, 4), sizeEnd: 0.5, color: pick([p.glow, p.hot]), shape: 'star', spin: rand(-3, 3),
+  }));
+}
+
 export function auraEstado(stage: Stage, at: SlotGeometry, estado: string): void {
   const s = at.size, fx = stage.fx;
   switch (estado) {
