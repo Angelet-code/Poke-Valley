@@ -4,10 +4,13 @@
 // Una sola caja por página: sobrevive a los cambios de mapa (la escena se reinicia, esto no).
 import type Phaser from 'phaser';
 import type { Red } from '../combate/red';
+import { VH } from '../config';
+
 
 const LARGO = 120;         // caracteres por mensaje
 const LINEAS = 50;         // las que se guardan en el registro
 const SE_APAGA = 12000;    // ms que se ve una línea con el chat cerrado
+const ALTO_BARRA = 35;     // px de juego que ocupa la barra de atajos desde abajo (VH − BY en HudAventura.ts)
 
 type Linea = { el: HTMLDivElement; t: number };
 // Quién habla: tú, otro jugador o el juego.
@@ -74,6 +77,7 @@ export class Chat {
     // Si se pierde el foco (clic en el juego, otra ventana), se cierra.
     this.entrada.addEventListener('blur', () => { if (this.abierto) this.cerrar(); });
     setInterval(() => this.apagar(), 500);
+    window.addEventListener('resize', () => this.colocar());
   }
 
   get abierto(): boolean { return this.caja.classList.contains('abierto'); }
@@ -92,6 +96,7 @@ export class Chat {
       });
     }
     this.caja.classList.add('activo');
+    this.colocar();
     escena.events.once('shutdown', () => { if (this.escena === escena) this.desactivar(); });
   }
 
@@ -100,6 +105,14 @@ export class Chat {
     this.escena = null;
     this.alDecir = null;
     this.caja.classList.remove('activo');
+  }
+
+  // Justo encima de la barra de atajos y la piedra de hogar, mida lo que mida el lienzo en la ventana.
+  private colocar(): void {
+    const lienzo = this.escena?.game.canvas;
+    if (!lienzo) return;
+    const r = lienzo.getBoundingClientRect(), k = r.height / VH;
+    this.caja.style.bottom = `${Math.round(innerHeight - r.bottom + (ALTO_BARRA + 6) * k)}px`;
   }
 
   // Una línea del juego (entradas, avisos).
