@@ -464,5 +464,16 @@ Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
   registro de abajo a la izquierda (las líneas se desvanecen a los 12 s con el chat cerrado) y en un bocadillo sobre la
   cabeza de quien habla si está en tu mapa. Sin red, solo lo ves tú.
 
+- **Comercio** (2026-10-16, como en WoW; `src/combate/tradeo.ts`, ventana en `HudAventura.pintarTrato`). T con otro
+  jugador elegido y cerca le pide comerciar; él acepta con T o rechaza con Esc (la petición caduca a los 30 s; si os
+  pedís a la vez, se abre). Ventana de tres columnas: tus cosas (los Pokémon que no manejas, los objetos de la mochila
+  y las Pokécoins; clic = ofrecerlo), lo que das (clic = quitarlo) y lo que da el otro. Mayús+clic: cinco objetos o
+  100 Pokécoins. Caben 6 Pokémon y 12 clases de objeto. El Pokémon que manejas no se puede dar; los objetos que lleva
+  equipados un Pokémon se van con él. Los dos pulsan Aceptar; cualquier cambio en una oferta quita los dos aceptados.
+  Cierre en dos pasos para que nadie dé sin recibir: el de uid de red menor manda «cierra» con las versiones de las
+  dos ofertas y deja de poder cambiar la suya; el otro, si sigue de acuerdo, hace el cambio y contesta «hecho»; con
+  «hecho» lo hace el primero. Se cancela con Esc, al alejaros más de 160 px o al cambiar de mapa. Los Pokémon
+  recibidos llegan con uid nuevo y, en el pueblo, salen a pasear al momento (`mundo.rehacerVecinos`).
+
 Falta: probar el golpe del alfa y el clima con dos jugadores, un indicador en el HUD de quién lleva el mapa, ver a
 los vecinos del pueblo de los demás y entrar en la sala desde el título.

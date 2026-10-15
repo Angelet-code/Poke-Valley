@@ -36,6 +36,7 @@ import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, t
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
 import { chatDeLaPagina } from '../ui/chat';
+import { TRATO_LEJOS, Tradeo, type MensajeTrato, type Recibido } from '../combate/tradeo';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
 import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
@@ -178,6 +179,9 @@ export class Aventura extends Phaser.Scene {
   private ajenos = new Map<string, number>();   // n de los sucesos de otros → n propio (negativo: no choca con los tuyos)
   private compartir: Suceso[] = [];
   private escuchando = false;
+  // Comercio con otro jugador (T): la ventana la pinta el HUD. Uno por página, como la conexión.
+  tradeo: Tradeo | null = null;
+  private cargandoTrato = new Set<string>();
   // Medidas de los sprites para la simulación (con la forma cargada; la shiny mide lo mismo que la normal).
   private readonly anatomia: Anatomia = {
     alto: dex => ancla(this.cargado(dex)).alto,
@@ -278,6 +282,8 @@ export class Aventura extends Phaser.Scene {
     if (this.red) {
       mundo.miRed = this.red.uid;
       this.llegada = performance.now(); this.dueno = this.red.uid; this.fotoT = 0; this.ajenos.clear(); this.compartir = [];
+      this.tradeo ??= new Tradeo(this.red.uid, () => this.partida, m => this.red!.enviar(m), txt => this.aviso(txt), (r, d) => this.tratoHecho(r, d));
+      this.tradeo.cerrar('Comercio cancelado: has cambiado de zona');
       this.escucharRed();
       this.red.fuente(() => {
         if (this.mundo !== mundo || !this.listo) return null;
@@ -615,7 +621,7 @@ export class Aventura extends Phaser.Scene {
   // ---- Entrada ----
   private entradas(): void {
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,I,H,M,R', false) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,I,H,M,R,T', false) as Record<string, Phaser.Input.Keyboard.Key>;
     // Al perder el foco (otra ventana, Alt+Tab) no llega el "soltar": que no se quede andando solo.
     const soltar = () => kb.resetKeys();
     this.game.events.on(Phaser.Core.Events.BLUR, soltar);
@@ -629,11 +635,13 @@ export class Aventura extends Phaser.Scene {
     this.keys.H.on('down', () => this.usarHogar());
     this.keys.M.on('down', () => this.mostrarMapa(!this.verMapa));
     this.keys.R.on('down', () => { if (this.listo && this.red) this.mundo?.retar(); });
+    this.keys.T.on('down', () => this.comerciar());
     this.keys.K.on('down', () => { this.panel = this.panel === 'movs' ? null : 'movs'; this.asignando = null; });
     this.keys.I.on('down', () => { this.panel = this.panel === 'inv' ? null : 'inv'; this.asignando = null; });
     this.keys.ESC.on('down', () => {
       if (this.verMapa) { this.mostrarMapa(false); return; }
       if (this.mundo?.rechazarReto()) return;
+      if (this.tradeo?.cancelar()) return;
       if (this.mundo?.hogar) { this.mundo.cortarHogar(); return; }
       if (this.asignando) { this.asignando = null; return; }
       if (this.panel) { this.panel = null; return; }
@@ -1006,6 +1014,38 @@ export class Aventura extends Phaser.Scene {
     if (this.panel === 'misiones' && Math.hypot(t.x - p.x, t.y - p.y) > TABLON_CERCA + 30) this.panel = null;
   }
 
+  // ---- Comercio (combate/tradeo.ts) ----
+  // T: con otro jugador elegido y cerca, pedirle comerciar; si te lo han pedido, aceptar.
+  private comerciar(): void {
+    const tr = this.tradeo, mundo = this.mundo;
+    if (!this.listo || !tr || !mundo || this.verMapa) return;
+    if (tr.pideDe) { tr.pedir(tr.pideDe.de, tr.pideDe.nombre, this.partida.usuario); return; }
+    const o = mundo.objetivo, p = mundo.jugador;
+    if (!o || o.rol !== 'remoto') { this.aviso('Elige a otro jugador (Tab o clic) y pulsa T para comerciar'); return; }
+    if (Math.hypot(o.x - p.x, o.y - p.y) > TRATO_LEJOS * 0.6) { this.aviso('Acércate más para comerciar'); return; }
+    tr.pedir(o.uid.slice('remoto-'.length), o.usuario ?? o.nombre, this.partida.usuario);
+  }
+  private pasoTrato(dt: number): void {
+    const tr = this.tradeo, mundo = this.mundo!;
+    if (!tr) return;
+    const p = mundo.jugador;
+    tr.paso(dt, con => { const o = mundo.remotos.find(l => l.uid === `remoto-${con}`); return !!o && Math.hypot(o.x - p.x, o.y - p.y) < TRATO_LEJOS; });
+    // Las caras de la ventana: tu equipo y lo que ofrece el otro (se cargan la primera vez).
+    if (!tr.trato) return;
+    const ids = [...this.partida.estado.equipo, ...tr.trato.suya.pokes].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
+    const faltan = ids.filter(id => !listo(this, id) && !this.cargandoTrato.has(id));
+    if (faltan.length) { faltan.forEach(id => this.cargandoTrato.add(id)); void cargar(this, faltan).finally(() => faltan.forEach(id => this.cargandoTrato.delete(id))); }
+  }
+  // Hecho el cambio: guardar, contarlo y, en el pueblo, que los Pokémon que se van se vayan y los nuevos salgan.
+  private tratoHecho(r: Recibido, dados: Recibido): void {
+    this.guardar();
+    const lista = (x: Recibido) => [...x.pokes.map(m => `${formaDe(m.linea, m.nivel).nombre} Nv ${m.nivel}${m.shiny ? ' ✦' : ''}`),
+      ...Object.entries(x.items).map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`), ...(x.dinero ? [`${x.dinero} Pokécoins`] : [])].join(', ') || 'nada';
+    this.aviso(`¡Comercio hecho! Recibes: ${lista(r)}. Das: ${lista(dados)}`);
+    const ids = r.pokes.map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny)), mundo = this.mundo;
+    void cargar(this, ids).then(() => { if (this.mundo === mundo && mundo) mundo.rehacerVecinos(); });
+  }
+
   // ---- Multijugador ----
   // Los demás jugadores de este mapa, con lo último que ha llegado de cada uno (su sprite se carga la primera vez).
   private pasoRed(): void {
@@ -1054,6 +1094,7 @@ export class Aventura extends Phaser.Scene {
       else if (s.tipo === 'clima') mundo.recibirClima(s.clima);
       else if (s.tipo === 'duelo') { if (s.para === red.uid) mundo.recibirDuelo(s.fase, `remoto-${m.uid}`, s.gana, s.abandona); }
     });
+    red.on('trato', m => this.tradeo?.recibir(m as unknown as MensajeTrato & { uid: string }));
     red.on('sucs', m => { if (deAqui(m)) for (const s of m.l as Suceso[]) this.suceso(this.ajeno(s, m.uid)); });
     // Si la sala usa otra semilla que la de este mapa (te has unido estando en uno procedural), se rehace igual que el suyo.
     red.on('sala', () => {
@@ -1135,6 +1176,7 @@ ${l.nombre} Nv.${l.nivel}`;
       if (this.red && (s.tipo === 'rotulo' || s.tipo === 'destello' || s.tipo === 'mov' || s.tipo === 'ball' || s.tipo === 'ballFin' || s.tipo === 'debilitado')) this.compartir.push(s);
     }
     if (this.red) this.enviarRed(dtMs);
+    this.pasoTrato(dt);
     this.luzDelDia(t);
     this.aclarar(dtMs);
     for (const l of [...mundo.todos(), ...mundo.remotos]) this.dibujar(l, this.vistaDe(l));

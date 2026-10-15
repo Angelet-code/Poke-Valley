@@ -461,6 +461,20 @@ export class Mundo {
       this.vecinos.push(l);
     });
   }
+  // Tras un comercio (combate/tradeo.ts): fuera los vecinos que ya no son tuyos y, en el pueblo, salen los nuevos.
+  rehacerVecinos(): void {
+    const eq = this.partida.estado.equipo;
+    this.vecinos = this.vecinos.filter(l => eq.includes(l.miembro!));
+    if (this.objetivo?.rol === 'vecino' && !this.vecinos.includes(this.objetivo)) this.objetivo = null;
+    if (this.mapa.id !== 'pueblo') return;
+    const c = this.mapa.llegada.inicio!;
+    for (const m of eq) {
+      if (m.uid === this.partida.activo.uid || this.vecinos.some(l => l.miembro === m)) continue;
+      let x = c.x + (this.rnd() - 0.5) * 140, y = c.y + 40 + (this.rnd() - 0.5) * 80;
+      for (let k = 0; k < 30 && !this.pisable({ x, y }); k++) { x = c.x + (this.rnd() - 0.5) * 300; y = c.y + (this.rnd() - 0.2) * 200; }
+      this.vecinos.push(this.crearLuchador('vecino', m.linea, m.nivel, x, y, m));
+    }
+  }
   private quitar(l: Luchador): void {
     this.salvajes = this.salvajes.filter(q => q !== l);
     if (this.objetivo === l) this.objetivo = null;

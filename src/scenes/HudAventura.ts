@@ -13,6 +13,10 @@
 //   nueva = aceptarla; en una cumplida = entregarla. A la derecha, bajo la hora, el seguimiento (cara + "2/5").
 // - F junto a Kecleon (el tendero del pueblo): la tienda, Poké Balls y pociones. Clic = comprar uno; Mayús+clic, cinco.
 //   Arriba, tus Pokécoins (también en el inventario, I).
+// - Comercio (T con otro jugador, combate/tradeo.ts): ventana en el centro con tres columnas, como la del WoW: tus cosas
+//   (Pokémon que no manejas, objetos de la mochila y Pokécoins; clic = ponerlo en la oferta), lo que das (clic =
+//   quitarlo) y lo que da el otro. Mayús+clic: cinco objetos o 100 Pokécoins. Debajo, Aceptar y Cancelar; cada oferta
+//   se pone en verde cuando su dueño la acepta.
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
@@ -22,11 +26,14 @@ import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data
 import { ITEMS } from '../data/items';
 import { EQUIPABLES } from '../combate/objetos';
 import { EVO_OBJETO, LINEAS } from '../data/pokedex';
-import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, formaDe, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
 import { redDeLaPagina } from '../combate/red';
+import { TRATO_OBJS, TRATO_POKES } from '../combate/tradeo';
+import { idSprite } from '../combate/sprites';
+import type { Miembro } from '../combate/partida';
 
 const CW = 32, CH = 22, HUECO = 2;                       // casilla de la barra (px de juego)
 const BW = 8 + CASILLAS * CW + (CASILLAS - 1) * HUECO, BX = Math.round((VW - BW) / 2), BY = VH - 5 - (CH + 8);
@@ -126,6 +133,10 @@ export class HudAventura extends Phaser.Scene {
   private tiClave = '';
   private tiZonas: { x: number; y: number; w: number; h: number; id: string }[] = [];
   private tiCaja: { x: number; y: number; w: number; h: number } | null = null;
+  private trObjs: Phaser.GameObjects.GameObject[] = [];
+  private trClave = '';
+  private trZonas: { x: number; y: number; w: number; h: number; clic?: (mayus: boolean) => void; ficha?: string }[] = [];
+  private trCaja: { x: number; y: number; w: number; h: number } | null = null;
 
   constructor() { super('hud'); }
 
@@ -142,6 +153,7 @@ export class HudAventura extends Phaser.Scene {
     this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null; this.invElegido = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.tiObjs = []; this.tiClave = ''; this.tiZonas = []; this.tiCaja = null;
+    this.trObjs = []; this.trClave = ''; this.trZonas = []; this.trCaja = null;
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
 
@@ -180,7 +192,7 @@ export class HudAventura extends Phaser.Scene {
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(10).setVisible(false);
     this.fichaTipo = this.texto(0, 0, '', 5, 0xffffff, { stroke: '#3a2a1a', strokeThickness: 1 * S }).setDepth(10).setVisible(false);
     // Teclas de ayuda.
-    const ayuda = ['Tab objetivo', 'K movimientos', 'I inventario', 'F cambiar', 'H piedra de hogar', 'M mapa', ...(redDeLaPagina() ? ['R retar a duelo'] : [])];
+    const ayuda = ['Tab objetivo', 'K movimientos', 'I inventario', 'F cambiar', 'H piedra de hogar', 'M mapa', ...(redDeLaPagina() ? ['R retar a duelo', 'T comerciar'] : [])];
     ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
 
     // Avisos.
@@ -199,6 +211,9 @@ export class HudAventura extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.av.verMapa) return;
       const x = p.x / S, y = p.y / S;
+      const trz = this.trZonas.find(q => q.clic && x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
+      if (trz) { trz.clic!(!!(p.event as MouseEvent | undefined)?.shiftKey); return; }
+      if (this.trCaja && x >= this.trCaja.x && x < this.trCaja.x + this.trCaja.w && y >= this.trCaja.y && y < this.trCaja.y + this.trCaja.h) return;
       const z = this.panelZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (z) { this.av.asignando = z.a; return; }
       const iz = this.invZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
@@ -222,6 +237,8 @@ export class HudAventura extends Phaser.Scene {
   tapaClic(px: number, py: number): boolean {
     const x = px / S, y = py / S;
     const c = this.misCaja;
+    const tc = this.trCaja;
+    if (tc && x >= tc.x && x < tc.x + tc.w && y >= tc.y && y < tc.y + tc.h) return true;
     return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
       || (this.av.panel === 'misiones' && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h)
       || (this.av.panel === 'tienda' && !!this.tiCaja && x >= this.tiCaja.x && x < this.tiCaja.x + this.tiCaja.w && y >= this.tiCaja.y && y < this.tiCaja.y + this.tiCaja.h)
@@ -380,7 +397,9 @@ export class HudAventura extends Phaser.Scene {
     const px = ptr.x / S, py = ptr.y / S, chip = [...this.yo.zonas, ...this.obj.zonas].find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h);
     const carta = av.panel === 'movs' ? this.panelZonas.find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h) : undefined;
     const inv = av.panel === 'inv' ? this.invZonas.find(z => px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h) : undefined;
-    if (chip) this.fichaAura(chip);
+    const trz = this.trZonas.find(z => z.ficha && px >= z.x && px < z.x + z.w && py >= z.y && py < z.y + z.h);
+    if (trz) this.fichaTrato(trz);
+    else if (chip) this.fichaAura(chip);
     else if (carta) this.pintarFicha(carta.a, -1, carta);
     else if (inv) this.fichaInv(inv);
     else if (!this.fichaTapada) this.pintarFicha(sobre >= 0 ? m.barra[sobre] : null, sobre);
@@ -388,6 +407,7 @@ export class HudAventura extends Phaser.Scene {
     this.pintarInventario();
     this.pintarMisiones();
     this.pintarTienda();
+    this.pintarTrato();
     this.pintarSeguimiento(cl ? 44 : 30);
   }
 
@@ -773,6 +793,127 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.ficha.setText(`${ITEMS[id]?.nombre ?? id}\n${desc}\n${uso}`).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, c = this.invCaja;
     const x = c ? c.x + c.w + 3 : z.x + z.w + 3, y = Math.max(4, Math.min(VH - h - 4, z.y + z.h / 2 - h / 2));
+    marco(g, x, y, w, h, PANEL);
+    this.ficha.setPosition((x + 4) * S, (y + 3) * S);
+  }
+
+  // Comercio (T): tus cosas | lo que das | lo que da el otro; debajo, Aceptar y Cancelar. Con una petición pendiente,
+  // solo un cartel bajo el marco del objetivo.
+  private pintarTrato(): void {
+    const av = this.av, tr = av.tradeo, t0 = tr?.trato ?? null, pa = av.partida, e = pa.estado;
+    const caras = t0 ? [...e.equipo, ...t0.suya.pokes].filter(m => listo(this, idSprite(formaDe(m.linea, m.nivel).dex, m.shiny))).length : 0;
+    const k = t0 ? JSON.stringify([t0, e.items, e.dinero, e.activo, e.equipo.map(m => m.uid), caras]) : tr?.pideDe ? `pide|${tr.pideDe.nombre}` : '';
+    if (k === this.trClave) return;
+    this.trClave = k;
+    this.trObjs.forEach(o => o.destroy()); this.trObjs = []; this.trZonas = []; this.trCaja = null;
+    if (!k) return;
+    const fondo = this.add.graphics().setDepth(6), g = this.add.graphics().setDepth(7);   // el marco (se pinta al final, cuando se sabe el alto) y lo de dentro
+    this.trObjs.push(fondo, g);
+    const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.trObjs.push(q); return q; };
+    if (!t0) {   // petición pendiente
+      const q = t(VW / 2, 60, `${tr!.pideDe!.nombre} quiere comerciar contigo\nT aceptar · Esc rechazar`, 6, C.tinta, { align: 'center', fontStyle: 'bold' }).setOrigin(0.5, 0);
+      const w = q.width / S + 14, h = q.height / S + 8;
+      marco(fondo, VW / 2 - w / 2, 56, w, h, PANEL);
+      return;
+    }
+    const PASO = 20, CS = 18, COLS = 6, CW2 = 6 + COLS * PASO + 4, w = 6 + 3 * CW2 + 2 * 4 + 6;
+    const x = Math.round((VW - w) / 2), y = 56, cy0 = y + 18;
+    const moneda = (mx: number, my: number) => { const im = this.add.image(mx * S, my * S, this.pixeles('hud_moneda', MONEDA, COL_MONEDA)).setOrigin(0, 0.5).setDepth(8); this.trObjs.push(im); };
+    const nombrePoke = (m: Miembro) => `${formaDe(m.linea, m.nivel).nombre}${m.shiny ? ' ✦' : ''}${m.sexo === 'm' ? ' ♂' : m.sexo === 'f' ? ' ♀' : ''}  Nv ${m.nivel}\n${m.movs.map(id => getMove(id)?.name ?? id).join(', ')}${m.objetos?.some(Boolean) ? `\nLleva: ${m.objetos.filter(Boolean).map(id => ITEMS[id!]?.nombre ?? id).join(', ')}` : ''}`;
+    // Las casillas: hueco, contenido y su zona (clic, ficha).
+    const hueco = (cx: number, cy: number) => { rect(g, C.huecoSombra, 1, cx - 1, cy - 1, CS + 2, CS + 2); rect(g, C.hueco, 1, cx, cy, CS, CS); };
+    const poke = (cx: number, cy: number, m: Miembro, clic?: (mayus: boolean) => void, uso = '') => {
+      hueco(cx, cy);
+      this.cara(cx + CS / 2, cy + CS / 2, idSprite(formaDe(m.linea, m.nivel).dex, m.shiny), CS - 2, this.trObjs, 8);
+      this.trObjs.push(this.sombreado(cx + CS - 0.5, cy + CS + 0.5, String(m.nivel), 4.5).setOrigin(1, 1).setDepth(9));
+      if (m.shiny) this.trObjs.push(this.sombreado(cx + 0.5, cy - 0.5, '✦', 4.5, 0xfff0a0).setDepth(9));
+      this.trZonas.push({ x: cx, y: cy, w: CS, h: CS, clic, ficha: nombrePoke(m) + (uso ? `\n${uso}` : '') });
+    };
+    const objeto = (cx: number, cy: number, id: string, n: number, clic?: (mayus: boolean) => void, uso = '') => {
+      hueco(cx, cy);
+      this.iconoItem(cx + CS / 2, cy + CS / 2, id, CS - 2, this.trObjs, 8);
+      if (n > 1) this.trObjs.push(this.sombreado(cx + CS - 0.5, cy + CS + 0.5, String(n), 5).setOrigin(1, 1).setDepth(9));
+      this.trZonas.push({ x: cx, y: cy, w: CS, h: CS, clic, ficha: `${ITEMS[id]?.nombre ?? id} ×${n}${uso ? `\n${uso}` : ''}` });
+    };
+    const rejilla = (cx: number, cy: number, n: number, minFilas: number) => {   // huecos vacíos; devuelve el alto
+      const filas = Math.max(minFilas, Math.ceil(n / COLS));
+      for (let i = n; i < filas * COLS; i++) hueco(cx + (i % COLS) * PASO, cy + Math.floor(i / COLS) * PASO);
+      return filas * PASO;
+    };
+    const tit = (cx: number, cy: number, s: string) => t(cx, cy, s, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    const cols = [0, 1, 2].map(i => x + 6 + i * (CW2 + 4));
+    let alto = 0;
+    // 1. Tus cosas.
+    {
+      const cx = cols[0] + 4;
+      let cy = cy0;
+      tit(cols[0], cy, 'TUS COSAS'); cy += 10;
+      const libres = e.equipo.filter(m => m.uid !== e.activo && !t0.mia.pokes.includes(m.uid)).slice(0, 3 * COLS);
+      t(cx, cy, 'Pokémon', 4.5, C.tinta).setAlpha(0.75); cy += 7;
+      libres.forEach((m, i) => poke(cx + (i % COLS) * PASO, cy + Math.floor(i / COLS) * PASO, m, () => tr!.ponerPoke(m.uid), 'Clic: ofrecerlo'));
+      if (!libres.length) t(cx, cy + CS / 2, e.equipo.length > 1 ? 'Ya los ofreces todos' : 'Solo tienes al que manejas', 4.5, C.tinta).setOrigin(0, 0.5).setAlpha(0.6);
+      cy += Math.max(1, Math.ceil(libres.length / COLS)) * PASO + 2;
+      const objs = Object.entries(e.items).map(([id, n]) => [id, n - (t0.mia.items[id] ?? 0)] as const).filter(([id, n]) => n > 0 && ITEMS[id]).slice(0, 3 * COLS);
+      t(cx, cy, 'Objetos', 4.5, C.tinta).setAlpha(0.75); cy += 7;
+      objs.forEach(([id, n], i) => objeto(cx + (i % COLS) * PASO, cy + Math.floor(i / COLS) * PASO, id, n, mayus => tr!.ponerObjeto(id, mayus ? 5 : 1), 'Clic: ofrecer uno · Mayús: cinco'));
+      if (!objs.length) t(cx, cy + CS / 2, 'Mochila vacía', 4.5, C.tinta).setOrigin(0, 0.5).setAlpha(0.6);
+      cy += Math.max(1, Math.ceil(objs.length / COLS)) * PASO + 2;
+      const d = t(cx + 10, cy, `${pa.dinero - t0.mia.dinero} Pokécoins`, 5.5, C.tinta, { fontStyle: 'bold' });
+      moneda(cx, cy + 3.5);
+      this.trZonas.push({ x: cx, y: cy - 1, w: d.width / S + 12, h: 9, clic: mayus => tr!.dinero(mayus ? 100 : 10), ficha: 'Clic: ofrecer 10 · Mayús: 100' });
+      cy += 11;
+      alto = Math.max(alto, cy - cy0);
+    }
+    // 2 y 3. Lo que das y lo que da: Pokémon (una fila), objetos (dos filas), Pokécoins y si está aceptado (en verde).
+    const oferta = (ci: number, titulo: string, pokes: Miembro[], items: [string, number][], dinero: number, acepta: boolean, mia: boolean) => {
+      const cx = cols[ci] + 4;
+      let cy = cy0;
+      tit(cols[ci], cy, titulo); cy += 10;
+      rect(g, acepta ? 0x5fbf4a : C.bandejaSombra, acepta ? 0.35 : 0.25, cols[ci], cy - 2, CW2, 7 + PASO + 2 + 7 + 2 * PASO + 2 + 13);
+      t(cx, cy, `Pokémon (${pokes.length}/${TRATO_POKES})`, 4.5, C.tinta).setAlpha(0.75); cy += 7;
+      pokes.forEach((m, i) => poke(cx + i * PASO, cy, m, mia ? () => tr!.quitarPoke(m.uid) : undefined, mia ? 'Clic: quitarlo' : 'Te lo da'));
+      cy += rejilla(cx, cy, pokes.length, 1) + 2;
+      t(cx, cy, `Objetos (${items.length}/${TRATO_OBJS})`, 4.5, C.tinta).setAlpha(0.75); cy += 7;
+      items.forEach(([id, n], i) => objeto(cx + (i % COLS) * PASO, cy + Math.floor(i / COLS) * PASO, id, n, mia ? mayus => tr!.quitarObjeto(id, mayus ? 5 : 1) : undefined, mia ? 'Clic: quitar uno · Mayús: cinco' : 'Te lo da'));
+      cy += rejilla(cx, cy, items.length, 2) + 2;
+      const d = t(cx + 10, cy, `${dinero} Pokécoins`, 5.5, C.tinta, { fontStyle: 'bold' });
+      moneda(cx, cy + 3.5);
+      if (mia) this.trZonas.push({ x: cx, y: cy - 1, w: d.width / S + 12, h: 9, clic: mayus => tr!.dinero(mayus ? -100 : -10), ficha: 'Clic: quitar 10 · Mayús: 100' });
+      cy += 13;
+      const est = t(cols[ci] + CW2 / 2, cy, acepta ? '✓ ACEPTADO' : 'Sin aceptar', 5.5, acepta ? 0x2f7a22 : C.tinta, { fontStyle: 'bold' }).setOrigin(0.5, 0);
+      if (!acepta) est.setAlpha(0.55);
+      cy += 9;
+      alto = Math.max(alto, cy - cy0);
+    };
+    const yoOk = !!t0.listoYo && t0.listoYo[0] === t0.mia.v && t0.listoYo[1] === t0.suya.v;
+    const elOk = !!t0.listoEl && t0.listoEl[0] === t0.suya.v && t0.listoEl[1] === t0.mia.v;
+    const mias = t0.mia.pokes.map(u => e.equipo.find(m => m.uid === u)).filter((m): m is Miembro => !!m);
+    oferta(1, 'TÚ DAS', mias, Object.entries(t0.mia.items), t0.mia.dinero, yoOk, true);
+    oferta(2, `${t0.nombre.toUpperCase()} DA`, t0.suya.pokes, Object.entries(t0.suya.items), t0.suya.dinero, elOk, false);
+    // Botones.
+    const by = cy0 + alto + 4, BWb = 56, BH = 13, mid = x + w / 2;
+    const boton = (bx: number, txt: string, clic: () => void, activo: boolean) => {
+      marco(g, bx, by, BWb, BH, { borde: C.madera, fondo: activo ? C.bandeja : C.hueco, luz: C.bandejaLuz, osc: C.bandejaSombra, sombra: true });
+      const q = t(bx + BWb / 2, by + BH / 2, txt, 6, C.tinta, { fontStyle: 'bold' }).setOrigin(0.5);
+      if (!activo) q.setAlpha(0.5);
+      this.trZonas.push({ x: bx, y: by, w: BWb, h: BH, clic: () => clic() });
+    };
+    boton(mid - BWb - 4, t0.cerrando ? 'Cerrando…' : yoOk ? 'Quitar' : 'Aceptar', () => tr!.pulsarListo(), !t0.cerrando);
+    boton(mid + 4, 'Cancelar', () => tr!.cancelar(), !t0.cerrando);
+    t(mid, by + BH + 3, 'Cualquier cambio quita los dos aceptados · Esc cancela', 4.5, C.maderaClara).setOrigin(0.5, 0);
+    t(mid, y + 5, `COMERCIO CON ${t0.nombre.toUpperCase()}`, 6, C.tinta, { fontFamily: FUENTE_TIT }).setOrigin(0.5, 0);
+    const h = by + BH + 13 - y;
+    this.trCaja = { x, y, w, h };
+    marco(fondo, x, y, w, h, PANEL);
+  }
+  // Ficha de una casilla del comercio (encima, a la derecha).
+  private fichaTrato(z: { x: number; y: number; w: number; h: number; ficha?: string }): void {
+    const g = this.fichaG;
+    g.clear();
+    this.fichaTipo.setVisible(false);
+    this.ficha.setText(z.ficha ?? '').setVisible(true);
+    const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6;
+    const x = Math.min(VW - w - 4, z.x + z.w + 3), y = Math.max(4, Math.min(VH - h - 4, z.y - h - 2));
     marco(g, x, y, w, h, PANEL);
     this.ficha.setPosition((x + 4) * S, (y + 3) * S);
   }
