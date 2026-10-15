@@ -36,6 +36,8 @@ export class Preload extends Phaser.Scene {
       if (objs[id].icono) this.load.image('icono_' + id, `${A}game/pixel/${objs[id].icono}`);
     }
 
+    this.load.image('icono_hogar', `${A}game/pixel/items/piedra_hogar.png`);   // piedra de hogar (tools/icono_hogar.py)
+    this.load.image('marco_alfa', `${A}game/pixel/ui/aerodactyl_alfa.png`);   // adorno del marco de los alfas (HudAventura)
     const bayas = this.registry.get(REG.bayas) as BayasData, B = `${A}sprites/bayas/`;
     this.load.image('baya_tierra', B + bayas.tierra.png);
     this.load.spritesheet('baya_brote', B + bayas.brote.png, { frameWidth: bayas.brote.frame[0], frameHeight: bayas.brote.frame[1] });

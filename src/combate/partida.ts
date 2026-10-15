@@ -3,20 +3,26 @@
 // Cada Pokémon tiene su nivel, su experiencia, los movimientos que sabe y su barra de atajos (10 casillas:
 // movimientos u objetos, colocados al gusto).
 import { LINEAS } from '../data/pokedex';
-import { ataqueBasico, aprendizaje, getMove } from '../data/movimientos';
+import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimientos';
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, nivelPorExp } from './reglas';
 import { misionesDe, type EstadoMision, type Mision } from './misiones';
 
 export const CASILLAS = 10;
 // Probabilidad de que un salvaje salga shiny (la de los juegos desde la 6.ª generación).
-export const PROB_SHINY = 1 / 10;   // TEMPORAL para verlos; la buena es 1 / 4096
+export const PROB_SHINY = 1 / 4096;
 // Piedra de hogar (como en el WoW): H, se canaliza unos segundos sin moverte ni recibir golpes y te lleva al pueblo.
 export const HOGAR_CARGA = 8;          // s
 export const HOGAR_CD = 5 * 60;        // s reales hasta poder usarla otra vez
 const CLAVE = 'pokemon-valley/aventura';
 const VERSION = 1;
 
+export type Sexo = 'm' | 'f' | null;
+// Sexo de un Pokémon nuevo, con la proporción oficial de su forma (Showdown: data/gen/combate.json).
+export function tirarSexo(forma: string, rnd = Math.random): Sexo {
+  const p = probMacho(forma);
+  return p < 0 ? null : rnd() < p ? 'm' : 'f';
+}
 export type Atajo = { m: string } | { i: string } | null;
 export interface Miembro {
   uid: number; linea: string; nivel: number; exp: number;
@@ -24,6 +30,7 @@ export interface Miembro {
   barra: Atajo[];
   ps: number;                  // fracción de vida (0-1): se recupera sola fuera de combate
   shiny?: boolean;             // va con el Pokémon, no con la forma: sigue siéndolo al evolucionar
+  sexo?: Sexo;                 // ♂/♀ (null: sin sexo, como Magnemite); se tira al crearlo con la proporción oficial
 }
 export interface Estado {
   version: number; uid: number;
@@ -63,6 +70,7 @@ export class Partida {
       const e = JSON.parse(localStorage.getItem(CLAVE) ?? 'null') as Estado | null;
       if (!e || e.version !== VERSION || !e.equipo?.length) return null;
       e.misiones ??= {}; e.alfas ??= {};
+      for (const m of e.equipo) if (m.sexo === undefined) m.sexo = tirarSexo(formaDe(m.linea, m.nivel).id);   // partidas de antes
       return new Partida(e);
     } catch { return null; }
   }
@@ -80,12 +88,12 @@ export class Partida {
   forma(m: Miembro) { return formaDe(m.linea, m.nivel); }
 
   // Un Pokémon nuevo en tu equipo (al empezar, o capturado): con su barra ya puesta (movimientos y, detrás, las Balls).
-  crear(linea: string, nivel: number, shiny = false): Miembro {
+  crear(linea: string, nivel: number, shiny = false, sexo?: Sexo): Miembro {
     const f = formaDe(linea, nivel), movs = movsHasta(f.id, nivel);
     const barra: Atajo[] = Array.from({ length: CASILLAS }, () => null);
     movs.slice(0, CASILLAS - 2).forEach((m, i) => { barra[i] = { m }; });
     barra[CASILLAS - 2] = { i: 'pokeball' }; barra[CASILLAS - 1] = { i: 'oran' };
-    const m: Miembro = { uid: this.estado.uid++, linea, nivel, exp: expDeNivel(linea, nivel), movs, barra, ps: 1, ...(shiny ? { shiny } : {}) };
+    const m: Miembro = { uid: this.estado.uid++, linea, nivel, exp: expDeNivel(linea, nivel), movs, barra, ps: 1, ...(shiny ? { shiny } : {}), sexo: sexo !== undefined ? sexo : tirarSexo(f.id) };
     this.estado.equipo.push(m);
     return m;
   }

@@ -20,7 +20,7 @@ import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
 
 const CW = 32, CH = 22, HUECO = 2;                       // casilla de la barra (px de juego)
 const BW = 8 + CASILLAS * CW + (CASILLAS - 1) * HUECO, BX = Math.round((VW - BW) / 2), BY = VH - 5 - (CH + 8);
-// Piedra de hogar: casilla aparte a la izquierda de la barra (tecla H) y barra de lanzamiento encima de la barra.
+// Piedra de hogar: casilla aparte a la izquierda de la barra (tecla H; icono pixel art de tools/icono_hogar.py) y barra de lanzamiento encima de la barra.
 const HW = CH + 8, HX = BX - 4 - HW, CAST_W = 120, CAST_Y = BY - 16;
 const CATEGORIA: Record<string, string> = { Physical: 'Físico', Special: 'Especial', Status: 'Estado' };
 // Iconos de misión (pixel art 1:1, '.' = transparente): espadas = derrotar, corona = alfa, visto = entregada.
@@ -31,11 +31,25 @@ const PIX: Record<string, string[]> = {
   visto: ['.....g', '....gg', 'g..gg.', 'gggg..', '.gg...'],
 };
 const pix = (g: G, x: number, y: number, id: string) => PIX[id].forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') rect(g, PIX_COL[ch], 1, x + i, y + j, 1, 1); }));
+// Marco del alfa (como el de élite del WoW): el sprite pixel art de Aerodactyl (PMD) entero de color tierra
+// (assets/game/pixel/ui/aerodactyl_alfa.png, de assets/gen/pixel/ui_dragon/tierra.py), en la esquinita de arriba a la
+// izquierda del retrato. Más pequeño que el resto del HUD: escala S − 1 (píxeles de pantalla enteros); reducido a menos
+// píxeles perdía la forma. La esquina que forman su mandíbula y su cuerpo (el píxel ADORNO_CX, ADORNO_CY del sprite,
+// el primero libre bajo la cabeza y a la derecha del cuerpo) cae en la esquina del hueco del retrato (x + 3, y + 3). Para
+// que el ala no se salga de la pantalla por arriba, el marco de un alfa baja ALFA_DY.
+const ADORNO_CX = 16, ADORNO_CY = 23, ADORNO_W = 32, ADORNO_H = 30, ADORNO_ESCALA = Math.max(1, S - 1);
+const ALFA_DY = Math.max(0, Math.ceil(ADORNO_CY * ADORNO_ESCALA / S) - 5);
+// Sexo junto al nombre (pixel art): ♂ azul, ♀ rosa.
+const SEXO: Record<'m' | 'f', { col: number; filas: string[] }> = {
+  m: { col: 0x3f7fd8, filas: ['...xxx', '....xx', '.xxx.x', 'x...x.', 'x...x.', 'x...x.', '.xxx..'] },
+  f: { col: 0xe0508a, filas: ['.xxx.', 'x...x', 'x...x', 'x...x', '.xxx.', '..x..', 'xxxxx', '..x..'] },
+};
 const MW = 84, MH = 46;                                    // carta de misión (px de juego)
 const oscurecer = (c: number, k: number) => (Math.round(((c >> 16) & 255) * k) << 16) | (Math.round(((c >> 8) & 255) * k) << 8) | Math.round((c & 255) * k);
 
 interface Marco {
-  g: G; cara: Phaser.GameObjects.Image; nombre: Phaser.GameObjects.Text; nivel: Phaser.GameObjects.Text; ps: Phaser.GameObjects.Text; sub: Phaser.GameObjects.Text; clave: string;
+  dy: number;                         // lo que está bajado el marco (el de un alfa, ALFA_DY)
+  g: G; cara: Phaser.GameObjects.Image; dragon: Phaser.GameObjects.Image; sexo: Phaser.GameObjects.Image; nombre: Phaser.GameObjects.Text; nivel: Phaser.GameObjects.Text; ps: Phaser.GameObjects.Text; sub: Phaser.GameObjects.Text; clave: string;
   chips: Phaser.GameObjects.Text[];   // bufos y debufos bajo el marco
   zonas: { x: number; y: number; w: number; h: number; a: Aura }[];
 }
@@ -120,13 +134,10 @@ export class HudAventura extends Phaser.Scene {
         clave: '',
       });
     }
-    // Piedra de hogar: su casilla (icono de piedra teñido de azul) y la barra de lanzamiento.
+    // Piedra de hogar: su casilla (piedra blanca con runa azul) y la barra de lanzamiento.
     marco(this.add.graphics().setDepth(1), HX, BY, HW, HW, { borde: C.madera, fondo: C.bandeja, luz: C.bandejaLuz, osc: C.bandejaSombra, sombra: true });
     this.add.graphics().setDepth(2).fillStyle(0x2c5a7a, 1).fillRect((HX + 4) * S, (BY + 4) * S, (HW - 8) * S, (HW - 8) * S);
-    if (this.textures.exists('obj_piedra')) {
-      const im = this.add.image((HX + HW / 2) * S, (BY + HW / 2) * S, 'obj_piedra').setDepth(2).setTint(0xa8e4ff);
-      im.setScale(S * Math.min(2, 16 / Math.max(im.frame.width, im.frame.height)));
-    }
+    if (this.textures.exists('icono_hogar')) this.add.image((HX + HW / 2) * S, (BY + HW / 2) * S, 'icono_hogar').setDepth(2).setScale(S);
     this.hogarG = this.add.graphics().setDepth(2);
     this.sombreado(HX + 5.5, BY + 4.5, 'H', 4.5).setOrigin(0, 0);
     this.hogarCd = this.sombreado(HX + HW / 2, BY + HW / 2, '', 5.5).setOrigin(0.5).setDepth(4);
@@ -185,7 +196,10 @@ export class HudAventura extends Phaser.Scene {
   private crearMarco(x: number, y: number): Marco {
     const g = this.add.graphics().setDepth(1);
     return {
-      g, cara: this.add.image((x + 13) * S, (y + 14) * S, '__DEFAULT').setDepth(2).setVisible(false),
+      dy: 0, g, cara: this.add.image((x + 13) * S, (y + 14) * S, '__DEFAULT').setDepth(2).setVisible(false),
+      dragon: this.add.image((x + 3) * S, (y + 3) * S, this.textures.exists('marco_alfa') ? 'marco_alfa' : '__DEFAULT')
+        .setOrigin(ADORNO_CX / ADORNO_W, ADORNO_CY / ADORNO_H).setScale(ADORNO_ESCALA).setDepth(2.5).setVisible(false),
+      sexo: this.add.image(0, (y + 5) * S, this.pixeles('hud_sexo_m', SEXO.m.filas, { x: SEXO.m.col })).setOrigin(0).setDepth(3).setVisible(false),
       nombre: this.texto(x + 26, y + 4, '', 7, C.tinta, { fontStyle: 'bold' }),
       nivel: this.texto(x + 124, y + 4.5, '', 6, C.maderaClara).setOrigin(1, 0),
       ps: this.texto(x + 124, y + 13.5, '', 5, C.tinta).setOrigin(1, 0),
@@ -196,12 +210,28 @@ export class HudAventura extends Phaser.Scene {
       zonas: [],
     };
   }
+  // Textura pixel art (1 carácter = 1 px de juego, S px de pantalla) a partir de filas de caracteres; se crea una vez.
+  private pixeles(key: string, filas: string[], col: Record<string, number>): string {
+    if (this.textures.exists(key)) return key;
+    const w = Math.max(...filas.map(f => f.length)), t = this.textures.createCanvas(key, w * S, filas.length * S)!, cx = t.getContext();
+    filas.forEach((f, j) => [...f].forEach((ch, i) => { if (col[ch] === undefined) return; cx.fillStyle = HEX(col[ch]); cx.fillRect(i * S, j * S, S, S); }));
+    t.refresh();
+    return key;
+  }
   // Marco de un luchador: cara (primer fotograma de su Idle de frente), nombre, nivel, vida y una línea de abajo.
   private pintarMarco(mc: Marco, x: number, y: number, l: Luchador | null, sub: string, colorSub: number, exp?: number): void {
-    const g = mc.g;
+    const g = mc.g, dy = l?.alfa ? ALFA_DY : 0;
+    // El de un alfa baja (sitio para Aerodactyl): se mueve todo lo que se creó con el marco.
+    if (dy !== mc.dy) {
+      for (const o of [mc.cara, mc.dragon, mc.sexo, mc.nombre, mc.nivel, mc.ps, ...mc.chips]) o.y += (dy - mc.dy) * S;
+      mc.dy = dy;
+    }
+    y += dy;
     g.clear();
     const vis = !!l;
     [mc.cara, mc.nombre, mc.nivel, mc.ps, mc.sub].forEach(o => o.setVisible(vis));
+    mc.dragon.setVisible(!!l?.alfa);
+    mc.sexo.setVisible(!!l?.sexo);
     const auras = l ? this.av.auras(l).slice(0, CHIPS) : [];
     mc.zonas = [];
     mc.chips.forEach((c, i) => c.setVisible(i < auras.length).setText(auras[i]?.txt ?? ''));
@@ -216,7 +246,9 @@ export class HudAventura extends Phaser.Scene {
       rect(g, 0xfff6dc, 0.9, cx, cy + CHIP_H - 2, Math.round(CHIP_W * a.frac), 2);
       mc.zonas.push({ x: cx, y: cy, w: CHIP_W, h: CHIP_H, a });
     });
-    marco(g, x, y, 128, 30, PANEL);
+    // El alfa, con marco dorado (y Aerodactyl encima, `mc.dragon`).
+    if (l.alfa) { marco(g, x, y, 128, 30, { ...PANEL, borde: 0xc8962a, luz: 0xfff3c4 }); rect(g, 0xc8962a, 1, x + 2, y + 2, 23, 26); }
+    else marco(g, x, y, 128, 30, PANEL);
     rect(g, C.bandeja, 1, x + 3, y + 3, 21, 24);
     const k = `${clave(l.dex)}-${l.dex}`;
     if (mc.clave !== k) {
@@ -227,6 +259,7 @@ export class HudAventura extends Phaser.Scene {
       mc.cara.setScale(S * Math.max(0.5, s));
     }
     mc.nombre.setText(l.nombre);
+    if (l.sexo) mc.sexo.setTexture(this.pixeles(`hud_sexo_${l.sexo}`, SEXO[l.sexo].filas, { x: SEXO[l.sexo].col })).setX(mc.nombre.x + mc.nombre.width + 2 * S);
     mc.nivel.setText(`Nv ${l.nivel}`);
     // Vida.
     const f = Math.max(0, l.ps / l.stats.hp), bw = 64, bx = x + 26, by = y + 14;
@@ -258,13 +291,13 @@ export class HudAventura extends Phaser.Scene {
     this.pintarMarco(this.yo, 4, 4, p, p.estado ? NOMBRE_ESTADO[p.estado] : tipos, p.estado ? 0xb03a2e : C.maderaClara, m.nivel >= 100 ? 1 : (m.exp - e0) / Math.max(1, e1 - e0));
     // Objetivo.
     const o = av.objetivo;
-    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? '¡Te ataca!' : `${NOMBRE_TEMPLE[o.temple]} · ${o.tipos.map(t => TIPO_ES[t]).join(' · ')}`;
+    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${NOMBRE_TEMPLE[o.temple]} · ${o.tipos.map(t => TIPO_ES[t]).join(' · ')}`;
     this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : o.rol === 'vecino' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_TEMPLE[o.temple], 0.6));
     // Reloj.
     const min = Math.floor(av.partida.estado.minuto) % (24 * 60), h = Math.floor(min / 60), mm = Math.floor(min % 60 / 10) * 10;
     this.reloj.setText(`${av.mapa.nombre}\n${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).setLineSpacing(-1 * S);
     // Clima activo (Danza Lluvia, Día Soleado…), con lo que le queda.
-    const cl = av.clima, tq = cl ? Math.max(0, Math.ceil(cl.hasta - this.time.now / 1000)) : 0;
+    const cl = av.clima, tq = cl ? Math.max(0, Math.ceil(cl.hasta - av.ahora)) : 0;
     this.climaG.clear();
     this.climaTxt.setVisible(!!cl);
     if (cl) {

@@ -1,0 +1,2 @@
+assets\gen\pixel\ui_dragon\klein\aero_alas_r_0.png
+177.6s

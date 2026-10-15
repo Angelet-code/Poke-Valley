@@ -53,3 +53,13 @@ export function rng(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+// ¿Está (x, y) dentro del polígono? (par-impar)
+export function dentroDe(pol: [number, number][], x: number, y: number): boolean {
+  let d = false;
+  for (let i = 0, j = pol.length - 1; i < pol.length; j = i++) {
+    const [xi, yi] = pol[i], [xj, yj] = pol[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) d = !d;
+  }
+  return d;
+}

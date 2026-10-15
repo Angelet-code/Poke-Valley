@@ -1,0 +1,2 @@
+assets\gen\pixel\ui_dragon\klein\aero_lado_s1_0.png
+74.2s

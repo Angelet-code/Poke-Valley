@@ -28,13 +28,15 @@ export interface MoveData {
   /** Lo que usa el catálogo de animaciones (src/fx/catalog.ts). */
   secondaryChance?: number | null;
 }
-interface Aprende { especie: string; tipos: TypeName[]; gen: number; lista: [number, string][] }
+interface Aprende { especie: string; tipos: TypeName[]; gen: number; lista: [number, string][]; macho?: number }
 
 const D = datos as unknown as { moves: Record<string, MoveData>; aprende: Record<string, Aprende>; tipos: Record<TypeName, Partial<Record<TypeName, number>>> };
 
 export function getMove(id: string): MoveData | undefined { return D.moves[id]; }
 // Tipos oficiales de una forma (id del juego: 'bulbasaur', 'pidgeotto'…).
 export function tiposDe(forma: string): TypeName[] { return D.aprende[forma]?.tipos ?? ['Normal']; }
+// Probabilidad de que una forma salga macho (oficial; −1 = sin sexo).
+export function probMacho(forma: string): number { return D.aprende[forma]?.macho ?? 0.5; }
 // Movimientos que aprende por nivel, en orden: [nivel, id].
 export function aprendizaje(forma: string): [number, string][] { return D.aprende[forma]?.lista ?? []; }
 // Multiplicador de un tipo atacante contra los tipos del defensor (0, ¼, ½, 1, 2, 4).

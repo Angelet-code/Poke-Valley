@@ -8,7 +8,9 @@ cerrados (pueblo + bosque procedural). El juego de antes, estilo Stardew (granja
 
 ## Leer antes de trabajar
 - `docs/GDD-combate.md`: diseño del modo aventura (fuente de verdad desde el pivote). Su código:
-  - `src/scenes/Aventura.ts` + `HudAventura.ts`;
+  - `src/scenes/Aventura.ts` + `HudAventura.ts`: montan el mapa, leen el teclado y dibujan;
+  - `src/combate/mundo.ts`: la simulación (choques, IA, combate, capturas, clima, alfa, hogar), sin Phaser y con
+    semilla (`rnd`). Avanza con `paso(dt, entrada)` y pasa sucesos a la escena: es la base para el multijugador;
   - `src/combate/`: reglas, partida y sprites;
   - `src/data/bosque.ts`: mapas;
   - `src/data/movimientos.ts`: datos de `src/data/gen/combate.json`, que genera

@@ -53,14 +53,7 @@ function frente(polis: [number, number][][], x: number): number {
   }
   return y;
 }
-export function dentroDe(pol: [number, number][], x: number, y: number): boolean {
-  let d = false;
-  for (let i = 0, j = pol.length - 1; i < pol.length; j = i++) {
-    const [xi, yi] = pol[i], [xj, yj] = pol[j];
-    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) d = !d;
-  }
-  return d;
-}
+export { dentroDe } from '../util';
 // Alfa de cada textura de pantalla (para saber si un punto del mundo cae en lo pintado de un elemento).
 const ALFAS = new Map<string, { data: Uint8ClampedArray; w: number; h: number }>();
 function alfaDe(img: Phaser.GameObjects.Image) {

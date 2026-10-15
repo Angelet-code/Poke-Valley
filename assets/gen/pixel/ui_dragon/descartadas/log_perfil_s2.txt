@@ -1,0 +1,38 @@
+{
+ "status_str": "error",
+ "completed": false,
+ "messages": [
+  [
+   "execution_start",
+   {
+    "prompt_id": "efebde0b-985c-498e-9b72-7abb8b308483",
+    "timestamp": 1792023856314
+   }
+  ],
+  [
+   "execution_cached",
+   {
+    "nodes": [
+     "unet",
+     "clips",
+     "vae"
+    ],
+    "prompt_id": "efebde0b-985c-498e-9b72-7abb8b308483",
+    "timestamp": 1792023856315
+   }
+  ],
+  [
+   "execution_interrupted",
+   {
+    "prompt_id": "efebde0b-985c-498e-9b72-7abb8b308483",
+    "node_id": "neg",
+    "node_type": "CLIPTextEncode",
+    "executed": [
+     "lora0",
+     "latent"
+    ],
+    "timestamp": 1792023877637
+   }
+  ]
+ ]
+}

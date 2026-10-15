@@ -53,10 +53,10 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   - Absorber cura, el retroceso daña y Quemado reduce a la mitad el daño físico.
 - **Estados en tiempo real**: hacen lo de los juegos, con un "turno" de 3 s (`reglas.ts`). Son debufos con
   duración, como en un MMO.
-  - **Quemado** (12 s): hace la mitad de daño físico y pierde 1/16 de su vida por turno.
-  - **Paralizado** (12 s): se mueve a la mitad de velocidad (tú y los salvajes) y el 25 % de las veces no ataca.
-  - **Envenenado** (12 s): pierde 1/8 por turno.
-  - **Gravemente envenenado** (12 s): pierde 1/16, luego 2/16, 3/16… cada turno.
+  - **Quemado** (30 s): hace la mitad de daño físico y pierde 1/16 de su vida por turno.
+  - **Paralizado** (30 s): se mueve a la mitad de velocidad (tú y los salvajes) y el 25 % de las veces no ataca.
+  - **Envenenado** (24 s): pierde 1/8 por turno.
+  - **Gravemente envenenado** (21 s): pierde 1/16, luego 2/16, 3/16… cada turno.
   - **Dormido** (4 s): ni se mueve ni ataca.
   - **Congelado** (4 s): ni se mueve ni ataca y se queda quieto en su fotograma. Un ataque de Fuego lo descongela y
     con sol no se congela.
@@ -96,7 +96,7 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   - **Peleón** (40 %): al pegarle te persigue y ataca con su movimiento listo más fuerte (a veces con uno de
     estado). Si se aleja más de 330 px de su sitio, vuelve y se cura (correa).
   - Nadie ataca sin que le peguen primero.
-- **Vida**: fuera de combate (6 s sin recibir daño) se recupera un 5 % por segundo. Las bayas curan: Aranja 30 %,
+- **Vida**: fuera de combate (nadie te persigue, 6 s sin pegar ni recibir y sin quemadura ni veneno) se recupera un 5 % por segundo. Las bayas curan: Aranja 30 %,
   Zidra 50 %.
 - **Debilitarse**: vuelves al pueblo con la vida entera, sin otra penalización.
 
@@ -281,3 +281,39 @@ se añadió después.
 - Faltan sonido y música.
 - Equilibrio: duración de las peleas, vida de los salvajes y ritmo de niveles.
 - Más mapas (cueva, lago…) y jefes.
+
+## Sexo
+Cada Pokémon es macho, hembra o sin sexo, con la proporción oficial de su especie (Showdown, `macho` en
+`src/data/gen/combate.json`, que genera `tools/datos_combate.mjs`). Se tira al crearlo (`tirarSexo` en
+`src/combate/partida.ts`), se guarda con él (`Miembro.sexo`) y el capturado conserva el del salvaje. En los marcos del
+HUD sale un ♂ azul o un ♀ rosa en pixel art junto al nombre.
+
+## Multijugador cooperativo (2026-10-15)
+De 2 a 4 jugadores en la misma red, cada uno con su partida. Se juega con:
+- `npm run mp`: el servidor (`tools/servidor_mp.mjs`, puerto 5190). Hace el WebSocket a mano, sin paquetes. Reenvía
+  los mensajes a los demás jugadores de la sala, que es la ruta de la URL (por defecto "valle"), y apunta en qué orden
+  ha llegado cada uno y la semilla de la sala.
+- `npm run dev:red`: el juego abierto a la red. Cada jugador entra en `http://<ip>:5174/?mp=ws://<ip>:5190`.
+
+Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
+- **Verse.** Cada uno manda su estado 10 veces por segundo: mapa, posición, animación, estado, vida, forma y nivel.
+  Los demás jugadores son luchadores con el rol `remoto` (`mundo.remotos`): se mueven suavizados, llevan una placa
+  azul con su nombre y su barra de vida, no tienen IA y no se les puede atacar.
+- **Mismos mapas.** Los mapas procedurales usan la semilla de la sala, que es la del primero que entró. Si te unes
+  estando en uno, se rehace en el mismo sitio.
+- **Manda el dueño del mapa.** En cada mapa, el jugador que lleva más tiempo en él lleva a los salvajes: su IA, su
+  vida, sus muertes y sus reapariciones. Si dos llegan a la vez, manda el que entró antes en la sala. El dueño manda
+  una foto de sus salvajes 10 veces por segundo (`foto`/`aplicarFoto`). Los demás los tienen en modo espejo
+  (`espejo`): los dibujan tal como llegan y lo que les hacen se lo mandan al dueño (`Salida`). Cuando el dueño se va,
+  manda el siguiente, con los salvajes donde estaban.
+- **Cada uno manda en su Pokémon.** Un golpe a un remoto no se aplica aquí: se le manda y él se lo aplica
+  (`recibirGolpe`). Pasa lo mismo con el golpe de un jugador a un salvaje del dueño.
+- **Experiencia.** Al caer un salvaje, todos los que le hicieron daño (`golpeadores`) ganan su experiencia y su botín.
+- **Captura.** Quien lanza la Ball tira la captura y avisa al dueño (`recibirBall`). Mientras está dentro, el salvaje
+  no se mueve.
+- **Clima y alfa.** El clima del mapa va en la foto. El golpe anunciado del alfa lo mira cada jugador en su pantalla.
+- **Animaciones.** Cada uno reenvía a los demás los rótulos, los destellos, los movimientos, las Balls y las caídas,
+  con los uids traducidos (`traducir`).
+
+Falta: probar el golpe del alfa y el clima con dos jugadores, un indicador en el HUD de quién lleva el mapa, ver a
+los vecinos del pueblo de los demás y entrar en la sala desde el título.

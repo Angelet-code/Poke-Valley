@@ -89,9 +89,9 @@ export function probCaptura(atrapa: number, ball: number, ps: number, psMax: num
 // - Paralizado: se mueve a la mitad de velocidad y a veces no puede atacar (25 %).
 // - Envenenado: pierde 1/8 por turno; gravemente envenenado, 1/16, 2/16, 3/16… (cada vez más).
 // - Dormido o congelado: ni se mueve ni ataca. Un ataque de Fuego descongela; con sol no se congela.
-// Son debufos con duración (como en un MMO): se pasan solos.
+// Son debufos con duración (como en un MMO): se pasan solos. Los que dañan siguen haciéndolo fuera de combate.
 export const TURNO = 3;
-export const DURA_ESTADO: Record<string, number> = { slp: 4, frz: 4, par: 12, psn: 12, tox: 12, brn: 12 };
+export const DURA_ESTADO: Record<string, number> = { slp: 4, frz: 4, par: 30, psn: 24, tox: 21, brn: 30 };
 export const DANO_ESTADO: Record<string, number> = { psn: 1 / 8, tox: 1 / 16, brn: 1 / 16 };
 export const VEL_PARALIZADO = 0.5;
 export const NOMBRE_ESTADO: Record<string, string> = { slp: 'Dormido', frz: 'Congelado', par: 'Paralizado', psn: 'Envenenado', tox: 'Gravemente envenenado', brn: 'Quemado' };
