@@ -38,8 +38,11 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   - Clic derecho en una casilla la vacía.
   - Cada Pokémon tiene su propia barra.
   - Al aprender un movimiento, este va a la primera casilla libre.
-- **Inventario (I)** (`combate/objetos.ts`): cada Pokémon lleva un objeto equipable (`Miembro.objeto`). Clic en uno
-  para ponérselo (el que llevaba vuelve a la mochila); clic en el suyo para quitárselo. En combate no se cambia.
+- **Inventario (I)** (`combate/objetos.ts`): como la pantalla del personaje del WoW, vertical y a la izquierda: tu
+  Pokémon animado en el centro y sus dos objetos equipables a los lados (`Miembro.objetos`). Arriba, nombre, sexo,
+  nivel y tipos; bajo el Pokémon, sus stats (en verde o rojo si ahora las tiene subidas o bajadas); debajo, los de la mochila.
+  Clic en uno para ponérselo en un hueco libre (con los dos llenos, luego clic en el hueco que cambias); clic en uno
+  de los suyos para quitárselo. No puede llevar dos iguales ni cambiarlos en combate.
   No se gastan. Solo se encuentran jugando: los alfas sueltan uno al azar (y, muy rara vez, un salvaje).
   - Restos (1/16 cada 3 s en combate), Banda Focus (con la vida entera aguanta con 1 PS; se recarga en 60 s),
     Cinta Focus (10 %), Vidasfera (×1,3 y 1/10 por golpe), Cinta Fuerte y Gafas Especiales (×1,1), Cinta Experto

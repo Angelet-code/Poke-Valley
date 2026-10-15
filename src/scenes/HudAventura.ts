@@ -5,8 +5,10 @@
 //   quedan; se oscurecen mientras se enfrían y el número se pone rojo si el objetivo está lejos. Al pasar el ratón,
 //   la ficha del movimiento. Clic = usar; clic derecho = quitar de la barra.
 // - K: panel de movimientos y objetos. Clic en uno y luego en una casilla (o su tecla) para colocarlo.
-// - I: inventario. Arriba, el objeto que lleva tu Pokémon (clic = quitarlo); debajo, los equipables (clic = equiparlo,
-//   combate/objetos.ts) y el resto de la mochila. Al pasar el ratón, la ficha del objeto.
+// - I: inventario, como la pantalla del personaje del WoW (a la izquierda, vertical): tu Pokémon animado en el centro
+//   y sus HUECOS_OBJ objetos a los lados (clic = quitarlo); debajo, los equipables de la mochila (clic = ponérselo en
+//   un hueco libre; con los dos llenos, clic luego en el hueco que cambias). Al pasar el ratón, la ficha del objeto.
+//   Arriba, nombre, sexo, nivel y tipos; bajo el Pokémon, sus stats.
 // - F en el tablón del pueblo: las misiones de cada zona, solo con iconos (cara, número, Ball u objeto). Clic en una
 //   nueva = aceptarla; en una cumplida = entregarla. A la derecha, bajo la hora, el seguimiento (cara + "2/5").
 import Phaser from 'phaser';
@@ -14,12 +16,12 @@ import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
 import { type Aura, type Aventura, type Luchador } from './Aventura';
-import { COLOR_TIPO, TIPO_ES, getMove, type TypeName } from '../data/movimientos';
+import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES } from '../combate/objetos';
 import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, necesitaObjetivo, perfil } from '../combate/reglas';
-import { CASILLAS, HOGAR_CARGA, HOGAR_CD, type Atajo } from '../combate/partida';
-import { clave } from '../combate/sprites';
+import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
+import { ancla, clave, listo, poner } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
 import { redDeLaPagina } from '../combate/red';
 
@@ -95,7 +97,8 @@ export class HudAventura extends Phaser.Scene {
   // Inventario (I): se rehace cuando cambia algo.
   private invObjs: Phaser.GameObjects.GameObject[] = [];
   private invClave = '';
-  private invZonas: { x: number; y: number; w: number; h: number; id: string | null }[] = [];   // id null: el objeto equipado
+  private invZonas: { x: number; y: number; w: number; h: number; id: string | null; hueco?: number }[] = [];   // con hueco: lo que lleva puesto
+  private invElegido: string | null = null;   // equipable elegido con los dos huecos llenos: espera a que elijas hueco
   private invCaja: { x: number; y: number; w: number; h: number } | null = null;
   private avisoC!: Phaser.GameObjects.Container;
   private avisoG!: G;
@@ -123,7 +126,7 @@ export class HudAventura extends Phaser.Scene {
   create(): void {
     this.av = this.scene.get('aventura') as Aventura;
     this.casillas = []; this.panelObjs = []; this.panelClave = ''; this.panelZonas = [];
-    this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null;
+    this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null; this.invElegido = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
@@ -185,7 +188,7 @@ export class HudAventura extends Phaser.Scene {
       const z = this.panelZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (z) { this.av.asignando = z.a; return; }
       const iz = this.invZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
-      if (iz) { if (iz.id === null) this.av.equipar(null); else if (EQUIPABLES[iz.id]) this.av.equipar(iz.id); return; }
+      if (iz) { this.clicInventario(iz); return; }
       const mz = this.misZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       if (mz) {
         const st = this.av.partida.estadoMision(mz.m);
@@ -601,18 +604,35 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.panelObjs.push(g);
   }
 
-  // Inventario (I): el objeto que lleva tu Pokémon, los equipables y el resto de la mochila, en casillas con su icono.
+  // Inventario (I): clic en un hueco (con un equipable elegido, ponerlo ahí; si no, quitar lo que lleva) o en un equipable
+  // (al primer hueco libre; con los dos llenos, se queda elegido).
+  private clicInventario(z: { id: string | null; hueco?: number }): void {
+    const av = this.av, obs = av.partida.objetos(av.partida.activo);
+    if (z.hueco !== undefined) {
+      if (this.invElegido) av.equipar(this.invElegido, z.hueco); else av.equipar(null, z.hueco);
+      this.invElegido = null;
+      return;
+    }
+    if (!z.id || !EQUIPABLES[z.id]) return;
+    const libre = obs.indexOf(null);
+    if (obs.includes(z.id)) av.equipar(z.id, obs.indexOf(z.id));   // ya lo lleva: lo dice el aviso
+    else if (libre >= 0) av.equipar(z.id, libre);
+    else this.invElegido = this.invElegido === z.id ? null : z.id;
+  }
+  // Inventario (I), como la pantalla del personaje del WoW: tu Pokémon animado en el centro, sus objetos a los lados y,
+  // debajo, los equipables de la mochila (las Balls y las curas siguen en el panel K).
   private pintarInventario(): void {
-    const av = this.av, m = av.partida.activo, todos = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id]);
-    const k = av.panel === 'inv' ? `${m.uid}|${m.linea}|${m.nivel}|${m.objeto}|${JSON.stringify(todos)}` : '';
+    const av = this.av, m = av.partida.activo, obs = av.partida.objetos(m), dex = av.jugador?.dex ?? '';
+    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && EQUIPABLES[id]);
+    if (av.panel !== 'inv') this.invElegido = null;
+    const k = av.panel === 'inv' ? `${m.uid}|${dex}|${m.nivel}|${JSON.stringify(av.jugador?.boosts)}|${obs.join()}|${JSON.stringify(eq)}|${this.invElegido}|${listo(this, dex)}` : '';
     if (k === this.invClave) return;
     this.invClave = k;
     this.invObjs.forEach(o => o.destroy()); this.invObjs = []; this.invZonas = []; this.invCaja = null;
     if (av.panel !== 'inv') return;
-    const eq = todos.filter(([id]) => EQUIPABLES[id]), resto = todos.filter(([id]) => !EQUIPABLES[id]);
-    const COLS = 10, CS = 22, PASO = CS + 2, filas = (n: number) => Math.max(1, Math.ceil(n / COLS));
-    const w = 12 + COLS * PASO - 2, h = 50 + 11 + filas(eq.length) * PASO + 12 + 11 + filas(resto.length) * PASO - 6;
-    const x = Math.round(VW / 2 - w / 2), y = Math.max(32, BY - h - 6);
+    const COLS = 6, CS = 18, PASO = CS + 2, filas = Math.max(1, Math.ceil(eq.length / COLS)), HUECO = 24, FONDO = 78;
+    const STATS = 3 * 7 + 4, w = 12 + COLS * PASO - 2, h = 24 + FONDO + 4 + STATS + 6 + 11 + filas * PASO + 12;
+    const x = 4, y = Math.max(32, Math.min(48, BY - 6 - h));   // bajo los bufos de tu marco, si cabe
     this.invCaja = { x, y, w, h };
     const g = this.add.graphics().setDepth(6);
     this.invObjs.push(g);
@@ -622,47 +642,75 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     const icono = (cx: number, cy: number, id: string, tam: number) => {
       const ic = ITEMS[id]?.icono;
       if (!ic || !this.textures.exists(ic)) return;
-      const im = this.add.image(cx * S, cy * S, ic).setDepth(7);
+      const im = this.add.image(cx * S, cy * S, ic).setDepth(8);
       im.setScale(Math.max(1, Math.floor(S * tam / Math.max(im.frame.width, im.frame.height))));
       this.invObjs.push(im);
     };
-    const casilla = (cx: number, cy: number, id: string | null, n: number, lado: number, borde: number, fondo: number) => {
-      rect(g, borde, 1, cx - 1, cy - 1, lado + 2, lado + 2);
-      rect(g, fondo, 1, cx, cy, lado, lado);
-      const ob = id ?? m.objeto;
-      if (ob) icono(cx + lado / 2, cy + lado / 2, ob, lado - 2);
-      if (n > 1) this.invObjs.push(this.sombreado(cx + lado - 0.5, cy + lado + 0.5, String(n), 5).setOrigin(1, 1).setDepth(8));
-      this.invZonas.push({ x: cx, y: cy, w: lado, h: lado, id });
+    const casilla = (cx: number, cy: number, lado: number, id: string | null, zona: { id: string | null; hueco?: number }, elegida: boolean, n = 0) => {
+      rect(g, elegida ? C.elegido : C.huecoSombra, 1, cx - 1, cy - 1, lado + 2, lado + 2);
+      rect(g, elegida ? C.elegidoFondo : C.hueco, 1, cx, cy, lado, lado);
+      if (id) icono(cx + lado / 2, cy + lado / 2, id, lado - 2);
+      if (n > 1) this.invObjs.push(this.sombreado(cx + lado - 0.5, cy + lado + 0.5, String(n), 5).setOrigin(1, 1).setDepth(9));
+      this.invZonas.push({ x: cx, y: cy, w: lado, h: lado, ...zona });
     };
-    t(x + 6, y + 5, 'INVENTARIO', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
-    t(x + w - 6, y + 5, 'Clic en un equipable para ponérselo', 5, C.maderaClara).setOrigin(1, 0);
-    // Lo que lleva el que manejas.
-    const yo = av.partida.forma(m).nombre, ob = m.objeto ? EQUIPABLES[m.objeto] : null;
-    casilla(x + 7, y + 17, null, 0, 28, ob ? C.elegido : C.huecoSombra, ob ? C.elegidoFondo : C.hueco);
-    t(x + 42, y + 16, `${yo} lleva`, 5, C.tinta).setAlpha(0.8);
-    t(x + 42, y + 23, ob ? ob.nombre : 'Nada', 6.5, C.tinta, { fontStyle: 'bold' });
-    t(x + 42, y + 33, ob ? ob.desc : 'Elige un equipable de abajo para ponérselo', 5, C.tinta, { wordWrap: { width: (w - 48) * S } }).setAlpha(0.85);
-    const rejilla = (y0: number, titulo: string, lista: [string, number][], vacio: string) => {
-      t(x + 6, y0, titulo, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
-      if (!lista.length) t(x + 7, y0 + 11 + CS / 2, vacio, 5, C.tinta).setOrigin(0, 0.5).setAlpha(0.7);
-      lista.forEach(([id, n], i) => casilla(x + 7 + (i % COLS) * PASO, y0 + 11 + Math.floor(i / COLS) * PASO, id, n, CS, C.huecoSombra, C.hueco));
-    };
-    const ye = y + 50;
-    rejilla(ye, 'EQUIPABLES', eq, 'Ninguno: los sueltan los alfas');
-    rejilla(ye + 11 + filas(eq.length) * PASO + 12, 'MOCHILA', resto, 'Vacía');
+    // Nombre, sexo y nivel; debajo, sus tipos con su color.
+    const l = av.jugador, nom = t(x + w / 2, y + 5, `${l.nombre}  Nv ${l.nivel}`, 6, C.tinta, { fontStyle: 'bold' }).setOrigin(0.5, 0);
+    if (l.sexo) {
+      const sx = this.add.image(nom.x + nom.width / 2 + 2 * S, (y + 5.5) * S, this.pixeles(`hud_sexo_${l.sexo}`, SEXO[l.sexo].filas, { x: SEXO[l.sexo].col })).setOrigin(0).setDepth(7);
+      this.invObjs.push(sx);
+    }
+    const chips = l.tipos.map(tp => { const q = t(0, y + 14, TIPO_ES[tp].toUpperCase(), 5, 0xffffff, { stroke: '#3a2a1a', strokeThickness: 1 * S }); return { tp, q, cw: q.width / S + 6 }; });
+    let cx0 = x + w / 2 - (chips.reduce((a, c) => a + c.cw, 0) + (chips.length - 1) * 3) / 2;
+    for (const c of chips) {
+      rect(g, COLOR_TIPO[c.tp], 1, cx0, y + 13, c.cw, 8);
+      rect(g, 0xffffff, 0.3, cx0, y + 13, c.cw, 1);
+      rect(g, 0x000000, 0.2, cx0, y + 20, c.cw, 1);
+      c.q.setPosition((cx0 + 3) * S, (y + 14) * S);
+      cx0 += c.cw + 3;
+    }
+    // El Pokémon, animado (su Idle mirando al frente), sobre un fondo hundido, con un hueco a cada lado.
+    const fx = x + 6, fy = y + 24, fw = w - 12;
+    rect(g, C.huecoSombra, 1, fx, fy, fw, FONDO);
+    rect(g, C.bandejaSombra, 1, fx + 1, fy + 1, fw - 2, FONDO - 2);
+    rect(g, 0x000000, 0.12, fx + fw / 2 - 22, fy + FONDO - 17, 44, 6);   // sombra bajo los pies
+    if (dex && listo(this, dex)) {
+      const spr = this.add.sprite((fx + fw / 2) * S, (fy + FONDO - 14) * S, '__DEFAULT').setDepth(7);
+      poner(spr, dex, 'Idle', 0);
+      spr.setScale(Math.max(1, Math.min(3 * S, Math.floor(S * 50 / Math.max(1, ancla(dex).alto)))));
+      this.invObjs.push(spr);
+    }
+    for (let i = 0; i < HUECOS_OBJ; i++) {
+      const hx = i === 0 ? fx + 5 : fx + fw - 5 - HUECO, hy = fy + FONDO / 2 - HUECO / 2;
+      casilla(hx, hy, HUECO, obs[i], { id: obs[i], hueco: i }, !!this.invElegido || !!obs[i]);
+    }
+    // Los equipables de la mochila.
+    // Stats (con su nivel), en dos columnas; en verde o rojo si ahora mismo las tiene subidas o bajadas.
+    const ys = fy + FONDO + 4, st = l.stats;
+    const filasSt: [string, number, Stat6 | null][] = [['PS', st.hp, null], ['Velocidad', st.spe, 'spe'], ['Ataque', st.atk, 'atk'], ['At. Esp.', st.spa, 'spa'], ['Defensa', st.def, 'def'], ['Def. Esp.', st.spd, 'spd']];
+    rect(g, C.huecoSombra, 1, fx, ys, fw, STATS);
+    rect(g, C.hueco, 1, fx + 1, ys + 1, fw - 2, STATS - 2);
+    filasSt.forEach(([nombre, v, b], i) => {
+      const cx = fx + 4 + (i % 2) * (fw / 2), cy = ys + 2 + Math.floor(i / 2) * 7, n = b ? l.boosts[b] ?? 0 : 0;
+      t(cx, cy, nombre, 5, C.tinta).setAlpha(0.8);
+      t(cx + fw / 2 - 8, cy, String(v), 5, n > 0 ? 0x3f8a2f : n < 0 ? 0xc0453a : C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
+    });
+    const ye = ys + STATS + 6;
+    t(x + 6, ye, 'EQUIPABLES', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    if (!eq.length) t(x + 7, ye + 11 + CS / 2, 'Ninguno: los sueltan los alfas', 5, C.tinta).setOrigin(0, 0.5).setAlpha(0.7);
+    eq.forEach(([id, n], i) => casilla(x + 7 + (i % COLS) * PASO, ye + 11 + Math.floor(i / COLS) * PASO, CS, id, { id }, this.invElegido === id, n));
+    t(x + w / 2, y + h - 9, this.invElegido ? 'Ahora elige qué objeto cambiar' : 'Clic: ponérselo · en el suyo: quitar', 5, C.maderaClara).setOrigin(0.5, 0);
   }
-  // Ficha de un objeto del inventario (encima de su casilla).
-  private fichaInv(z: { x: number; y: number; w: number; h: number; id: string | null }): void {
-    const g = this.fichaG, m = this.av.partida.activo, id = z.id ?? m.objeto;
+  // Ficha de un objeto del inventario (a la derecha del panel, a su altura).
+  private fichaInv(z: { x: number; y: number; w: number; h: number; id: string | null; hueco?: number }): void {
+    const g = this.fichaG, id = z.id;
     g.clear();
     this.fichaTipo.setVisible(false);
     if (!id) { this.ficha.setVisible(false); return; }
-    const it = ITEMS[id], eq = EQUIPABLES[id];
-    const desc = eq ? eq.desc : it?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : it?.cura ? `Te cura ${it.cura} PS` : 'Te cura un poco';
-    const uso = z.id === null ? 'Clic: quitárselo' : eq ? 'Clic: ponérselo' : 'Ponlo en la barra con K';
-    this.ficha.setText(`${it?.nombre ?? id}\n${desc}\n${uso}`).setVisible(true);
-    const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6;
-    const x = Math.max(4, Math.min(VW - w - 4, z.x + z.w / 2 - w / 2)), y = z.y - h - 3 >= 4 ? z.y - h - 3 : z.y + z.h + 3;
+    const eq = EQUIPABLES[id];
+    const uso = z.hueco !== undefined ? (this.invElegido ? 'Clic: cambiarlo' : 'Clic: quitárselo') : 'Clic: ponérselo';
+    this.ficha.setText(`${ITEMS[id]?.nombre ?? id}\n${eq?.desc ?? ''}\n${uso}`).setVisible(true);
+    const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, c = this.invCaja;
+    const x = c ? c.x + c.w + 3 : z.x + z.w + 3, y = Math.max(4, Math.min(VH - h - 4, z.y + z.h / 2 - h / 2));
     marco(g, x, y, w, h, PANEL);
     this.ficha.setPosition((x + 4) * S, (y + 3) * S);
   }

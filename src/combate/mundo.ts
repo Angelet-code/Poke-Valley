@@ -12,7 +12,7 @@ import { BALL, ITEMS } from '../data/items';
 import { alturaDe, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
 import type { LabelTone } from '../fx/stage';
 import { dentroDe } from '../util';
-import { HOGAR_CARGA, HOGAR_CD, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
+import { HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
 import { MEJOR, nivelZona, sortear, tierDe } from './botin';
@@ -617,15 +617,16 @@ export class Mundo {
   private lanzarMov(l: Luchador, id: string, t: Luchador, parte?: MoveData): void {
     const m = parte ?? getMove(id)!;
     if (l.muerto || this.cambiando) return;
-    const ob = this.objeto(l);
-    const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(ob === 'scopelens' ? { ...m, critRatio: m.critRatio + 1 } : m, l, t, this.clima?.tipo ?? null, this.rnd);
-    if (r.dano > 0 && ob && !m.fixedDamage) r.dano = Math.max(1, Math.floor(r.dano * this.potencia(ob, m, r)));
+    const obs = this.objetos(l);
+    const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(obs.includes('scopelens') ? { ...m, critRatio: m.critRatio + 1 } : m, l, t, this.clima?.tipo ?? null, this.rnd);
+    if (r.dano > 0 && obs.length && !m.fixedDamage) r.dano = Math.max(1, Math.floor(r.dano * obs.reduce((k, ob) => k * this.potencia(ob, m, r), 1)));
     const ef = this.efectos(m, l, t, r), n = ++this.n;
     this.pendientes.set(n, { l, id, t, r, ef, hasta: this.ahora + IMPACTO_MAX });
     this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
   }
-  // Objeto equipado (combate/objetos.ts): solo los de tu equipo llevan.
-  objeto(l: Luchador): string | undefined { return l.miembro?.objeto; }
+  // Objetos equipados (combate/objetos.ts, hasta HUECOS_OBJ): solo los de tu equipo llevan.
+  objetos(l: Luchador): string[] { return (l.miembro?.objetos ?? []).filter((o): o is string => !!o); }
+  lleva(l: Luchador, id: string): boolean { return !!l.miembro?.objetos?.includes(id); }
   private potencia(ob: string, m: MoveData, r: Golpe): number {
     if (ob === 'lifeorb') return 1.3;
     if (ob === 'muscleband') return m.category === 'Physical' ? 1.1 : 1;
@@ -684,11 +685,10 @@ export class Mundo {
       }
       if (!ajeno) this.danar(t, r.dano, l);
       // Objetos: la Vidasfera cuesta 1/10, la Campana Concha devuelve 1/8 del daño, el Casco Dentado pincha al que toca.
-      const ob = this.objeto(l);
       if (!this.ajeno(l) && !l.muerto) {
-        if (ob === 'shellbell') this.curar(l, Math.max(1, Math.floor(r.dano / 8)));
-        if (ob === 'lifeorb') this.danar(l, Math.max(1, Math.floor(l.stats.hp / 10)), null);
-        if (!ajeno && !l.muerto && this.objeto(t) === 'rockyhelmet' && m.flags.includes('contact')) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 6)), null);
+        if (this.lleva(l, 'shellbell')) this.curar(l, Math.max(1, Math.floor(r.dano / 8)));
+        if (this.lleva(l, 'lifeorb')) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 10)), null);
+        if (!ajeno && !l.muerto && this.lleva(t, 'rockyhelmet') && m.flags.includes('contact')) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 6)), null);
       }
       if (m.drain) this.curar(l, Math.max(1, Math.floor(r.dano * m.drain[0] / m.drain[1])));
       if (m.recoil) this.danar(l, Math.max(1, Math.floor(r.dano * m.recoil[0] / m.recoil[1])), null);
@@ -710,8 +710,10 @@ export class Mundo {
   private danar(t: Luchador, n: number, de: Luchador | null): void {
     // En un duelo nadie se debilita: el que llega a 1 PS pierde.
     // Banda Focus (con la vida entera, cada RECARGA_BANDA s) y Cinta Focus (1 de cada 10): aguanta con 1 PS un golpe.
-    const ob = this.objeto(t);
-    if (de && n >= t.ps && t.ps >= 1 && ((ob === 'focussash' && t.ps >= t.stats.hp && this.ahora > (t.bandaHasta ?? -99)) || (ob === 'focusband' && this.rnd() < 0.1))) {
+    const ob = !de || n < t.ps || t.ps < 1 ? null
+      : this.lleva(t, 'focussash') && t.ps >= t.stats.hp && this.ahora > (t.bandaHasta ?? -99) ? 'focussash'
+      : this.lleva(t, 'focusband') && this.rnd() < 0.1 ? 'focusband' : null;
+    if (ob) {
       n = Math.floor(t.ps - 1);
       if (ob === 'focussash') t.bandaHasta = this.ahora + RECARGA_BANDA;
       this.rotulo(t, `¡Aguanta con ${EQUIPABLES[ob].nombre}!`, 'strong', 200);
@@ -980,13 +982,15 @@ export class Mundo {
   }
 
   // ---- Objetos ----
-  // Equipar (o quitar, id null) el objeto del que manejas, desde el inventario (I). En combate no se puede.
-  equipar(id: string | null): void {
-    const l = this.jugador, m = this.partida.activo;
-    if (l.muerto || this.cambiando) return;
+  // Equipar en un hueco (o vaciarlo, id null) un objeto del que manejas, desde el inventario (I). En combate no se
+  // puede, ni llevar dos iguales.
+  equipar(id: string | null, hueco: number): void {
+    const l = this.jugador, m = this.partida.activo, antes = this.partida.objetos(m)[hueco];
+    if (l.muerto || this.cambiando || hueco < 0 || hueco >= HUECOS_OBJ) return;
     if (this.ahora - l.ultimoCombate < 6) { this.aviso('No puedes cambiar de objeto en combate'); return; }
-    if (id === null) { if (m.objeto) { this.aviso(`${l.nombre} ya no lleva ${ITEMS[m.objeto]?.nombre ?? m.objeto}`); this.partida.desequipar(m); } }
-    else if (this.partida.equipar(m, id)) this.aviso(`${l.nombre} lleva ${ITEMS[id]?.nombre ?? id}`);
+    if (id === null) { if (antes) { this.aviso(`${l.nombre} ya no lleva ${ITEMS[antes]?.nombre ?? antes}`); this.partida.desequipar(m, hueco); } else return; }
+    else if (this.partida.objetos(m).some((o, i) => o === id && i !== hueco)) { this.aviso(`${l.nombre} ya lleva ${ITEMS[id]?.nombre ?? id}`); return; }
+    else if (this.partida.equipar(m, id, hueco)) this.aviso(`${l.nombre} lleva ${ITEMS[id]?.nombre ?? id}`);
     else return;
     l.bandaHasta = undefined; l.ticObjeto = undefined;
     this.guardar();
@@ -1162,7 +1166,7 @@ export class Mundo {
       if (l.muerto) return;
     }
     // Restos: en combate, 1/16 de su vida cada turno.
-    if (enCombate && this.objeto(l) === 'leftovers' && l.ps < l.stats.hp && this.ahora > (l.ticObjeto ?? -99)) {
+    if (enCombate && this.lleva(l, 'leftovers') && l.ps < l.stats.hp && this.ahora > (l.ticObjeto ?? -99)) {
       if (l.ticObjeto !== undefined && this.ahora - l.ticObjeto < TURNO) this.curar(l, Math.max(1, Math.floor(l.stats.hp / 16)));
       l.ticObjeto = this.ahora + TURNO;
     }
@@ -1181,7 +1185,7 @@ export class Mundo {
     const drena = [...this.todos(), ...this.remotos].filter(o => o.semilla?.de === l.uid && !o.muerto);
     if (drena.length) out.push({ txt: drena.length > 1 ? `DRE×${drena.length}` : 'DRE', nombre: drena.length > 1 ? `Drenando a ${drena.length}` : `Drenando a ${drena[0].nombre}`,
       color: 0x4fae4a, frac: Math.max(0, Math.min(1, (Math.max(...drena.map(o => o.semilla!.hasta)) - this.ahora) / DURA_SEMILLA)) });
-    if (this.objeto(l) === 'focussash' && (l.bandaHasta ?? 0) > this.ahora) out.push({ txt: 'BAN', nombre: 'Banda Focus gastada', color: 0x8a7a6a, frac: Math.max(0, Math.min(1, (l.bandaHasta! - this.ahora) / RECARGA_BANDA)) });
+    if (this.lleva(l, 'focussash') && (l.bandaHasta ?? 0) > this.ahora) out.push({ txt: 'BAN', nombre: 'Banda Focus gastada', color: 0x8a7a6a, frac: Math.max(0, Math.min(1, (l.bandaHasta! - this.ahora) / RECARGA_BANDA)) });
     for (const [s, n] of Object.entries(l.boosts) as [Stat6, number][]) {
       if (!n) continue;
       out.push({ txt: `${CORTO_STAT[s]}${n > 0 ? '+' : ''}${n}`, nombre: `${NOMBRE_STAT[s]} ${n > 0 ? '+' : ''}${n}`, color: n > 0 ? 0x4fae4a : 0xc0453a,

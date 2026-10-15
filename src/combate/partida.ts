@@ -9,6 +9,7 @@ import { expDeNivel, formaDe, nivelPorExp } from './reglas';
 import { misionesDe, type EstadoMision, type Mision } from './misiones';
 
 export const CASILLAS = 10;
+export const HUECOS_OBJ = 2;          // objetos equipables que lleva cada Pokémon (inventario, I)
 // Probabilidad de que un salvaje salga shiny (la de los juegos desde la 6.ª generación).
 export const PROB_SHINY = 1 / 4096;
 // Piedra de hogar (como en el WoW): H, se canaliza unos segundos sin moverte ni recibir golpes y te lleva al pueblo.
@@ -34,7 +35,8 @@ export interface Miembro {
   ps: number;                  // fracción de vida (0-1): se recupera sola fuera de combate
   shiny?: boolean;             // va con el Pokémon, no con la forma: sigue siéndolo al evolucionar
   sexo?: Sexo;                 // ♂/♀ (null: sin sexo, como Magnemite); se tira al crearlo con la proporción oficial
-  objeto?: string;             // objeto equipado (combate/objetos.ts): se pone y se quita en el inventario (I)
+  objetos?: (string | null)[]; // objetos equipados, HUECOS_OBJ huecos (combate/objetos.ts): se ponen y se quitan en el inventario (I)
+  objeto?: string;             // partidas de antes de los dos huecos: pasa a objetos[0] al cargar
 }
 export interface Estado {
   version: number; uid: number;
@@ -79,10 +81,11 @@ export class Partida {
       const e = JSON.parse(localStorage.getItem(CLAVE) ?? 'null') as Estado | null;
       if (!e || e.version !== VERSION || !e.equipo?.length) return null;
       e.misiones ??= {}; e.alfas ??= {};
+      for (const m of e.equipo) if (m.objeto) { m.objetos = [m.objeto, null]; delete m.objeto; }   // de un hueco a dos
       if (e.regalo) {   // quitar el regalo por error: de la mochila o, si lo lleva puesto, al Pokémon
         for (const [id, n] of Object.entries(REGALO)) for (let i = 0; i < n; i++) {
           if ((e.items[id] ?? 0) > 0) e.items[id]--;
-          else { const m = e.equipo.find(q => q.objeto === id); if (m) delete m.objeto; }
+          else { const m = e.equipo.find(q => q.objetos?.includes(id)); if (m) m.objetos![m.objetos!.indexOf(id)] = null; }
         }
         delete e.regalo;
       }
@@ -147,16 +150,20 @@ export class Partida {
     this.estado.items[id]--;
     return true;
   }
-  // Objeto equipado (inventario, I): el que llevaba vuelve a la mochila.
-  equipar(m: Miembro, id: string): boolean {
-    if (!this.gastar(id)) return false;
-    this.desequipar(m);
-    m.objeto = id;
+  // Objetos equipados (inventario, I): HUECOS_OBJ huecos; el que había en el hueco vuelve a la mochila.
+  objetos(m: Miembro): (string | null)[] { return Array.from({ length: HUECOS_OBJ }, (_, i) => m.objetos?.[i] ?? null); }
+  equipar(m: Miembro, id: string, hueco: number): boolean {
+    if (hueco < 0 || hueco >= HUECOS_OBJ || !this.gastar(id)) return false;
+    this.desequipar(m, hueco);
+    (m.objetos = this.objetos(m))[hueco] = id;
     return true;
   }
-  desequipar(m: Miembro): void {
-    if (m.objeto) this.dar(m.objeto);
-    delete m.objeto;
+  desequipar(m: Miembro, hueco: number): void {
+    const o = this.objetos(m), id = o[hueco];
+    if (!id) return;
+    this.dar(id);
+    o[hueco] = null;
+    m.objetos = o;
   }
 
   // Misiones del tablón (combate/misiones.ts).
