@@ -418,6 +418,13 @@ Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
 - **Captura.** Quien lanza la Ball tira la captura y avisa al dueño (`recibirBall`). Mientras está dentro, el salvaje
   no se mueve.
 - **Clima y alfa.** El clima del mapa va en la foto. El golpe anunciado del alfa lo mira cada jugador en su pantalla.
+- **Objetivo.** Tab y el clic eligen también a los demás jugadores (marco azul, "Otro jugador"). Fuera de un duelo no
+  se les puede atacar.
+- **Duelos** (como en WoW, `mundo.ts` § Duelos). R con otro jugador elegido le reta; él acepta con R o rechaza con Esc
+  (el reto caduca a los 30 s; si os retáis a la vez, empieza). Cuenta atrás de 3 s y a pegarse: los golpes van por el
+  camino de siempre (cada uno se aplica los suyos) y solo cuentan entre los dos del duelo. Nadie se debilita: el que
+  llega a 1 PS pierde. Alejarse más de 300 px de donde empezó, cambiar de mapa o caer ante un salvaje es abandonar.
+  Al acabar se quitan los estados y bufos del duelo. Sin experiencia ni premio, de momento.
 - **Animaciones.** Cada uno reenvía a los demás los rótulos, los destellos, los movimientos, las Balls y las caídas,
   con los uids traducidos (`traducir`).
 

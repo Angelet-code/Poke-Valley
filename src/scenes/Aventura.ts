@@ -511,7 +511,7 @@ export class Aventura extends Phaser.Scene {
   // ---- Entrada ----
   private entradas(): void {
     const kb = this.input.keyboard!;
-    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,H,M', false) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,F,SPACE,ESC,TAB,K,H,M,R', false) as Record<string, Phaser.Input.Keyboard.Key>;
     // Al perder el foco (otra ventana, Alt+Tab) no llega el "soltar": que no se quede andando solo.
     const soltar = () => kb.resetKeys();
     this.game.events.on(Phaser.Core.Events.BLUR, soltar);
@@ -524,9 +524,11 @@ export class Aventura extends Phaser.Scene {
     this.keys.SPACE.on('down', () => this.interactuar());
     this.keys.H.on('down', () => this.usarHogar());
     this.keys.M.on('down', () => this.mostrarMapa(!this.verMapa));
+    this.keys.R.on('down', () => { if (this.listo && this.red) this.mundo?.retar(); });
     this.keys.K.on('down', () => { this.panel = this.panel === 'movs' ? null : 'movs'; this.asignando = null; });
     this.keys.ESC.on('down', () => {
       if (this.verMapa) { this.mostrarMapa(false); return; }
+      if (this.mundo?.rechazarReto()) return;
       if (this.mundo?.hogar) { this.mundo.cortarHogar(); return; }
       if (this.asignando) { this.asignando = null; return; }
       if (this.panel) { this.panel = null; return; }
@@ -842,7 +844,7 @@ export class Aventura extends Phaser.Scene {
     }
     const o = mundo.objetivo;
     if (o && !o.muerto) {
-      const col = o.rol === 'vecino' ? 0x9fd0ff : o.modo === 'pelear' ? COLOR_REACCION.pelea : COLOR_REACCION[mundo.reaccionA(o)];
+      const col = mundo.luchandoCon(o) ? COLOR_REACCION.pelea : o.rol === 'vecino' || o.rol === 'remoto' ? 0x9fd0ff : o.modo === 'pelear' ? COLOR_REACCION.pelea : COLOR_REACCION[mundo.reaccionA(o)];
       const w = Math.max(18, o.alto * 0.8);
       this.anillo.setVisible(true).setPosition(o.x, o.y - 2).setSize(w, w * 0.36).setDisplaySize(w, w * 0.36).setFillStyle(col, 0.45).setDepth(o.y - 1.5);
     } else this.anillo.setVisible(false);
@@ -922,6 +924,7 @@ export class Aventura extends Phaser.Scene {
       else if (s.tipo === 'ball') mundo.recibirBall(s.a, s.dentro, s.ok, `remoto-${m.uid}`);
       else if (s.tipo === 'muere') mundo.recibirMuerte(s);
       else if (s.tipo === 'clima') mundo.recibirClima(s.clima);
+      else if (s.tipo === 'duelo') { if (s.para === red.uid) mundo.recibirDuelo(s.fase, `remoto-${m.uid}`, s.gana, s.abandona); }
     });
     red.on('sucs', m => { if (deAqui(m)) for (const s of m.l as Suceso[]) this.suceso(this.ajeno(s, m.uid)); });
     // Si la sala usa otra semilla que la de este mapa (te has unido estando en uno procedural), se rehace igual que el suyo.

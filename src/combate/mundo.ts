@@ -71,6 +71,9 @@ export interface Entrada { vx: number; vy: number }   // hacia dónde andas (-1�
 // Un movimiento que se está lanzando (barra de lanzamiento) o canalizando (golpes por tics), docs/GDD-combate.md §3.2.
 export interface Lanza { id: string; obj: Luchador | null; t0: number; t1: number; canal: boolean; tics: number; hechos: number }
 const INTERRUMPIDO = 4;            // s que el movimiento cortado tarda en volver
+const RETO = 30;                   // s que espera un reto a duelo antes de caducar
+const CUENTA = 3;                  // s de cuenta atrás al aceptar un duelo
+const DUELO_RADIO = 300;           // px desde donde empezó el duelo: más lejos, lo abandonas
 
 // Lo que un movimiento cambia en alguien además del daño: stats o un estado.
 interface Efecto { quien: Luchador; boosts?: Boosts; estado?: string }
@@ -109,6 +112,9 @@ export interface EstadoRemoto {
   enMapa?: number;                                             // s que lleva en este mapa (el que más lleva es su dueño)
 }
 
+// El uid de red de otro jugador a partir del de su remoto.
+const redDe = (uid: string) => uid.slice('remoto-'.length);
+
 // ---- Multijugador cooperativo: manda el dueño del mapa ----
 // En cada mapa, uno de los jugadores que están en él (el primero que entró en la sala) lleva a los salvajes: su IA, su
 // vida, sus muertes y sus reapariciones. Los demás los tienen en modo espejo (`espejo`): los ven tal como llegan en las
@@ -118,7 +124,9 @@ export type Salida =
   | { tipo: 'golpe'; de: string; a: string; mov: string; golpe: Golpe; efectos: { boosts?: Boosts; estado?: string }[] }
   | { tipo: 'ball'; a: string; dentro: boolean; ok?: boolean }
   | { tipo: 'muere'; a: string; para: string[]; linea: string; nivel: number; alfa: boolean; nombre: string }
-  | { tipo: 'clima'; clima: Clima };
+  | { tipo: 'clima'; clima: Clima }
+  // Duelo entre dos jugadores (`para`: el uid de red del otro). `gana`: uid de red del ganador; `abandona`: se ha ido.
+  | { tipo: 'duelo'; para: string; fase: 'reto' | 'acepta' | 'rechaza' | 'fin'; gana?: string; abandona?: boolean };
 export interface FotoSalvaje {
   u: string; li: string; f?: string; n: number; sh?: boolean; al?: boolean; r: number; c: Punto;   // r: su ronda en el mapa (−1: ninguna)
   x: number; y: number; d: number; an: boolean; ps: number; hp: number; e: string | null; m: boolean; b: boolean;
@@ -191,6 +199,9 @@ export class Mundo {
   // Multijugador: tu uid en la red, si los salvajes los lleva otro (espejo) y lo que hay que mandarle.
   miRed = '';
   espejo = false;
+  // Duelo con otro jugador (`con`: uid de su remoto): le has retado y esperas, cuenta atrás o luchando (`c`: dónde empezó).
+  duelo: { con: string; fase: 'reto' | 'cuenta' | 'lucha'; hasta: number; c: Punto } | null = null;
+  retoDe: { de: string; hasta: number } | null = null;   // otro jugador te ha retado (uid de su remoto)
   private salidas: Salida[] = [];
   private capturadosFuera = new Map<string, number>();   // salvajes que has capturado tú: que no vuelvan con una foto vieja
   private miBall: string | null = null;                  // el salvaje que está en tu Ball (su enBall lo llevas tú)
@@ -397,14 +408,14 @@ export class Mundo {
 
   // ---- Elegir objetivo ----
   bajo(x: number, y: number): Luchador | null {
-    return [...this.salvajes, ...this.vecinos].filter(l => !l.muerto && !l.enBall && Math.abs(x - l.x) < Math.max(10, l.alto * 0.4) && y > l.y - l.alto - 4 && y < l.y + 6)
+    return [...this.salvajes, ...this.vecinos, ...this.remotos].filter(l => !l.muerto && !l.enBall && Math.abs(x - l.x) < Math.max(10, l.alto * 0.4) && y > l.y - l.alto - 4 && y < l.y + 6)
       .sort((a, b) => b.y - a.y)[0] ?? null;
   }
-  // Tab: el salvaje más cercano que no sea el actual (en orden de distancia).
+  // Tab: el salvaje o el otro jugador más cercano que no sea el actual (en orden de distancia).
   siguienteObjetivo(): void {
-    const p = this.jugador, vivos = this.salvajes.filter(l => !l.muerto && !l.enBall && Math.hypot(l.x - p.x, l.y - p.y) < 260)
+    const p = this.jugador, vivos = [...this.salvajes, ...this.remotos].filter(l => !l.muerto && !l.enBall && Math.hypot(l.x - p.x, l.y - p.y) < 260)
       .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
-    if (!vivos.length) { this.aviso('No hay ningún salvaje cerca'); return; }
+    if (!vivos.length) { this.aviso('No hay nadie cerca'); return; }
     const i = this.objetivo ? vivos.indexOf(this.objetivo) : -1;
     this.objetivo = vivos[(i + 1) % vivos.length];
   }
@@ -467,6 +478,10 @@ export class Mundo {
       if (!obj && yo) obj = this.objetivo = this.salvajes.filter(s => !s.muerto && !s.enBall).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] ?? null;
       if (!obj || obj.muerto || obj.enBall) { if (yo) this.aviso('Elige a quién (clic en un Pokémon o Tab)'); return false; }
       if (obj.rol === 'vecino') { if (yo) this.aviso(`${obj.nombre} es de los tuyos`); return false; }
+      if (obj.rol === 'remoto' && !this.luchandoCon(obj)) {
+        if (yo) this.aviso(this.duelo?.con === obj.uid && this.duelo.fase === 'cuenta' ? 'El duelo aún no ha empezado' : `${obj.nombre} es otro jugador: R para retarle a un duelo`);
+        return false;
+      }
       const d = Math.hypot(obj.x - l.x, obj.y - l.y), al = alcance(m) + Math.max(8, obj.alto * 0.3);
       if (d > al) { if (yo) this.aviso(`${m.nombre}: demasiado lejos`); return false; }
       this.mirarA(l, obj);
@@ -613,11 +628,15 @@ export class Mundo {
     }
   }
   private danar(t: Luchador, n: number, de: Luchador | null): void {
-    t.ps = Math.max(0, t.ps - n);
+    // En un duelo nadie se debilita: el que llega a 1 PS pierde.
+    const pierde = t.rol === 'jugador' && !!de && this.luchandoCon(de) && t.ps - n < 1;
+    if (pierde) n = Math.max(0, Math.floor(t.ps - 1));
+    t.ps = Math.max(pierde ? 1 : 0, t.ps - n);
     if (de) t.ultimoCombate = de.ultimoCombate = this.ahora;
     if (de && (de.rol === 'jugador' || de.rol === 'remoto')) (t.golpeadores ??= new Set()).add(de.uid);   // el daño de estados o del clima no cuenta como combate
     if (t.rol === 'jugador' && this.hogar) this.cortarHogar('¡Te han interrumpido!');
     this.rotulo(t, `−${n}`, t.rol === 'jugador' ? 'bad' : 'neutral', 0, true);
+    if (pierde) { this.finDuelo(false, `${de!.nombre} gana el duelo`); return; }
     if (t.ps <= 0) { this.debilitar(t, de); return; }
     if (t.anim !== 'Attack' && t.anim !== 'Shoot' && t.anim !== 'Charge') this.reproducir(t, 'Hurt', 0.3);
     if (de) this.provocar(t, de);
@@ -765,10 +784,97 @@ export class Mundo {
   // Te debilitas: fundido y vuelves al pueblo con la vida entera.
   private caer(): void {
     if (this.cambiando) return;
+    this.finDuelo(false, 'Has perdido el duelo', true);
     this.aviso(`¡${this.jugador.nombre} se ha debilitado! Vuelves al pueblo.`);
     this.partida.activo.ps = 1;
     this.partida.guardar();
     this.ir('pueblo', 'inicio', 1.3);
+  }
+
+  // ---- Duelos entre jugadores ----
+  // Como en WoW: R con otro jugador elegido le reta; él acepta con R (o rechaza con Esc) y, tras la cuenta atrás, os
+  // podéis pegar. Nadie se debilita: el que llega a 1 PS pierde. Alejarse de donde empezó, cambiar de mapa o
+  // debilitarse (por un salvaje) es abandonar. Cada uno lleva su lado y se avisan con la `Salida` 'duelo'.
+  luchandoCon(l: Luchador): boolean { return this.duelo?.fase === 'lucha' && this.duelo.con === l.uid; }
+  retar(): void {
+    if (this.retoDe) { this.aceptarReto(); return; }
+    const o = this.objetivo, p = this.jugador;
+    if (this.duelo) { this.aviso(this.duelo.fase === 'reto' ? 'Ya has retado a alguien: espera su respuesta' : 'Ya estás en un duelo'); return; }
+    if (!o || o.rol !== 'remoto') { this.aviso('Elige a otro jugador (Tab o clic) y pulsa R para retarle a un duelo'); return; }
+    if (p.muerto || o.muerto || this.cambiando) return;
+    if (Math.hypot(o.x - p.x, o.y - p.y) > DUELO_RADIO) { this.aviso('Acércate más para retarle'); return; }
+    this.duelo = { con: o.uid, fase: 'reto', hasta: this.ahora + RETO, c: { x: p.x, y: p.y } };
+    this.salir({ tipo: 'duelo', para: redDe(o.uid), fase: 'reto' });
+    this.aviso(`Has retado a ${o.nombre} a un duelo`);
+  }
+  private aceptarReto(): void {
+    const r = this.retoDe!, o = this.luchador(r.de);
+    this.retoDe = null;
+    if (!o || this.duelo) return;
+    this.salir({ tipo: 'duelo', para: redDe(r.de), fase: 'acepta' });
+    this.empezarDuelo(o);
+  }
+  // Esc con un reto pendiente: lo rechazas (true si había uno).
+  rechazarReto(): boolean {
+    if (!this.retoDe) return false;
+    this.salir({ tipo: 'duelo', para: redDe(this.retoDe.de), fase: 'rechaza' });
+    this.retoDe = null;
+    this.aviso('Has rechazado el duelo');
+    return true;
+  }
+  private empezarDuelo(o: Luchador): void {
+    const p = this.jugador;
+    this.duelo = { con: o.uid, fase: 'cuenta', hasta: this.ahora + CUENTA, c: { x: (p.x + o.x) / 2, y: (p.y + o.y) / 2 } };
+    this.objetivo = o;
+    this.aviso(`Duelo con ${o.nombre}: empieza en ${CUENTA} s`);
+    for (let i = 0; i < CUENTA; i++) this.despues(i, () => { if (this.duelo?.fase === 'cuenta') this.rotulo(this.jugador, String(CUENTA - i), 'strong'); });
+  }
+  // Se acaba: ganas o pierdes; `avisar`: decírselo al otro. Lo que te haya puesto el duelo (estado, bufos) se quita.
+  // Si aún esperabas respuesta a tu reto, solo se retira.
+  private finDuelo(ganas: boolean, txt: string, abandona = false, avisar = true): void {
+    const d = this.duelo;
+    if (!d) return;
+    this.duelo = null;
+    if (d.fase === 'reto') { if (avisar) this.salir({ tipo: 'duelo', para: redDe(d.con), fase: 'rechaza' }); return; }
+    if (avisar) this.salir({ tipo: 'duelo', para: redDe(d.con), fase: 'fin', gana: ganas ? this.miRed : redDe(d.con), abandona });
+    const p = this.jugador;
+    if (p.estado) this.curarEstado(p);
+    p.boosts = {}; p.boostHasta = {};
+    if (p.lanza) this.cortarLanza(p);
+    this.aviso(txt);
+    if (!p.muerto) this.rotulo(p, ganas ? '¡Victoria!' : 'Derrota', ganas ? 'strong' : 'weak');
+  }
+  private pasoDuelo(): void {
+    if (this.retoDe && (this.ahora > this.retoDe.hasta || !this.luchador(this.retoDe.de))) this.retoDe = null;
+    const d = this.duelo, p = this.jugador;
+    if (!d) return;
+    const o = this.luchador(d.con);
+    if (d.fase === 'reto') {
+      if (this.ahora > d.hasta || !o) { this.duelo = null; this.aviso('Nadie ha aceptado el duelo'); }
+      return;
+    }
+    if (!o) { this.finDuelo(true, 'El otro jugador se ha ido: ¡ganas el duelo!', false, false); return; }
+    if (Math.hypot(p.x - d.c.x, p.y - d.c.y) > DUELO_RADIO) { this.finDuelo(false, 'Te has alejado: abandonas el duelo', true); return; }
+    if (d.fase === 'cuenta' && this.ahora >= d.hasta) { d.fase = 'lucha'; this.rotulo(p, '¡A luchar!', 'strong'); }
+  }
+  // Lo que llega del otro jugador (`de`: uid de su remoto).
+  recibirDuelo(fase: Extract<Salida, { tipo: 'duelo' }>['fase'], de: string, gana?: string, abandona?: boolean): void {
+    const o = this.luchador(de), nombre = o?.nombre ?? 'El otro jugador', d = this.duelo;
+    if (fase === 'reto') {
+      // Os habéis retado a la vez: empieza.
+      if (d?.con === de && d.fase === 'reto' && o) { this.salir({ tipo: 'duelo', para: redDe(de), fase: 'acepta' }); this.empezarDuelo(o); return; }
+      if (d || this.cambiando) { this.salir({ tipo: 'duelo', para: redDe(de), fase: 'rechaza' }); return; }   // ocupado
+      this.retoDe = { de, hasta: this.ahora + RETO };
+      this.aviso(`${nombre} te reta a un duelo: R para aceptar, Esc para rechazar`);
+    } else if (fase === 'acepta') {
+      if (d?.con === de && d.fase === 'reto' && o) this.empezarDuelo(o);
+    } else if (fase === 'rechaza') {
+      if (d?.con === de && d.fase === 'reto') { this.duelo = null; this.aviso(`${nombre} no acepta el duelo`); }
+      if (this.retoDe?.de === de) this.retoDe = null;   // ha retirado su reto
+    } else if (d?.con === de) {
+      const ganas = gana === this.miRed;
+      this.finDuelo(ganas, ganas ? (abandona ? `${nombre} abandona: ¡ganas el duelo!` : `¡Has ganado el duelo a ${nombre}!`) : `${nombre} gana el duelo`, false, false);
+    }
   }
 
   // ---- Objetos ----
@@ -1011,6 +1117,7 @@ export class Mundo {
   // ---- Cambiar de mapa (lo hace la escena) ----
   private ir(mapa: MapaId, desde: MapaId | 'inicio', tras = 0): void {
     this.cambiando = true;
+    this.finDuelo(false, 'Has abandonado el duelo', true);
     if (tras > 0) this.despues(tras, () => this.emitir({ tipo: 'ir', mapa, desde }));
     else this.emitir({ tipo: 'ir', mapa, desde });
   }
@@ -1054,6 +1161,7 @@ export class Mundo {
     if (this.objetivo && (this.objetivo.muerto || Math.hypot(this.objetivo.x - p.x, this.objetivo.y - p.y) > 400)) this.objetivo = null;
     this.pasoMarca();
     this.pasoHogar();
+    this.pasoDuelo();
     // Los remotos se acercan a lo último que llegó (unos 100 ms de suavizado); si está muy lejos, saltan.
     const f = 1 - Math.exp(-dt * 12);
     for (const l of this.espejo ? [...this.remotos, ...this.salvajes] : this.remotos) {
@@ -1084,7 +1192,10 @@ export class Mundo {
     l.remoto = { x: e.x, y: e.y, t: ahora, animN };
     return l;
   }
-  quitarRemoto(uid: string): void { this.remotos = this.remotos.filter(r => r.uid !== `remoto-${uid}`); }
+  quitarRemoto(uid: string): void {
+    this.remotos = this.remotos.filter(r => r.uid !== `remoto-${uid}`);
+    if (this.objetivo?.uid === `remoto-${uid}`) this.objetivo = null;
+  }
 
   // Lo que hay que mandar por la red desde la última vez (y se vacía).
   sacarSalidas(): Salida[] { return this.salidas.splice(0); }
@@ -1173,6 +1284,7 @@ export class Mundo {
   recibirGolpe(deUid: string, aUid: string, r: Golpe, efectos: { boosts?: Boosts; estado?: string }[]): void {
     const l = this.luchador(deUid) ?? null, t = this.luchador(aUid);
     if (!t || t.muerto || t.enBall || this.ajeno(t)) return;
+    if (l?.rol === 'remoto' && t.rol === 'jugador' && !this.luchandoCon(l)) return;   // otro jugador solo te pega en un duelo
     if (l) { l.ultimoCombate = t.ultimoCombate = this.ahora; this.provocar(t, l); }
     if (r.falla) return;
     if (r.dano > 0) this.danar(t, r.dano, l);

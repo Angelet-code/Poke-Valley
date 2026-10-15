@@ -18,6 +18,7 @@ import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, expDeNivel, necesitaObjetivo
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, type Atajo } from '../combate/partida';
 import { clave } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
+import { redDeLaPagina } from '../combate/red';
 
 const CW = 32, CH = 22, HUECO = 2;                       // casilla de la barra (px de juego)
 const BW = 8 + CASILLAS * CW + (CASILLAS - 1) * HUECO, BX = Math.round((VW - BW) / 2), BY = VH - 5 - (CH + 8);
@@ -150,7 +151,7 @@ export class HudAventura extends Phaser.Scene {
     this.fichaG = this.add.graphics().setDepth(9);
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(10).setVisible(false);
     // Teclas de ayuda.
-    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar', 'M mapa'];
+    const ayuda = ['Tab objetivo', 'K movimientos', 'F cambiar', 'H piedra de hogar', 'M mapa', ...(redDeLaPagina() ? ['R retar a duelo'] : [])];
     ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
 
     // Avisos.
@@ -295,8 +296,8 @@ export class HudAventura extends Phaser.Scene {
     this.pintarMarco(this.yo, 4, 4, p, p.estado ? NOMBRE_ESTADO[p.estado] : tipos, p.estado ? 0xb03a2e : C.maderaClara, m.nivel >= 100 ? 1 : (m.exp - e0) / Math.max(1, e1 - e0));
     // Objetivo.
     const o = av.objetivo;
-    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}`;
-    this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : o.rol === 'vecino' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_REACCION[av.mundo!.reaccionA(o)], 0.6));
+    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.rol === 'remoto' ? `${av.mundo!.luchandoCon(o) ? 'En duelo' : av.mundo!.duelo?.con === o.uid ? (av.mundo!.duelo.fase === 'reto' ? 'Retado' : 'Duelo en…') : 'Otro jugador'}${o.estado ? ` · ${NOMBRE_ESTADO[o.estado]}` : ''}` : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}`;
+    this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : av.mundo!.luchandoCon(o) ? 0xb03a2e : o.rol === 'vecino' || o.rol === 'remoto' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_REACCION[av.mundo!.reaccionA(o)], 0.6));
     // Reloj.
     const min = Math.floor(av.partida.estado.minuto) % (24 * 60), h = Math.floor(min / 60), mm = Math.floor(min % 60 / 10) * 10;
     this.reloj.setText(`${av.mapa.nombre}\n${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`).setLineSpacing(-1 * S);
