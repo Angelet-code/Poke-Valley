@@ -8,7 +8,7 @@ import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
 import { FORMAS } from '../data/pokedex';
 import { ESPECIES } from '../data/especies';
 import { BALL, ITEMS } from '../data/items';
-import { getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
+import { alturaDe, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
 import type { LabelTone } from '../fx/stage';
 import { dentroDe } from '../util';
 import { HOGAR_CARGA, HOGAR_CD, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
@@ -31,6 +31,14 @@ const CORREA = 330;                // px: un salvaje que te persigue más lejos 
 export const CURA_FUERA = 0.05;    // fracción de vida por segundo fuera de combate (6 s sin pegar ni recibir)
 // Alfas (docs/GDD-mundo.md §2): más grandes, con aura, el triple de vida y un golpe anunciado en el suelo.
 export const ALFA_ESCALA = 1.4;
+// Tamaño de cada especie: su altura oficial comprimida (raíz 0,4 respecto a 0,7 m, entre ×0,75 y ×1,8) y corregida a
+// medias por lo que ya mide su sprite PMD (los de los grandes vienen algo más altos; ALTO_REF = la mediana, 23 px).
+const ALTO_REF = 23;
+export function escalaEspecie(forma: string, altoSprite: number): number {
+  const f = Math.min(1.8, Math.max(0.75, (alturaDe(forma) / 0.7) ** 0.4));
+  return f * Math.sqrt(ALTO_REF / Math.max(8, altoSprite));
+}
+const ALTO_MAX = 90;               // px: tope del alto del cuerpo (barra de vida, placa, alcance)
 const ALFA_VIDA = 3;
 const ALFA_RESPAWN = 5 * 60;       // s
 const ALFA_CADA = 8;               // s entre golpes anunciados
@@ -279,14 +287,14 @@ export class Mundo {
     // Un remoto o un espejo (uid que llega de fuera) no gasta la semilla ni numera: así la simulación sale igual haya quien haya conectado.
     const fuera = rol === 'remoto' || uid !== undefined, rnd = fuera ? Math.random : this.rnd;
     const f = forma ? FORMAS[forma] : formaDe(linea, nivel), sh = miembro?.shiny ?? shiny, dex = idSprite(f.dex, sh);
-    const stats = statsDe(f.base, nivel);
+    const stats = statsDe(f.base, nivel), as = this.anatomia.alto(dex), escala = escalaEspecie(f.id, as);
     return {
       uid: fuera ? uid ?? '' : `${rol}-${++this.uid}`, rol, linea, nivel, miembro, dex, nombre: f.nombre, tipos: tiposDe(f.id),
       stats, ps: stats.hp, boosts: {}, boostHasta: {}, estado: null, estadoHasta: 0, ticEstado: 0, toxN: 0,
-      x, y, dir: 0, anda: false, alto: Math.min(56, this.anatomia.alto(dex)),
+      x, y, dir: 0, anda: false, alto: Math.min(ALTO_MAX, as * escala),
       movs: miembro ? miembro.movs : movsHasta(f.id, nivel), cd: {}, gcd: 0, anim: null, animHasta: 0, animN: 0, quietoHasta: 0,
       temple: 'agresivo', modo: 'pasear', casa: { x, y }, meta: null, espera: rnd() * 2, huirHasta: 0, ultimoCombate: -99, rival: null,
-      muerto: false, enBall: false, ruta: null, rutaA: null, rutaT: -99, atasco: 0, forma, escala: 1, golpeAlfa: 0, shiny: sh,
+      muerto: false, enBall: false, ruta: null, rutaA: null, rutaT: -99, atasco: 0, forma, escala, golpeAlfa: 0, shiny: sh,
       sexo: miembro ? miembro.sexo ?? null : tirarSexo(f.id, rnd),
     };
   }
@@ -314,8 +322,8 @@ export class Mundo {
     return l;
   }
   private hacerAlfa(l: Luchador): void {
-    l.alfa = true; l.escala = ALFA_ESCALA; l.temple = 'agresivo'; l.nombre += ' alfa';
-    l.alto = Math.min(80, l.alto * ALFA_ESCALA);
+    l.alfa = true; l.escala *= ALFA_ESCALA; l.temple = 'agresivo'; l.nombre += ' alfa';
+    l.alto = Math.min(ALTO_MAX * ALFA_ESCALA, l.alto * ALFA_ESCALA);
     l.stats = { ...l.stats, hp: l.stats.hp * ALFA_VIDA }; l.ps = l.stats.hp;
   }
   // Golpe anunciado del alfa: se para, se carga y marca en el suelo dónde estás; el círculo se llena en ALFA_AVISO s.
@@ -645,7 +653,8 @@ export class Mundo {
     const p = this.jugador, m = p.miembro!, f = formaDe(m.linea, m.nivel), frac = p.ps / p.stats.hp;
     p.nivel = m.nivel; p.dex = idSprite(f.dex, m.shiny); p.nombre = f.nombre; p.tipos = tiposDe(f.id);
     p.stats = statsDe(f.base, m.nivel); p.ps = Math.max(1, Math.round(p.stats.hp * frac));
-    p.alto = Math.min(56, this.anatomia.alto(p.dex));
+    const as = this.anatomia.alto(p.dex);
+    p.escala = escalaEspecie(f.id, as); p.alto = Math.min(ALTO_MAX, as * p.escala);
     p.anim = null; p.animHasta = 0;
     this.emitir({ tipo: 'destello', uid: p.uid, ms: 300 });
   }

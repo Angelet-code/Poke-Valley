@@ -50,7 +50,7 @@ for (const f of formas) {
   lista.sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1]));
   // Probabilidad de que salga macho (−1 = sin sexo, como Magnemite).
   const macho = sp.gender === 'N' ? -1 : sp.gender === 'M' ? 1 : sp.gender === 'F' ? 0 : sp.genderRatio?.M ?? 0.5;
-  aprende[idDe(f.nombre)] = { especie: sp.id, tipos: sp.types, gen, lista, macho };
+  aprende[idDe(f.nombre)] = { especie: sp.id, tipos: sp.types, gen, lista, macho, altura: sp.heightm };
 }
 
 // Nombres oficiales en español de los movimientos que no están en el i18n de Colleja (solo trae los de Champions).

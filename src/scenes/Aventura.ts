@@ -41,7 +41,7 @@ const MINI_ANCHO = 360;            // px de la miniatura de cada zona (mapa del 
 // Punto de vuelo (docs/GDD-mundo.md): Corviknight, el taxi volador de Galar, junto a la entrada de cada zona con un
 // farol al lado. Encima, el icono del maestro de vuelo del WoW: una bota verde con alas (pixel art, '.' = transparente).
 export const DEX_VUELO = '0823', NOMBRE_VUELO = 'Corviknight';
-const VUELO_CERCA = 40, FAROL_DX = 30;
+const VUELO_CERCA = 50, FAROL_DX = 40, VUELO_ESCALA = 2;   // el taxi, el doble de grande que un Corviknight
 const ICONO_VUELO = [
   'ww.......ww',
   'wWw.....wWw',
@@ -277,11 +277,11 @@ export class Aventura extends Phaser.Scene {
     const { x, y } = sitio, nuevos: Bloque[] = [];
     const farol = porId.get(mapa.id === 'pueblo' ? 'farola' : 'farola_madera') ?? porId.get('farola');
     if (farol) this.ponerElemento({ id: farol.id, x: x - FAROL_DX, y: y - 2 }, farol, nuevos);
-    nuevos.push({ x, y: y + 3, w: 24, h: 10, rombo: true });
+    nuevos.push({ x, y: y + 3, w: 36, h: 14, rombo: true });
     mundo.anadirBloques(nuevos);
     bloques.push(...nuevos);
-    const an = ancla(DEX_VUELO), alto = Math.min(56, an.alto), ancho = Math.max(10, Math.min(34, an.ancho * 0.75));
-    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
+    const an = ancla(DEX_VUELO), alto = an.alto * VUELO_ESCALA, ancho = Math.max(10, Math.min(34, an.ancho * 0.75)) * VUELO_ESCALA;
+    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y).setScale(VUELO_ESCALA);
     poner(spr, DEX_VUELO, 'Idle', 0);
     const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
     const placa = this.add.text(x, y - alto - 2, `${NOMBRE_VUELO}\n‹Vuelos›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#9be38a', stroke: '#16301a', strokeThickness: 2 * S, align: 'center' })
@@ -444,9 +444,9 @@ export class Aventura extends Phaser.Scene {
   }
   // Destello de shiny: unas estrellas que salen del cuerpo y se apagan (como al entrar en combate en los juegos).
   private destello(l: Luchador): void {
-    const cy = l.y - l.alto * 0.5 * l.escala;
+    const cy = l.y - l.alto * 0.5;
     for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * Math.PI * 2 + Math.random() * 0.5, r = (12 + l.alto * 0.4) * l.escala;
+      const a = (i / 7) * Math.PI * 2 + Math.random() * 0.5, r = 12 * l.escala + l.alto * 0.4;
       const st = this.add.text(l.x, cy, '✦', { fontFamily: '"Segoe UI Symbol", "Segoe UI", sans-serif', fontSize: `${(8 + Math.random() * 5) * S}px`, color: '#fff6b0', stroke: '#c8a020', strokeThickness: 1 * S })
         .setOrigin(0.5).setScale(0.2 / S).setDepth(1e5).setAlpha(0);
       st.resetPipeline();
@@ -732,7 +732,8 @@ export class Aventura extends Phaser.Scene {
         poner(spr, v.dex, l.anim, l.dir, { startFrame: Math.max(0, fr - 1) });
       }
     }
-    spr.setPosition(l.x + f.dx / k, l.y + f.dy / k).setScale(f.sx * l.escala, f.sy * l.escala).setAngle(f.rot).setAlpha(f.alpha * (l.enBall ? 0 : 1)).setDepth(l.y);
+    const e = S >= 3 ? Math.round(l.escala * S) / S : l.escala;   // píxeles de pantalla enteros por píxel del sprite
+    spr.setPosition(l.x + f.dx / k, l.y + f.dy / k).setScale(f.sx * e, f.sy * e).setAngle(f.rot).setAlpha(f.alpha * (l.enBall ? 0 : 1)).setDepth(l.y);
     // Golpe: silueta blanca. Si no, el tinte de su estado (quemado rojizo, envenenado morado, congelado azul…).
     if (f.flash > 0.5) { if (!spr.tintFill) spr.setTintFill(0xffffff); }
     else {
