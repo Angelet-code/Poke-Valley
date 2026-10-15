@@ -70,6 +70,11 @@ CON_SUELO = {"casa_grande", "almacen", "tienda", "casa_cabana", "casa_larga", "c
 # Los que tienen dentro un hueco grande del color del fondo que debe verse transparente (el corral de la valla). En el
 # resto los huecos se rellenan: el brillo verdoso de lo alto de las rocas tiene el color del fondo.
 ABRIR_HUECOS = {"valla"}
+# Piezas de biomas con huecos entre ramas, juncos o tablas (el fondo verde se veia entre ellos): se abren todos los
+# huecos de color del fondo a partir de HUECO_FINO px. Rocas, estatuas y columnas no: ahi es brillo, no hueco.
+HUECOS_FINOS = {"arbol_muerto", "juncos_secos", "cerca_rota", "hierba_duna", "andamio", "arbusto_seco", "pino_seco",
+                "arbol_flores", "arco_ruinas", "farol_fuego_fatuo", "red_pesca", "palmera", "arbol_quemado", "pino_nevado"}
+HUECO_FINO = 40
 # Tipo en el juego distinto del de la huella: el nenúfar va a ras de suelo como un detalle, pero no puede ser
 # "detalle", porque Aventura reparte los detalles por el césped (y saldrían nenúfares en la hierba).
 TIPO_JUEGO = {"nenufar": "losa", "seta": "losa"}
@@ -169,7 +174,8 @@ def main():
         if not x2.exists():
             subprocess.run([sys.executable, "-I", str(RAIZ / "tools/ampliar.py"), "--modelo", "RealESRGAN_x4plus_anime_6B.safetensors",
                             "--entrada", str(src), "--salida", str(x2)], check=True)
-        e = recortar(x2, id_, tipo, OUT, abrir_huecos=id_ in ABRIR_HUECOS)
+        e = recortar(x2, id_, tipo, OUT, abrir_huecos=id_ in ABRIR_HUECOS or id_ in HUECOS_FINOS,
+                     min_hueco=HUECO_FINO if id_ in HUECOS_FINOS else 1500)
         e["k"] = round(ancho_mundo(id_, klein) / (e["w"] * F / PNG_X), 4)
         if id_ in REPINTADOS:
             print("  alineado con el dibujo, desplazamiento", alinear(id_, klein, e))

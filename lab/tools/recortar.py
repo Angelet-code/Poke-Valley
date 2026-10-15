@@ -25,7 +25,7 @@ from extraer import calcular_huella  # noqa: E402
 CRUZ = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
 
 
-def recortar(src, nombre, tipo, out_dir, tol=26.0, abrir_huecos=True):
+def recortar(src, nombre, tipo, out_dir, tol=26.0, abrir_huecos=True, min_hueco=1500):
     a = np.asarray(Image.open(src).convert("RGB")).copy()
     H, W = a.shape[:2]
     borde = np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]]).astype(np.float32)
@@ -53,12 +53,13 @@ def recortar(src, nombre, tipo, out_dir, tol=26.0, abrir_huecos=True):
     m = ndi.binary_fill_holes(comp == int(np.argmax(tam)) + 1)
     # Huecos grandes de color de fondo encerrados por el elemento (el interior de un corral de valla):
     # siguen siendo transparentes. abrir_huecos=False los deja opacos (estilo Arcane: el brillo verdoso de lo alto
-    # de las rocas tiene el color del fondo y quedaba agujereado).
+    # de las rocas tiene el color del fondo y quedaba agujereado). min_hueco: area minima (px) de un hueco que se abre;
+    # baja para ramas, juncos y tablas, donde los huecos entre piezas son pequenos.
     huecos = es_fondo & ~exterior
     lh, nh = ndi.label(huecos, structure=CRUZ)
     if nh and abrir_huecos:
         th = ndi.sum(huecos, lh, index=np.arange(1, nh + 1))
-        m &= ~np.isin(lh, [i + 1 for i, t in enumerate(th) if t > 1500])
+        m &= ~np.isin(lh, [i + 1 for i, t in enumerate(th) if t > min_hueco])
     nucleo = ndi.binary_erosion(m, iterations=1)
     anillo = ndi.binary_dilation(m, iterations=1) & ~nucleo
     alfa = nucleo.astype(np.float32)
