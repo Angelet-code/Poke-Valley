@@ -38,11 +38,9 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   - Clic derecho en una casilla la vacía.
   - Cada Pokémon tiene su propia barra.
   - Al aprender un movimiento, este va a la primera casilla libre.
-- **Enfriamientos**:
-  - Hay un global de 1,1 s y otro propio de cada movimiento, que crece con la potencia: Placaje 1,1 s, Hoja
-    Afilada ~2 s, Rayo Solar ~6,5 s.
-  - Los de estado tardan 8 s, los que causan un estado 12 s y los de curar 14 s.
-  - La casilla se oscurece mientras se recarga.
+- **Enfriamientos y lanzamientos**: global de 1,1 s; cada movimiento es instantáneo, lanzado o canalizado y tiene
+  su enfriamiento según el modelo de §3.2 (`perfil()` en `reglas.ts`). Todo se acorta con la celeridad (Velocidad).
+  La casilla se oscurece mientras se recarga.
 - **Alcance**: 30 px para los de contacto y 150 px para el resto. El número de la casilla se pone rojo si el
   objetivo está lejos.
 - **Fórmulas oficiales**:
@@ -100,7 +98,7 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   Zidra 50 %.
 - **Debilitarse**: vuelves al pueblo con la vida entera, sin otra penalización.
 
-### 3.2 Balance de movimientos (propuesta, 2026-10-15; sin implementar)
+### 3.2 Balance de movimientos (2026-10-15; fases 1 y 2 hechas)
 Estudio: `node tools/balance_movimientos.mjs` clasifica los 389 movimientos y escribe
 [balance-movimientos.md](balance-movimientos.md) (ahora / propuesta, movimiento a movimiento).
 
@@ -153,9 +151,19 @@ a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 bot�
 - Los salvajes siguen las mismas reglas: lanzan con barra visible y se les puede interrumpir.
 
 **Fases**:
-1. `perfil(m)` en `reglas.ts` con el modelo (lanzamiento, tiempo, CD, forma, extra) y celeridad; el HUD lo enseña en
-   la ficha del movimiento.
-2. Barra de lanzamiento (tuya y del objetivo), moverse cancela, interrumpir, canalizados.
+1. ✔ `perfil(m)` en `reglas.ts` (lanzamiento, tiempo, CD, tics, interrumpe, agotado), `celeridad()` y `velAndar()`.
+   La ficha del movimiento (barra o panel K) dice cómo se lanza y lo que tarda con tu celeridad.
+2. ✔ Lanzamientos en `mundo.ts` (`Luchador.lanza`, `pasoLanza`, `soltar`, `cortarLanza`):
+   - El global empieza al pulsar; el enfriamiento, al soltarlo (en los canalizados, al empezar).
+   - Moverte corta lo que lanzas; dormirte o congelarte también. Si al acabar el objetivo está fuera de alcance
+     (+20 px), no sale.
+   - Canalizado: el golpe se reparte en tics (los golpes del multigolpe o tercios del drenaje); el efecto secundario,
+     solo en el primero.
+   - Interrumpir: un golpe que hace retroceder corta el lanzamiento y ese movimiento tarda 4 s en volver.
+   - Agotado (Hiperrayo): 2 s sin moverse ni actuar.
+   - Los salvajes lanzan igual (se quedan quietos) y se ven en las fotos del multijugador (`ln`).
+   - HUD: tu barra encima de la de atajos (naranja si se llena, verde si canalizas; la piedra de hogar, azul), la del
+     objetivo bajo su marco y una línea fina bajo la vida de cada salvaje que lanza.
 3. Áreas: retícula con el ratón, alrededor, cono, trampas; IA de los salvajes.
 4. Utilidad: carga, salto atrás, escudo, salto, velocidad.
 5. Hace falta exportar más datos en `tools/datos_combate.mjs` (`volatileStatus`, `sideCondition`, `selfdestruct`)
