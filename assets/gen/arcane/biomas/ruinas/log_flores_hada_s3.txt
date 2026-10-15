@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\flores_hada_s3_0.png
+13.1s

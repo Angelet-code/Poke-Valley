@@ -1,0 +1,12 @@
+costa|arena|warm pale beach sand
+costa|arena_humeda|darker wet beach sand with faint ripples
+cantera|grava|grey gravel and dusty rocky ground
+cantera|tierra_roca|dry brown cracked earth with small stones
+pantano|barro|dark wet swamp mud
+pantano|musgo|dark murky green moss and swamp grass
+ruinas|cesped_flores|soft green grass with a few tiny pale flowers
+ruinas|losas|old worn grey stone paving
+volcan|ceniza|dark grey volcanic ash
+volcan|roca_volcanica|cracked dark volcanic rock with faint glowing orange cracks
+nieve|nieve|fresh soft white snow
+nieve|hielo|pale blue cracked ice

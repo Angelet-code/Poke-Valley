@@ -181,3 +181,55 @@ ponerlas en el Lago Celeste con los mismos Pokémon y comparar capturas.
     [capturas/comparativa_piezas.png](../assets/gen/ab_lago/capturas/comparativa_piezas.png) (las 3 piezas en el
     juego, 4 estilos) y
     [capturas/comparativa_escenas.png](../assets/gen/ab_lago/capturas/comparativa_escenas.png) (la escena entera).
+
+## 4. Biomas futuros (2026-10-15)
+Seis biomas más, uno por grupo de tipos, para las zonas que vengan después de la v1. Cada uno tiene su paleta de suelo
+(dos texturas) y su kit de piezas en estilo Arcane (`assets/gen/arcane/biomas/`). Las piezas van ya en el catálogo
+Arcane (`lab/assets/elementos_arcane/`), así que una zona nueva solo necesita su generador (como `bosque()` o `lago()`
+en `src/data/bosque.ts`) y sus colores de suelo.
+
+| Bioma | Tipos | Nivel | Especies (líneas de `data/pokedex.ts`) | Hito |
+|---|---|---|---|---|
+| **Costa** | Agua, Volador | 8-14 | magikarp, wailmer, lapras (rara), pidgey, rookidee, pachirisu | faro |
+| **Cantera** | Roca, Tierra, Lucha, Acero | 10-16 | geodude, onix, larvitar, sudowoodo, diglett, drilbur, mudbray, rhyhorn, machop, timburr, makuhita, aron, magnemite | entrada de la cueva (mazmorra) |
+| **Pantano** | Veneno, Fantasma, Siniestro | 12-18 | grimer, trubbish, zubat, gastly, litwick, misdreavus, poochyena, sableye, murkrow, spinarak | lápidas y farol de fuego fatuo |
+| **Ruinas** | Psíquico, Hada | 14-20 | abra, ralts, natu, clefairy, togepi, flabebe | arco de las ruinas y altar |
+| **Volcán** | Fuego, Dragón | 18-24 | growlithe, slugma, torkoal, gible, axew, dratini, druddigon | fósil de dragón |
+| **Cumbres** | Hielo | 20-26 | vanillite, snorunt, swinub, bergmite, beldum | estanque helado |
+
+Orden propuesto en el mundo: Bosque → Lago → **Costa** (sale del lago) y **Cantera** (sale del bosque) → **Pantano** →
+**Ruinas** → **Volcán** y **Cumbres** al final. Cada bioma, su alfa en el hito.
+
+**Suelos** (`suelos.txt`), dos por bioma:
+- costa: arena y arena húmeda;
+- cantera: grava y tierra agrietada;
+- pantano: barro y musgo;
+- ruinas: césped con flores y losas viejas;
+- volcán: ceniza y roca volcánica;
+- cumbres: nieve y hielo.
+
+El agua de cada zona sale de la paleta, igual que en el lago. La lava y el lodo tóxico van como piezas planas, igual
+que el estanque: `charco_lava`, `charco_toxico`.
+
+**Piezas** (`piezas.txt`: bioma, id, tipo y ancho en el mundo). 53 en total; todas en el catálogo Arcane (93 piezas
+con las de las tres zonas).
+- Elegidas: [hoja_biomas.png](../lab/assets/elementos_arcane/hoja_biomas.png).
+- Las semillas elegidas están en `assets/gen/arcane/biomas/elegidos.json`, y las 3 semillas de cada pieza en
+  `assets/gen/arcane/biomas/<bioma>/hoja.png`.
+- Para rehacer una: cambiar su semilla en `elegidos.json` y ejecutar `python -I lab/tools/catalogo_arcane.py --solo <id>`.
+
+| Bioma | Piezas |
+|---|---|
+| Costa | palmera, roca_costa, conchas (solo la estrella de mar: las conchas sueltas se pierden al recortar), madera_deriva, poza_marea, hierba_duna, barca, **faro**, red_pesca |
+| Cantera | pino_seco, aguja_roca, roca_mineral, **entrada_cueva**, vagoneta, andamio, arbusto_seco, grava, cristal_acero |
+| Pantano | arbol_muerto, seta_toxica, lapida, charco_toxico, tronco_podrido, juncos_secos, cerca_rota, roca_musgo, farol_fuego_fatuo |
+| Ruinas | columna_rota, estatua (bestia guardiana; la primera tanda salía con gárgolas humanoides, en `ruinas/v1_estatua/`), **arco_ruinas**, altar, cristal_psiquico, losas_ruina, arbol_flores, muro_roto, flores_hada |
+| Volcán | roca_basalto, arbol_quemado, charco_lava, fumarola, obsidiana, roca_magma, **fosil_dragon**, ceniza, cristal_fuego |
+| Cumbres | pino_nevado, roca_nevada, monton_nieve, carambanos, **estanque_helado**, arbusto_nevado, tronco_nevado, cristal_hielo |
+
+**Suelos de cada bioma** (`lab/assets/suelo_arcane/<bioma>/`):
+- Repetibles con `tools/quilt.py --kind color --sin-matiz`, a partir de la textura de Klein reducida a 360 px.
+- Hoja 2×2: [hoja_biomas.png](../lab/assets/suelo_arcane/hoja_biomas.png).
+- Colores medios para la paleta de cada zona (`Paleta` de Terrain): `lab/assets/suelo_arcane/paletas_biomas.json`.
+- Las más flojas: las **losas de las ruinas**, porque el quilt rompe la rejilla (mejor el suelo 2 de Terrain, que
+  hace losas en mosaico), y la **roca volcánica**, con las grietas de lava a trozos.

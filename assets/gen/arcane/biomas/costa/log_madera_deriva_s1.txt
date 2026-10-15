@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\costa\madera_deriva_s1_0.png
+47.2s

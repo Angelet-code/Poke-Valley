@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\columna_rota_s1_0.png
+39.1s

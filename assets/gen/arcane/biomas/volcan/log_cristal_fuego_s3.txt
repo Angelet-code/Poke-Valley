@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\volcan\cristal_fuego_s3_0.png
+12.1s

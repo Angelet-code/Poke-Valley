@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\cantera\andamio_s2_0.png
+12.0s

@@ -26,6 +26,7 @@ from PIL import Image, ImageFilter
 
 COLOR = None   # (r, g, b, tol) para --kind color
 OK = None
+SIN_MATIZ = False   # --sin-matiz: solo la distancia de color (texturas grises: grava, ceniza, nieve)
 
 
 def class_mask(a, kind):
@@ -33,6 +34,8 @@ def class_mask(a, kind):
     if kind == "color":
         cr, cg, cb, tol = COLOR
         # además, el mismo matiz (orden de canales respecto al azul): el agua oscura no cuela como césped
+        if SIN_MATIZ:
+            return (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2 < tol * tol
         return (((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2 < tol * tol)
                 & (np.sign(g - b) == np.sign(cg - cb)) & (np.sign(r - b) == np.sign(cr - cb)) & (g - b > (cg - cb) * 0.4))
     if kind in ("sand", "flag"):
@@ -87,6 +90,7 @@ def main():
     a.add_argument("--kind", choices=["sand", "grass", "flag", "color"], required=True)
     a.add_argument("--color", help="R,G,B para --kind color")
     a.add_argument("--tol", type=float, default=40)
+    a.add_argument("--sin-matiz", action="store_true", help="--kind color sin comparar el matiz")
     a.add_argument("--ok", type=float, help="fracción mínima de la clase en cada bloque candidato")
     a.add_argument("--size", type=int, default=512)
     a.add_argument("--block", type=int, default=96)
@@ -94,7 +98,8 @@ def main():
     a.add_argument("--seed", type=int, default=1)
     a.add_argument("--mask-out")
     o = a.parse_args()
-    global COLOR, OK
+    global COLOR, OK, SIN_MATIZ
+    SIN_MATIZ = o.sin_matiz
     if o.color:
         COLOR = (*map(int, o.color.split(",")), o.tol)
     OK = o.ok

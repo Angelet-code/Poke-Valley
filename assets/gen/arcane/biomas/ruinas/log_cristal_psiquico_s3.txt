@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\cristal_psiquico_s3_0.png
+12.2s

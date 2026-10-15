@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\cantera\cristal_acero_s1_0.png
+32.1s

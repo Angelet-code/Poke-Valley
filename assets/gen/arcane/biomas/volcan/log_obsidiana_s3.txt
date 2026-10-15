@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\volcan\obsidiana_s3_0.png
+13.1s

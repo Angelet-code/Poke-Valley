@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\cantera\suelo\tierra_roca_s2_0.png
+11.1s

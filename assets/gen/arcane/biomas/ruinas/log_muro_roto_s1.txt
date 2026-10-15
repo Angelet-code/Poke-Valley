@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\muro_roto_s1_0.png
+28.1s

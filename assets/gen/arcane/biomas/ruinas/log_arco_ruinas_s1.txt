@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\arco_ruinas_s1_0.png
+39.1s

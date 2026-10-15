@@ -1,0 +1,53 @@
+costa|palmera|arbol|80|A single leaning coconut palm tree with a curved trunk and a few big fronds
+costa|roca_costa|roca|46|A single grey seaside boulder covered with barnacles and a little green seaweed
+costa|conchas|losa|22|A few seashells and an orange starfish lying flat on the ground
+costa|madera_deriva|roca|50|A bleached driftwood log lying on the ground with a few twisted branches
+costa|poza_marea|estanque|70|A small rocky tide pool with clear blue water, a few pebbles and a sea anemone inside, flat on the ground
+costa|hierba_duna|detalle|24|A tuft of tall pale dune grass
+costa|barca|roca|70|A small old wooden rowboat resting on the ground, with two oars inside
+costa|faro|casa|90|A small round white and red striped stone lighthouse with a glowing lamp room on top
+costa|red_pesca|roca|40|A wooden post with an old fishing net hanging on it and a small crab trap at its foot
+cantera|pino_seco|arbol|62|A single scraggly dry pine tree with sparse dark needles
+cantera|aguja_roca|roca|50|A single tall jagged rock spire
+cantera|roca_mineral|roca|44|A grey boulder with glinting veins of blue and gold ore
+cantera|entrada_cueva|casa|110|A cave entrance: a dark arched opening in a rough rock face reinforced with wooden support beams
+cantera|vagoneta|roca|44|A wooden mine cart full of rocks on a short piece of rail track
+cantera|andamio|roca|60|A rickety wooden scaffold of beams and planks with a hanging lantern
+cantera|arbusto_seco|detalle|24|A small dry thorny shrub
+cantera|grava|losa|40|A patch of scattered grey gravel and small stones, flat on the ground
+cantera|cristal_acero|roca|30|A cluster of sharp metallic silver steel crystals growing from a rock
+pantano|arbol_muerto|arbol|80|A single gnarled dead swamp tree with twisted bare branches and long hanging grey moss
+pantano|seta_toxica|detalle|20|A cluster of purple poisonous mushrooms with glowing spots
+pantano|lapida|roca|22|An old cracked mossy gravestone tilted to one side, no text
+pantano|charco_toxico|estanque|64|A small bubbling pool of purple toxic sludge, flat on the ground
+pantano|tronco_podrido|roca|52|A rotten hollow log covered in moss and small fungi lying on the ground
+pantano|juncos_secos|roca|22|A clump of dark brown withered reeds
+pantano|cerca_rota|roca|56|A broken old wooden fence segment with a fallen plank
+pantano|roca_musgo|roca|42|A single rounded boulder half covered with thick dark green moss
+pantano|farol_fuego_fatuo|roca|16|A crooked wooden post with a small old lantern holding a ghostly blue-green flame
+ruinas|columna_rota|roca|30|A broken ancient stone column, cracked, with ivy climbing it
+ruinas|estatua|roca|44|An ancient weathered stone statue of a mythical four-legged beast like a lion-dog guardian with a long tail, sitting on a pedestal, an animal, not humanoid, no human body
+ruinas|arco_ruinas|casa|100|An ancient overgrown stone archway with carved runes, vines hanging from it
+ruinas|altar|roca|48|An ancient round stone altar with a softly glowing pink rune in the middle
+ruinas|cristal_psiquico|roca|30|A cluster of glowing pink and violet psychic crystals
+ruinas|losas_ruina|losa|80|A patch of cracked ancient carved stone floor tiles with moss in the cracks, flat on the ground
+ruinas|arbol_flores|arbol|80|A single blossoming tree with a canopy of pale pink flowers and a slender trunk
+ruinas|muro_roto|roca|80|A broken ancient stone wall segment with crumbling top and ivy
+ruinas|flores_hada|detalle|22|A small cluster of pastel pink and white fairy flowers with sparkles
+volcan|roca_basalto|roca|44|A group of dark hexagonal basalt column rocks
+volcan|arbol_quemado|arbol|62|A single charred dead tree, black and burnt, with a few glowing embers
+volcan|charco_lava|estanque|64|A small pool of glowing orange molten lava with a dark crust edge, flat on the ground
+volcan|fumarola|detalle|30|A cracked volcanic vent in the ground releasing a plume of white steam
+volcan|obsidiana|roca|32|A cluster of sharp glossy black obsidian shards
+volcan|roca_magma|roca|46|A dark boulder with glowing orange magma cracks
+volcan|fosil_dragon|roca|90|A huge ancient dragon skull fossil half buried in the ground
+volcan|ceniza|losa|40|A patch of grey volcanic ash with a few small embers, flat on the ground
+volcan|cristal_fuego|roca|30|A cluster of glowing red fire crystals growing from a dark rock
+nieve|pino_nevado|arbol|70|A single tall pine tree with snow on its branches
+nieve|roca_nevada|roca|46|A single grey boulder with a thick cap of snow
+nieve|monton_nieve|roca|40|A soft round snow drift mound
+nieve|carambanos|roca|36|A cluster of sharp blue ice crystal spikes
+nieve|estanque_helado|estanque|90|A small frozen pond with cracked pale blue ice and snowy edges, flat on the ground
+nieve|arbusto_nevado|roca|30|A small round bush covered with snow
+nieve|tronco_nevado|roca|50|A fallen log covered with snow lying on the ground
+nieve|cristal_hielo|roca|30|A cluster of glowing pale blue ice crystals

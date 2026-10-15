@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\cantera\roca_mineral_s3_0.png
+12.2s

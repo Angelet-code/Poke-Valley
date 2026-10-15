@@ -900,6 +900,1206 @@
     "dy": 242
    },
    "k": 0.1836
+  },
+  {
+   "id": "palmera",
+   "tipo": "arbol",
+   "archivo": "palmera.png",
+   "w": 1291,
+   "h": 1625,
+   "ancla": [
+    645,
+    1624
+   ],
+   "huella": [
+    490,
+    1396,
+    800,
+    1624
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/palmera_s2_0.png",
+   "sombra": {
+    "archivo": "palmera_sombra.png",
+    "w": 1053,
+    "h": 1664,
+    "dx": 58,
+    "dy": 36
+   },
+   "k": 0.3718
+  },
+  {
+   "id": "roca_costa",
+   "tipo": "roca",
+   "archivo": "roca_costa.png",
+   "w": 1385,
+   "h": 1290,
+   "ancla": [
+    692,
+    1289
+   ],
+   "huella": [
+    166,
+    747,
+    1218,
+    1237
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/roca_costa_s1_0.png",
+   "k": 0.1993
+  },
+  {
+   "id": "conchas",
+   "tipo": "losa",
+   "archivo": "conchas.png",
+   "w": 875,
+   "h": 820,
+   "ancla": [
+    437,
+    818
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/costa/conchas_s3_0.png",
+   "sombra": {
+    "archivo": "conchas_sombra.png",
+    "w": 1163,
+    "h": 1099,
+    "dx": -127,
+    "dy": -167
+   },
+   "k": 0.1509
+  },
+  {
+   "id": "madera_deriva",
+   "tipo": "roca",
+   "archivo": "madera_deriva.png",
+   "w": 1596,
+   "h": 1430,
+   "ancla": [
+    798,
+    1429
+   ],
+   "huella": [
+    191,
+    828,
+    1404,
+    1371
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/madera_deriva_s1_0.png",
+   "sombra": {
+    "archivo": "madera_deriva_sombra.png",
+    "w": 302,
+    "h": 238,
+    "dx": -4,
+    "dy": 1216
+   },
+   "k": 0.188
+  },
+  {
+   "id": "poza_marea",
+   "tipo": "estanque",
+   "archivo": "poza_marea.png",
+   "w": 1396,
+   "h": 1124,
+   "ancla": [
+    698,
+    1123
+   ],
+   "huella": [
+    55,
+    111,
+    1340,
+    1089
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/poza_marea_s2_0.png",
+   "k": 0.3009
+  },
+  {
+   "id": "hierba_duna",
+   "tipo": "detalle",
+   "archivo": "hierba_duna.png",
+   "w": 1643,
+   "h": 1681,
+   "ancla": [
+    821,
+    1680
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/costa/hierba_duna_s1_0.png",
+   "k": 0.0876
+  },
+  {
+   "id": "barca",
+   "tipo": "roca",
+   "archivo": "barca.png",
+   "w": 1253,
+   "h": 1442,
+   "ancla": [
+    626,
+    1441
+   ],
+   "huella": [
+    150,
+    835,
+    1102,
+    1383
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/barca_s2_0.png",
+   "sombra": {
+    "archivo": "barca_sombra.png",
+    "w": 1332,
+    "h": 936,
+    "dx": -54,
+    "dy": 539
+   },
+   "k": 0.3352
+  },
+  {
+   "id": "faro",
+   "tipo": "casa",
+   "archivo": "faro.png",
+   "w": 974,
+   "h": 1508,
+   "ancla": [
+    487,
+    1506
+   ],
+   "huella": [
+    20,
+    1085,
+    943,
+    1492
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/faro_s2_0.png",
+   "sombra": {
+    "archivo": "faro_sombra.png",
+    "w": 1948,
+    "h": 1541,
+    "dx": -476,
+    "dy": 47
+   },
+   "k": 0.5544
+  },
+  {
+   "id": "red_pesca",
+   "tipo": "roca",
+   "archivo": "red_pesca.png",
+   "w": 1174,
+   "h": 1706,
+   "ancla": [
+    587,
+    1705
+   ],
+   "huella": [
+    140,
+    988,
+    1033,
+    1636
+   ],
+   "origen": "assets/gen/arcane/biomas/costa/red_pesca_s1_0.png",
+   "sombra": {
+    "archivo": "red_pesca_sombra.png",
+    "w": 1150,
+    "h": 435,
+    "dx": -166,
+    "dy": 1266
+   },
+   "k": 0.2044
+  },
+  {
+   "id": "pino_seco",
+   "tipo": "arbol",
+   "archivo": "pino_seco.png",
+   "w": 1589,
+   "h": 1720,
+   "ancla": [
+    794,
+    1719
+   ],
+   "huella": [
+    603,
+    1478,
+    985,
+    1719
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/pino_seco_s1_0.png",
+   "sombra": {
+    "archivo": "pino_seco_sombra.png",
+    "w": 1542,
+    "h": 1406,
+    "dx": 0,
+    "dy": 341
+   },
+   "k": 0.2341
+  },
+  {
+   "id": "aguja_roca",
+   "tipo": "roca",
+   "archivo": "aguja_roca.png",
+   "w": 1032,
+   "h": 1589,
+   "ancla": [
+    516,
+    1588
+   ],
+   "huella": [
+    123,
+    920,
+    908,
+    1524
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/aguja_roca_s2_0.png",
+   "sombra": {
+    "archivo": "aguja_roca_sombra.png",
+    "w": 1712,
+    "h": 1535,
+    "dx": -488,
+    "dy": 61
+   },
+   "k": 0.2907
+  },
+  {
+   "id": "roca_mineral",
+   "tipo": "roca",
+   "archivo": "roca_mineral.png",
+   "w": 1356,
+   "h": 1241,
+   "ancla": [
+    678,
+    1239
+   ],
+   "huella": [
+    162,
+    717,
+    1193,
+    1189
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/roca_mineral_s2_0.png",
+   "k": 0.1947
+  },
+  {
+   "id": "entrada_cueva",
+   "tipo": "casa",
+   "archivo": "entrada_cueva.png",
+   "w": 1754,
+   "h": 1210,
+   "ancla": [
+    877,
+    1208
+   ],
+   "huella": [
+    223,
+    847,
+    1662,
+    1194
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/entrada_cueva_s2_0.png",
+   "sombra": {
+    "archivo": "entrada_cueva_sombra.png",
+    "w": 1747,
+    "h": 340,
+    "dx": -21,
+    "dy": 865
+   },
+   "k": 0.3763
+  },
+  {
+   "id": "vagoneta",
+   "tipo": "roca",
+   "archivo": "vagoneta.png",
+   "w": 1511,
+   "h": 1328,
+   "ancla": [
+    755,
+    1326
+   ],
+   "huella": [
+    181,
+    768,
+    1329,
+    1272
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/vagoneta_s2_0.png",
+   "sombra": {
+    "archivo": "vagoneta_sombra.png",
+    "w": 1819,
+    "h": 1242,
+    "dx": -314,
+    "dy": 80
+   },
+   "k": 0.1747
+  },
+  {
+   "id": "andamio",
+   "tipo": "roca",
+   "archivo": "andamio.png",
+   "w": 1079,
+   "h": 1707,
+   "ancla": [
+    539,
+    1706
+   ],
+   "huella": [
+    129,
+    989,
+    949,
+    1637
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/andamio_s2_0.png",
+   "sombra": {
+    "archivo": "andamio_sombra.png",
+    "w": 1092,
+    "h": 622,
+    "dx": -45,
+    "dy": 1106
+   },
+   "k": 0.3336
+  },
+  {
+   "id": "arbusto_seco",
+   "tipo": "detalle",
+   "archivo": "arbusto_seco.png",
+   "w": 1063,
+   "h": 1369,
+   "ancla": [
+    531,
+    1368
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/cantera/arbusto_seco_s2_0.png",
+   "sombra": {
+    "archivo": "arbusto_seco_sombra.png",
+    "w": 1297,
+    "h": 1023,
+    "dx": 35,
+    "dy": 371
+   },
+   "k": 0.1355
+  },
+  {
+   "id": "grava",
+   "tipo": "losa",
+   "archivo": "grava.png",
+   "w": 1614,
+   "h": 1116,
+   "ancla": [
+    807,
+    1115
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/cantera/grava_s2_0.png",
+   "k": 0.1487
+  },
+  {
+   "id": "cristal_acero",
+   "tipo": "roca",
+   "archivo": "cristal_acero.png",
+   "w": 1334,
+   "h": 1469,
+   "ancla": [
+    667,
+    1468
+   ],
+   "huella": [
+    160,
+    851,
+    1173,
+    1409
+   ],
+   "origen": "assets/gen/arcane/biomas/cantera/cristal_acero_s2_0.png",
+   "sombra": {
+    "archivo": "cristal_acero_sombra.png",
+    "w": 1360,
+    "h": 1228,
+    "dx": -36,
+    "dy": 199
+   },
+   "k": 0.1349
+  },
+  {
+   "id": "arbol_muerto",
+   "tipo": "arbol",
+   "archivo": "arbol_muerto.png",
+   "w": 1716,
+   "h": 1773,
+   "ancla": [
+    858,
+    1772
+   ],
+   "huella": [
+    652,
+    1523,
+    1063,
+    1772
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/arbol_muerto_s2_0.png",
+   "sombra": {
+    "archivo": "arbol_muerto_sombra.png",
+    "w": 1616,
+    "h": 1065,
+    "dx": -35,
+    "dy": 733
+   },
+   "k": 0.2797
+  },
+  {
+   "id": "seta_toxica",
+   "tipo": "detalle",
+   "archivo": "seta_toxica.png",
+   "w": 1209,
+   "h": 1326,
+   "ancla": [
+    604,
+    1325
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/pantano/seta_toxica_s2_0.png",
+   "sombra": {
+    "archivo": "seta_toxica_sombra.png",
+    "w": 1270,
+    "h": 555,
+    "dx": -6,
+    "dy": 787
+   },
+   "k": 0.0993
+  },
+  {
+   "id": "lapida",
+   "tipo": "roca",
+   "archivo": "lapida.png",
+   "w": 1433,
+   "h": 1485,
+   "ancla": [
+    716,
+    1484
+   ],
+   "huella": [
+    171,
+    860,
+    1261,
+    1424
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/lapida_s1_0.png",
+   "sombra": {
+    "archivo": "lapida_sombra.png",
+    "w": 1409,
+    "h": 893,
+    "dx": -1,
+    "dy": 594
+   },
+   "k": 0.0921
+  },
+  {
+   "id": "charco_toxico",
+   "tipo": "estanque",
+   "archivo": "charco_toxico.png",
+   "w": 1305,
+   "h": 957,
+   "ancla": [
+    652,
+    956
+   ],
+   "huella": [
+    52,
+    94,
+    1252,
+    927
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/charco_toxico_s1_0.png",
+   "k": 0.2943
+  },
+  {
+   "id": "tronco_podrido",
+   "tipo": "roca",
+   "archivo": "tronco_podrido.png",
+   "w": 1552,
+   "h": 1394,
+   "ancla": [
+    776,
+    1392
+   ],
+   "huella": [
+    186,
+    806,
+    1365,
+    1336
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/tronco_podrido_s1_0.png",
+   "sombra": {
+    "archivo": "tronco_podrido_sombra.png",
+    "w": 1577,
+    "h": 1215,
+    "dx": -41,
+    "dy": 165
+   },
+   "k": 0.201
+  },
+  {
+   "id": "juncos_secos",
+   "tipo": "roca",
+   "archivo": "juncos_secos.png",
+   "w": 1592,
+   "h": 1770,
+   "ancla": [
+    796,
+    1769
+   ],
+   "huella": [
+    191,
+    1025,
+    1400,
+    1698
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/juncos_secos_s1_0.png",
+   "sombra": {
+    "archivo": "juncos_secos_sombra.png",
+    "w": 1549,
+    "h": 1468,
+    "dx": 0,
+    "dy": 298
+   },
+   "k": 0.0829
+  },
+  {
+   "id": "cerca_rota",
+   "tipo": "roca",
+   "archivo": "cerca_rota.png",
+   "w": 1457,
+   "h": 1233,
+   "ancla": [
+    728,
+    1231
+   ],
+   "huella": [
+    174,
+    713,
+    1282,
+    1181
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/cerca_rota_s1_0.png",
+   "sombra": {
+    "archivo": "cerca_rota_sombra.png",
+    "w": 1327,
+    "h": 500,
+    "dx": 163,
+    "dy": 623
+   },
+   "k": 0.2306
+  },
+  {
+   "id": "roca_musgo",
+   "tipo": "roca",
+   "archivo": "roca_musgo.png",
+   "w": 1384,
+   "h": 1327,
+   "ancla": [
+    692,
+    1325
+   ],
+   "huella": [
+    166,
+    767,
+    1217,
+    1271
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/roca_musgo_s1_0.png",
+   "k": 0.1821
+  },
+  {
+   "id": "farol_fuego_fatuo",
+   "tipo": "roca",
+   "archivo": "farol_fuego_fatuo.png",
+   "w": 1067,
+   "h": 1563,
+   "ancla": [
+    533,
+    1562
+   ],
+   "huella": [
+    128,
+    905,
+    938,
+    1499
+   ],
+   "origen": "assets/gen/arcane/biomas/pantano/farol_fuego_fatuo_s1_0.png",
+   "sombra": {
+    "archivo": "farol_fuego_fatuo_sombra.png",
+    "w": 1519,
+    "h": 1722,
+    "dx": -393,
+    "dy": -66
+   },
+   "k": 0.09
+  },
+  {
+   "id": "columna_rota",
+   "tipo": "roca",
+   "archivo": "columna_rota.png",
+   "w": 1251,
+   "h": 1747,
+   "ancla": [
+    625,
+    1746
+   ],
+   "huella": [
+    150,
+    1012,
+    1100,
+    1676
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/columna_rota_s1_0.png",
+   "sombra": {
+    "archivo": "columna_rota_sombra.png",
+    "w": 1337,
+    "h": 1724,
+    "dx": -194,
+    "dy": 29
+   },
+   "k": 0.1439
+  },
+  {
+   "id": "estatua",
+   "tipo": "roca",
+   "archivo": "estatua.png",
+   "w": 1611,
+   "h": 1731,
+   "ancla": [
+    805,
+    1729
+   ],
+   "huella": [
+    193,
+    1001,
+    1417,
+    1659
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/estatua_s1_0.png",
+   "k": 0.1639
+  },
+  {
+   "id": "arco_ruinas",
+   "tipo": "casa",
+   "archivo": "arco_ruinas.png",
+   "w": 1414,
+   "h": 1610,
+   "ancla": [
+    707,
+    1608
+   ],
+   "huella": [
+    184,
+    1088,
+    1368,
+    1562
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/arco_ruinas_s1_0.png",
+   "sombra": {
+    "archivo": "arco_ruinas_sombra.png",
+    "w": 1552,
+    "h": 1248,
+    "dx": -235,
+    "dy": 365
+   },
+   "k": 0.4243
+  },
+  {
+   "id": "altar",
+   "tipo": "roca",
+   "archivo": "altar.png",
+   "w": 1800,
+   "h": 1430,
+   "ancla": [
+    900,
+    1428
+   ],
+   "huella": [
+    216,
+    827,
+    1584,
+    1370
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/altar_s3_0.png",
+   "sombra": {
+    "archivo": "altar_sombra.png",
+    "w": 1790,
+    "h": 1121,
+    "dx": -3,
+    "dy": 459
+   },
+   "k": 0.16
+  },
+  {
+   "id": "cristal_psiquico",
+   "tipo": "roca",
+   "archivo": "cristal_psiquico.png",
+   "w": 1337,
+   "h": 1410,
+   "ancla": [
+    668,
+    1409
+   ],
+   "huella": [
+    160,
+    816,
+    1176,
+    1352
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/cristal_psiquico_s2_0.png",
+   "k": 0.1346
+  },
+  {
+   "id": "losas_ruina",
+   "tipo": "losa",
+   "archivo": "losas_ruina.png",
+   "w": 1631,
+   "h": 1274,
+   "ancla": [
+    815,
+    1272
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/ruinas/losas_ruina_s1_0.png",
+   "k": 0.2943
+  },
+  {
+   "id": "arbol_flores",
+   "tipo": "arbol",
+   "archivo": "arbol_flores.png",
+   "w": 1431,
+   "h": 1709,
+   "ancla": [
+    715,
+    1708
+   ],
+   "huella": [
+    543,
+    1468,
+    887,
+    1708
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/arbol_flores_s2_0.png",
+   "sombra": {
+    "archivo": "arbol_flores_sombra.png",
+    "w": 1283,
+    "h": 399,
+    "dx": 38,
+    "dy": 1347
+   },
+   "k": 0.3354
+  },
+  {
+   "id": "muro_roto",
+   "tipo": "roca",
+   "archivo": "muro_roto.png",
+   "w": 1000,
+   "h": 1363,
+   "ancla": [
+    500,
+    1362
+   ],
+   "huella": [
+    120,
+    789,
+    880,
+    1307
+   ],
+   "origen": "assets/gen/arcane/biomas/ruinas/muro_roto_s2_0.png",
+   "sombra": {
+    "archivo": "muro_roto_sombra.png",
+    "w": 1529,
+    "h": 1077,
+    "dx": -374,
+    "dy": 317
+   },
+   "k": 0.48
+  },
+  {
+   "id": "flores_hada",
+   "tipo": "detalle",
+   "archivo": "flores_hada.png",
+   "w": 1055,
+   "h": 1006,
+   "ancla": [
+    527,
+    1005
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/ruinas/flores_hada_s3_0.png",
+   "sombra": {
+    "archivo": "flores_hada_sombra.png",
+    "w": 1035,
+    "h": 869,
+    "dx": 21,
+    "dy": 180
+   },
+   "k": 0.1251
+  },
+  {
+   "id": "roca_basalto",
+   "tipo": "roca",
+   "archivo": "roca_basalto.png",
+   "w": 1402,
+   "h": 1344,
+   "ancla": [
+    701,
+    1343
+   ],
+   "huella": [
+    168,
+    778,
+    1233,
+    1289
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/roca_basalto_s2_0.png",
+   "sombra": {
+    "archivo": "roca_basalto_sombra.png",
+    "w": 1692,
+    "h": 1258,
+    "dx": -273,
+    "dy": 111
+   },
+   "k": 0.1883
+  },
+  {
+   "id": "arbol_quemado",
+   "tipo": "arbol",
+   "archivo": "arbol_quemado.png",
+   "w": 1193,
+   "h": 1573,
+   "ancla": [
+    596,
+    1572
+   ],
+   "huella": [
+    453,
+    1351,
+    739,
+    1572
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/arbol_quemado_s2_0.png",
+   "sombra": {
+    "archivo": "arbol_quemado_sombra.png",
+    "w": 1239,
+    "h": 1230,
+    "dx": -443,
+    "dy": 310
+   },
+   "k": 0.3118
+  },
+  {
+   "id": "charco_lava",
+   "tipo": "estanque",
+   "archivo": "charco_lava.png",
+   "w": 1288,
+   "h": 849,
+   "ancla": [
+    644,
+    847
+   ],
+   "huella": [
+    51,
+    82,
+    1236,
+    821
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/charco_lava_s1_0.png",
+   "k": 0.2981
+  },
+  {
+   "id": "fumarola",
+   "tipo": "detalle",
+   "archivo": "fumarola.png",
+   "w": 1373,
+   "h": 1711,
+   "ancla": [
+    686,
+    1710
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/volcan/fumarola_s2_0.png",
+   "sombra": {
+    "archivo": "fumarola_sombra.png",
+    "w": 1397,
+    "h": 1679,
+    "dx": -5,
+    "dy": 0
+   },
+   "k": 0.1311
+  },
+  {
+   "id": "obsidiana",
+   "tipo": "roca",
+   "archivo": "obsidiana.png",
+   "w": 1341,
+   "h": 1414,
+   "ancla": [
+    670,
+    1413
+   ],
+   "huella": [
+    160,
+    819,
+    1180,
+    1356
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/obsidiana_s2_0.png",
+   "sombra": {
+    "archivo": "obsidiana_sombra.png",
+    "w": 1667,
+    "h": 1203,
+    "dx": -307,
+    "dy": 168
+   },
+   "k": 0.1432
+  },
+  {
+   "id": "roca_magma",
+   "tipo": "roca",
+   "archivo": "roca_magma.png",
+   "w": 1356,
+   "h": 1214,
+   "ancla": [
+    678,
+    1213
+   ],
+   "huella": [
+    162,
+    703,
+    1193,
+    1164
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/roca_magma_s2_0.png",
+   "k": 0.2035
+  },
+  {
+   "id": "fosil_dragon",
+   "tipo": "roca",
+   "archivo": "fosil_dragon.png",
+   "w": 1505,
+   "h": 1464,
+   "ancla": [
+    752,
+    1463
+   ],
+   "huella": [
+    180,
+    848,
+    1324,
+    1404
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/fosil_dragon_s1_0.png",
+   "sombra": {
+    "archivo": "fosil_dragon_sombra.png",
+    "w": 1386,
+    "h": 604,
+    "dx": 97,
+    "dy": 226
+   },
+   "k": 0.3588
+  },
+  {
+   "id": "ceniza",
+   "tipo": "losa",
+   "archivo": "ceniza.png",
+   "w": 1392,
+   "h": 1045,
+   "ancla": [
+    696,
+    1043
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/volcan/ceniza_s2_0.png",
+   "sombra": {
+    "archivo": "ceniza_sombra.png",
+    "w": 1278,
+    "h": 983,
+    "dx": 52,
+    "dy": 75
+   },
+   "k": 0.1724
+  },
+  {
+   "id": "cristal_fuego",
+   "tipo": "roca",
+   "archivo": "cristal_fuego.png",
+   "w": 1246,
+   "h": 1361,
+   "ancla": [
+    623,
+    1360
+   ],
+   "huella": [
+    149,
+    788,
+    1096,
+    1305
+   ],
+   "origen": "assets/gen/arcane/biomas/volcan/cristal_fuego_s2_0.png",
+   "sombra": {
+    "archivo": "cristal_fuego_sombra.png",
+    "w": 1319,
+    "h": 590,
+    "dx": 22,
+    "dy": 780
+   },
+   "k": 0.1445
+  },
+  {
+   "id": "pino_nevado",
+   "tipo": "arbol",
+   "archivo": "pino_nevado.png",
+   "w": 1561,
+   "h": 1804,
+   "ancla": [
+    780,
+    1803
+   ],
+   "huella": [
+    593,
+    1550,
+    967,
+    1803
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/pino_nevado_s1_0.png",
+   "k": 0.2691
+  },
+  {
+   "id": "roca_nevada",
+   "tipo": "roca",
+   "archivo": "roca_nevada.png",
+   "w": 1361,
+   "h": 1311,
+   "ancla": [
+    680,
+    1309
+   ],
+   "huella": [
+    163,
+    758,
+    1197,
+    1256
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/roca_nevada_s1_0.png",
+   "k": 0.2028
+  },
+  {
+   "id": "monton_nieve",
+   "tipo": "roca",
+   "archivo": "monton_nieve.png",
+   "w": 1602,
+   "h": 1184,
+   "ancla": [
+    801,
+    1183
+   ],
+   "huella": [
+    192,
+    685,
+    1409,
+    1135
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/monton_nieve_s1_0.png",
+   "k": 0.1498
+  },
+  {
+   "id": "carambanos",
+   "tipo": "roca",
+   "archivo": "carambanos.png",
+   "w": 1429,
+   "h": 1532,
+   "ancla": [
+    714,
+    1531
+   ],
+   "huella": [
+    171,
+    887,
+    1257,
+    1469
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/carambanos_s2_0.png",
+   "k": 0.1512
+  },
+  {
+   "id": "estanque_helado",
+   "tipo": "estanque",
+   "archivo": "estanque_helado.png",
+   "w": 1599,
+   "h": 1226,
+   "ancla": [
+    799,
+    1224
+   ],
+   "huella": [
+    63,
+    120,
+    1535,
+    1187
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/estanque_helado_s1_0.png",
+   "k": 0.3377
+  },
+  {
+   "id": "arbusto_nevado",
+   "tipo": "roca",
+   "archivo": "arbusto_nevado.png",
+   "w": 1403,
+   "h": 1298,
+   "ancla": [
+    701,
+    1297
+   ],
+   "huella": [
+    168,
+    751,
+    1234,
+    1245
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/arbusto_nevado_s1_0.png",
+   "k": 0.1283
+  },
+  {
+   "id": "tronco_nevado",
+   "tipo": "roca",
+   "archivo": "tronco_nevado.png",
+   "w": 1555,
+   "h": 1297,
+   "ancla": [
+    777,
+    1296
+   ],
+   "huella": [
+    186,
+    751,
+    1368,
+    1244
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/tronco_nevado_s1_0.png",
+   "k": 0.1929
+  },
+  {
+   "id": "cristal_hielo",
+   "tipo": "roca",
+   "archivo": "cristal_hielo.png",
+   "w": 1384,
+   "h": 1407,
+   "ancla": [
+    692,
+    1405
+   ],
+   "huella": [
+    166,
+    814,
+    1217,
+    1348
+   ],
+   "origen": "assets/gen/arcane/biomas/nieve/cristal_hielo_s2_0.png",
+   "sombra": {
+    "archivo": "cristal_hielo_sombra.png",
+    "w": 1184,
+    "h": 669,
+    "dx": 132,
+    "dy": 671
+   },
+   "k": 0.1301
   }
  ]
 }

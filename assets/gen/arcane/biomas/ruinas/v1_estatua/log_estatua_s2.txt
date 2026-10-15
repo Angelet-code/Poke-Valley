@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\estatua_s2_0.png
+11.1s

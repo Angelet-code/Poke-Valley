@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\pantano\farol_fuego_fatuo_s3_0.png
+12.0s

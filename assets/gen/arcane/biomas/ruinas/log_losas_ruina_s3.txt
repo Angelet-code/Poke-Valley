@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\ruinas\losas_ruina_s3_0.png
+13.0s

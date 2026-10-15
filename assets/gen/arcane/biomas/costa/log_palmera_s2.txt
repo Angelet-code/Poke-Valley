@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\costa\palmera_s2_0.png
+14.0s

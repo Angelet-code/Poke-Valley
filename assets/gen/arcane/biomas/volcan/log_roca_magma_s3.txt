@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\volcan\roca_magma_s3_0.png
+12.2s

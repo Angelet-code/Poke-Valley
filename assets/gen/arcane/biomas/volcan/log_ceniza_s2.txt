@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\volcan\ceniza_s2_0.png
+12.0s

@@ -75,6 +75,20 @@ ABRIR_HUECOS = {"valla"}
 TIPO_JUEGO = {"nenufar": "losa"}
 # Ancho en px de mundo de los que no tienen equivalente en el catálogo dibujo.
 ANCHO = {"sauce": 84, "juncos": 22, "muelle": 72, "nenufar": 30, "seta": 14, "tronco_caido": 48, "arbol_viejo": 130, "panal": 26, "poste": 20, "tablon": 40}
+# Biomas futuros (docs/GDD-mundo.md §4): assets/gen/arcane/biomas/piezas.txt (bioma|id|tipo|ancho|descripción) y la
+# semilla elegida de cada pieza en biomas/elegidos.json ({id: semilla}).
+_BIO = REPO / "assets/gen/arcane/biomas"
+if (_BIO / "elegidos.json").exists():
+    _sel = json.loads((_BIO / "elegidos.json").read_text(encoding="utf-8"))
+    for _l in (_BIO / "piezas.txt").read_text(encoding="utf-8").splitlines():
+        if not _l.strip():
+            continue
+        _bio, _id, _tipo, _ancho, _ = _l.split("|", 4)
+        if _id in _sel:
+            ELEGIDOS[_id] = ("detalle" if _tipo == "losa" else _tipo, f"assets/gen/arcane/biomas/{_bio}/{_id}_s{_sel[_id]}_0.png")
+            ANCHO[_id] = int(_ancho)
+            if _tipo == "losa":
+                TIPO_JUEGO[_id] = "losa"
 
 
 def alinear(id_, klein, e):

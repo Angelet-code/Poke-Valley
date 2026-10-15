@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\volcan\suelo\roca_volcanica_s2_0.png
+11.0s
