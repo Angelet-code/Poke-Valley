@@ -40,7 +40,8 @@ export type { Aura, Luchador, Temple };
 const TABLON_CERCA = 44;           // px para abrir el tablón con F
 const MINI_ANCHO = 360;            // px de la miniatura de cada zona (mapa del mundo)
 // Punto de vuelo (docs/GDD-mundo.md): Corviknight, el taxi volador de Galar, junto a la entrada de cada zona con un
-// farol al lado. Encima, el icono del maestro de vuelo del WoW: una bota verde con alas (pixel art, '.' = transparente).
+// farol al lado. Encima, como en el WoW: un «!» verde mientras no lo hayas descubierto (hablando con él) y, después,
+// el icono del maestro de vuelo, una bota verde con alas (pixel art, '.' = transparente).
 export const DEX_VUELO = '0823', NOMBRE_VUELO = 'Corviknight';
 const VUELO_CERCA = 50, FAROL_DX = 40, VUELO_ESCALA = 2;   // el taxi, el doble de grande que un Corviknight
 const ICONO_VUELO = [
@@ -54,7 +55,31 @@ const ICONO_VUELO = [
   '...kggggk..',
   '...kkkkkk..',
 ];
-const COL_VUELO: Record<string, string> = { w: '#dff7d0', W: '#ffffff', k: '#1d4a16', g: '#5fd34a' };
+const ICONO_DESCUBRIR = [
+  '.kkk.',
+  'kgggk',
+  'kgLgk',
+  'kgLgk',
+  'kgLgk',
+  'kgggk',
+  'kgggk',
+  '.kgk.',
+  '.kgk.',
+  '..k..',
+  '.....',
+  '.kkk.',
+  'kgggk',
+  'kgggk',
+  '.kkk.',
+];
+const COL_VUELO: Record<string, string> = { w: '#dff7d0', W: '#ffffff', k: '#1d4a16', g: '#5fd34a', L: '#b6f5a0' };
+// Los dos iconos como texturas (una vez).
+function texturaPixel(scene: Phaser.Scene, clave: string, filas: string[]): void {
+  if (scene.textures.exists(clave)) return;
+  const c = scene.textures.createCanvas(clave, filas[0].length, filas.length)!, g = c.getContext();
+  filas.forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COL_VUELO[ch]; g.fillRect(i, j, 1, 1); } }));
+  c.refresh();
+}
 type DatosMapa = { nueva?: boolean; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
 
 // Mapa (M): la zona entera desde arriba, con una segunda cámara encajada en este hueco (px de pantalla). La escena
@@ -292,17 +317,14 @@ export class Aventura extends Phaser.Scene {
     const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
     const placa = this.add.text(x, y - alto - 2, `${NOMBRE_VUELO}\n‹Vuelos›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#9be38a', stroke: '#16301a', strokeThickness: 2 * S, align: 'center' })
       .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
-    if (!this.textures.exists('icono_vuelo')) {
-      const c = this.textures.createCanvas('icono_vuelo', ICONO_VUELO[0].length, ICONO_VUELO.length)!, g = c.getContext();
-      ICONO_VUELO.forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COL_VUELO[ch]; g.fillRect(i, j, 1, 1); } }));
-      c.refresh();
-    }
-    const icono = this.add.image(x, placa.y - 16, 'icono_vuelo').setOrigin(0.5, 1).setDepth(1e5);
-    for (const o of [sombra, placa, icono]) o.resetPipeline();
-    this.vuelo = { x, y, spr, sombra, placa, icono, fila: 0 };
+    texturaPixel(this, 'icono_vuelo', ICONO_VUELO);
+    texturaPixel(this, 'icono_descubrir', ICONO_DESCUBRIR);
     // El del pueblo (tu hogar) viene descubierto; de los demás, se apunta dónde está por si ha cambiado.
     const vs = this.partida.estado.vuelos ??= {};
     if (mapa.id === 'pueblo' || vs[mapa.id]) vs[mapa.id] = { x, y, u: x / mapa.W, v: y / mapa.H };
+    const icono = this.add.image(x, placa.y - 16, vs[mapa.id] ? 'icono_vuelo' : 'icono_descubrir').setOrigin(0.5, 1).setDepth(1e5).setScale(2);
+    for (const o of [sombra, placa, icono]) o.resetPipeline();
+    this.vuelo = { x, y, spr, sombra, placa, icono, fila: 0 };
   }
   // Puntos de vuelo descubiertos (por zona, dónde está su volador). Se descubren hablando con él (F).
   get vuelosConocidos(): Record<string, { x: number; y: number; u: number; v: number }> { return this.partida.estado.vuelos ?? {}; }
@@ -573,6 +595,7 @@ export class Aventura extends Phaser.Scene {
       const vs = this.partida.estado.vuelos ??= {};
       if (!vs[this.mapa.id]) {   // descubierto (como en el WoW: «Nueva ruta de vuelo»)
         vs[this.mapa.id] = { x: v.x, y: v.y, u: v.x / this.mapa.W, v: v.y / this.mapa.H };
+        v.icono.setTexture('icono_vuelo');   // el «!» se va: ya se puede volar desde aquí
         this.guardar();
         this.vueloNuevo = true;   // lo anuncia el mapa de vuelo
       }

@@ -134,7 +134,8 @@ Cómo es (constantes `ALFA_*` en Aventura.ts):
     árboles ni piezas, y por debajo se apartan más (vista 3/4: la copa taparía las losas); en el macizo, ahí solo
     piezas bajas. `MapaAventura.rellano` y `.vuelo` dicen dónde está; si una zona no tuviera, `Aventura.ponerVuelo`
     le busca un hueco con espacio alrededor.
-  - **Se descubren hablando con él** (F, como en el WoW): el pie del mapa dice «¡Nuevo punto de vuelo descubierto!».
+  - **Se descubren hablando con él** (F, como en el WoW): mientras no lo has descubierto lleva encima un **«!» verde**;
+    al hablarle se cambia por la bota con alas y el pie del mapa dice «¡Nuevo punto de vuelo descubierto!».
     El del pueblo (tu hogar) viene descubierto. Se guardan en la partida (`estado.vuelos`: dónde está cada volador).
   - **F a su lado** (fuera de combate) abre el mapa del mundo en modo vuelo, «¿A dónde vuelas?». Las zonas con punto
     descubierto llevan el icono del volador; clic en una y te lleva allí. Las demás no se pueden elegir (el pie dice
