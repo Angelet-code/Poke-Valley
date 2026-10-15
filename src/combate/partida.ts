@@ -15,7 +15,8 @@ export const PROB_SHINY = 1 / 4096;
 export const HOGAR_CARGA = 8;          // s
 export const HOGAR_CD = 5 * 60;        // s reales hasta poder usarla otra vez
 const CLAVE = 'pokemon-valley/aventura';
-// Equipables con los que se empieza (los demás los sueltan los alfas): combate/objetos.ts.
+// Equipables que se regalaron por error a todas las partidas (af959147): se retiran al cargar (los equipables solo se
+// encuentran jugando, combate/objetos.ts).
 const REGALO: Record<string, number> = { leftovers: 1, focussash: 1 };
 const VERSION = 1;
 
@@ -46,7 +47,7 @@ export interface Estado {
   alfas?: Record<string, number>;             // por zona: cuándo cayó su alfa (Date.now()); reaparece a los 5 min
   hallados?: Record<string, { t: number; n: number }>;   // objetos del suelo (`zona:i`): cuándo lo cogiste (Date.now()) y cuántas veces
   hogar?: number;                             // Date.now() desde el que se puede volver a usar la piedra de hogar
-  regalo?: boolean;                           // ya recibió los objetos equipables de regalo (Restos y Banda Focus)
+  regalo?: boolean;                           // recibió el regalo de equipables por error: se le retira al cargar
   vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
 }
 export type Aviso =
@@ -68,7 +69,7 @@ export class Partida {
 
   // `inicial`: la línea elegida en scenes/Eleccion.ts (Bulbasaur si no se dice); `usuario`: el nombre que se pide después.
   static nueva(inicial = 'bulbasaur', usuario?: string): Partida {
-    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3, ...REGALO }, regalo: true, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
+    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
     const b = p.crear(LINEAS[inicial] ? inicial : 'bulbasaur', 1);
     p.estado.activo = b.uid;
     return p;
@@ -78,7 +79,13 @@ export class Partida {
       const e = JSON.parse(localStorage.getItem(CLAVE) ?? 'null') as Estado | null;
       if (!e || e.version !== VERSION || !e.equipo?.length) return null;
       e.misiones ??= {}; e.alfas ??= {};
-      if (!e.regalo) { for (const [id, n] of Object.entries(REGALO)) e.items[id] = (e.items[id] ?? 0) + n; e.regalo = true; }   // partidas de antes del inventario
+      if (e.regalo) {   // quitar el regalo por error: de la mochila o, si lo lleva puesto, al Pokémon
+        for (const [id, n] of Object.entries(REGALO)) for (let i = 0; i < n; i++) {
+          if ((e.items[id] ?? 0) > 0) e.items[id]--;
+          else { const m = e.equipo.find(q => q.objeto === id); if (m) delete m.objeto; }
+        }
+        delete e.regalo;
+      }
       for (const m of e.equipo) if (m.sexo === undefined) m.sexo = tirarSexo(formaDe(m.linea, m.nivel).id);   // partidas de antes
       return new Partida(e);
     } catch { return null; }

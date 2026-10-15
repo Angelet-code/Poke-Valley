@@ -40,7 +40,7 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   - Al aprender un movimiento, este va a la primera casilla libre.
 - **Inventario (I)** (`combate/objetos.ts`): cada Pokémon lleva un objeto equipable (`Miembro.objeto`). Clic en uno
   para ponérselo (el que llevaba vuelve a la mochila); clic en el suyo para quitárselo. En combate no se cambia.
-  No se gastan. Se empieza con Restos y Banda Focus; los alfas sueltan uno al azar (y, muy rara vez, un salvaje).
+  No se gastan. Solo se encuentran jugando: los alfas sueltan uno al azar (y, muy rara vez, un salvaje).
   - Restos (1/16 cada 3 s en combate), Banda Focus (con la vida entera aguanta con 1 PS; se recarga en 60 s),
     Cinta Focus (10 %), Vidasfera (×1,3 y 1/10 por golpe), Cinta Fuerte y Gafas Especiales (×1,1), Cinta Experto
     (×1,2 supereficaz), Periscopio (+1 crítico), Campana Concha (1/8 del daño), Casco Dentado (1/6 al que toca) y
