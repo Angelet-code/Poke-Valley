@@ -28,6 +28,9 @@ const game = new Phaser.Game({
 // Prototipo: no pausar el juego cuando la pestaña queda oculta (Phaser lo hace por defecto).
 game.events.once(Phaser.Core.Events.READY, () => game.events.removeAllListeners(Phaser.Core.Events.HIDDEN));
 
+// La escala elegida (S baja a la mitad si la ventana mide menos de 960×540 px de CSS, etc.).
+console.info(`Vista: zoom ${S} (ventana ${innerWidth}×${innerHeight}, devicePixelRatio ${devicePixelRatio})`);
+
 // Para depurar desde la consola del navegador.
 (window as unknown as { pv: Phaser.Game }).pv = game;
 
