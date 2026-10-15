@@ -195,6 +195,19 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   mPaso.set(mCamino);
   for (const c of [...todosClaros, ...bolsas]) sello(mPaso, c.x, c.y, c.rad + 10, (c.rad + 10) * 0.8);
   for (const st of sitios) sello(mPaso, st.dentro.x, st.dentro.y, 60);
+  // Con mar: una playa abierta a lo largo de la orilla (el gran espacio abierto de la zona, frente a los senderos).
+  if (ag?.tipo === 'mar') for (let j = 0; j < GF; j++) for (let i = 0; i < GC; i++) {
+    const c = costa((i + 0.5) * CEL, (j + 0.5) * CEL);
+    if (c > -95 + Math.sin(j * 0.21 + fase) * 22) mPaso[j * GC + i] = 1;
+  }
+  // …y una bajada a la playa desde los dos claros más cercanos al mar (si no, la playa quedaría aislada).
+  if (ag?.tipo === 'mar') for (const c of [...claros].sort((p, q) => costa(q.x, q.y) - costa(p.x, p.y)).slice(0, 2)) {
+    const ex = ag.lado === 'e' ? 1 : ag.lado === 'o' ? -1 : 0, ey = ag.lado === 's' ? 1 : ag.lado === 'n' ? -1 : 0;
+    for (let d = 0; d < 700 && costa(c.x + ex * d, c.y + ey * d) < -40; d += 8) {
+      sello(mPaso, c.x + ex * d, c.y + ey * d + Math.sin(d * 0.02) * 12, 30);
+      sello(mCamino, c.x + ex * d, c.y + ey * d + Math.sin(d * 0.02) * 12, 20);
+    }
+  }
   const celda = (m: Uint8Array, x: number, y: number) => {
     const i = Math.floor(x / CEL), j = Math.floor(y / CEL);
     return i >= 0 && j >= 0 && i < GC && j < GF && m[j * GC + i] === 1;
@@ -217,6 +230,20 @@ function zona(def: DefZona, semilla: number): MapaAventura {
     const x = (i + 0.5) * CEL, y = (j + 0.5) * CEL;
     if (!mPaso[j * GC + i] && !enAgua(x, y)) mMacizo[j * GC + i] = 1;
   }
+  // Lo transitable que no se alcanza desde la entrada (bolsitas encerradas entre agua y macizo) pasa a macizo.
+  const alcanzado = new Uint8Array(GC * GF), pila = [Math.floor(sitios[0].dentro.y / CEL) * GC + Math.floor(sitios[0].dentro.x / CEL)];
+  alcanzado[pila[0]] = 1;
+  while (pila.length) {
+    const k = pila.pop()!, i = k % GC, j = (k - i) / GC;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const ni = i + di, nj = j + dj, nk = nj * GC + ni;
+      if (ni < 0 || nj < 0 || ni >= GC || nj >= GF || alcanzado[nk] || mMacizo[nk]) continue;
+      if (enAgua((ni + 0.5) * CEL, (nj + 0.5) * CEL)) continue;
+      alcanzado[nk] = 1; pila.push(nk);
+    }
+  }
+  for (let k = 0; k < GC * GF; k++) if (!alcanzado[k] && !mMacizo[k] && !enAgua((k % GC + 0.5) * CEL, (Math.floor(k / GC) + 0.5) * CEL)) mMacizo[k] = 1;
+  const alcanzable = (x: number, y: number) => celda(alcanzado, x, y);
   const enMaz = (x: number, y: number) => celda(mMacizo, Math.min(W - 1, Math.max(0, x)), Math.min(H - 1, Math.max(0, y)));
   // ¿Hay algo transitable cerca? (para poner en el borde del macizo las piezas que se ven, y más juntas)
   const bordeDe = (x: number, y: number) => { for (const [ox, oy] of [[-24, 0], [24, 0], [0, -24], [0, 24]]) if (!enMaz(x + ox, y + oy)) return true; return false; };
@@ -320,13 +347,15 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   });
   if (sec) salvajes.push({ linea: D.rara.linea, nivel: D.rara.nivel, x: Math.round(sec.x), y: Math.round(sec.y + 10) });
   bolsas.forEach((b, i) => { if (i % 2 === 0) salvajes.push({ linea: pick(especies), nivel: Math.round((def.niveles[0] + def.niveles[1]) / 2 + 1), x: Math.round(b.x), y: Math.round(b.y + 8) }); });
+  // Solo los que se pueden alcanzar desde la entrada.
+  const alcanzables = salvajes.filter(sv => alcanzable(sv.x, sv.y));
 
   const llegada: Partial<Record<MapaId | 'inicio', Llegada>> = { inicio: { ...sitios[0].dentro, dir: sitios[0].dir } };
   def.puertas.forEach((p, i) => { llegada[p.a] = { x: Math.round(sitios[i].dentro.x), y: Math.round(sitios[i].dentro.y), dir: sitios[i].dir }; });
   return {
     id: def.id, nombre: def.nombre, lema: def.lema, bienvenida: def.bienvenida, alfa, suelo: def.bioma, clima: def.clima,
     datos: { mw: MW, mh: MH, vert, inicio: [Math.round(sitios[0].dentro.x), Math.round(sitios[0].dentro.y)] }, W, H, colocados: col, detalles: 0,
-    llegada, salidas: def.puertas.map(p => salida(p, W, H)), salvajes,
+    llegada, salidas: def.puertas.map(p => salida(p, W, H)), salvajes: alcanzables,
     macizo: { cel: CEL, cols: GC, filas: GF, datos: mMacizo },
   };
 }
@@ -371,7 +400,7 @@ const DEFS: Record<Bioma, DefZona> = {
     nombre: 'Ruinas Antiguas', lema: 'Nivel 14-20 · Psíquico y Hada', sal: 0x2a1b5e, caminoLosas: true,
     bienvenida: 'Las ruinas. Columnas rotas, cristales que brillan y un arco al fondo.',
     puertas: [{ lado: 's', t: 0.6, a: 'pantano', texto: 'Al pantano' }, { lado: 'o', t: 0.4, a: 'volcan', texto: 'Al volcán' }, { lado: 'e', t: 0.4, a: 'nieve', texto: 'A las cumbres' }],
-    muro: ['arbol_flores', 'arbol_flores', 'columna_rota'], relleno: ['arbol_flores', 'arbol_flores', 'columna_rota'], claros: 6,
+    muro: ['arbol_flores'], relleno: ['arbol_flores', 'muro_roto', 'columna_rota'], claros: 6,
     extras: [['muro_roto', 6, 'borde'], ['estatua', 4, 'borde'], ['altar', 2, 'claro'], ['cristal_psiquico', 6, 'borde'], ['losas_ruina', 6, 'claro'], ['flores_hada', 14, 'claro'], ['columna_rota', 6, 'borde']],
     hito: 'arco_ruinas', alfa: { linea: 'ralts', forma: 'kirlia', nivel: 22 },
     especies: ['abra', 'ralts', 'natu', 'clefairy', 'togepi', 'flabebe'], niveles: [14, 20],

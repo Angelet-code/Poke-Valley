@@ -293,6 +293,24 @@ Fuentes:
 - [Emily Short: geography in interactive fiction](https://emshort.blog/how-to-play/writing-if/my-articles/geography/)
 - [Procedural 2D Map Generation for Computer Games (Charles University)](https://dspace.cuni.cz/handle/20.500.11956/99794)
 
+### 5b. Macizo: zonas que no se pueden cruzar (2026-10-15)
+Al verlas, el usuario: "son muy abiertas y planas, puedes pasar por cualquier parte… un lienzo en blanco decorado".
+Ahora lo transitable se **excava** (`biomas.ts`, rejilla `Macizo` de 8 px):
+- **Transitable:** claros, pasillos (el principal de ~90 px, los demás de ~70, el del secreto de ~45) y **bolsas**
+  (callejones sin salida a un lado del camino, con un hito local y a veces un salvaje).
+- **Macizo:** todo lo demás. No se cruza: la escena lo pasa al mundo junto con el agua (`enMacizo`). Se llena de piezas
+  de muro y relleno, más juntas en el borde con lo transitable, para que se lea como bosque cerrado, roca o ruina. Es
+  el 70 % de la zona, con ~1 200 piezas y 60 fps.
+- **Ríos** (`rio`) de agua, lodo, lava o hielo: cruzan la zona entre la entrada y el hito y solo se pasan por los
+  **vados** de los caminos, con piedras. Las lagunas también dejan paso al camino.
+- **Costa:** selva cerrada de palmeras con senderos, y una **playa** abierta a lo largo del mar, con bajadas desde los
+  dos claros más cercanos.
+- **Siempre conectada:** lo que no se alcanza desde la entrada pasa a macizo, y los salvajes que no se alcanzan se
+  quitan. Comprobado en las seis zonas: hito, salidas y todos los salvajes, alcanzables.
+
+Siguiente paso posible, con arte: **acantilados y desniveles** (bordes de meseta, rampas y escaleras), para tener alturas
+y no solo paredes.
+
 **Para más adelante**, aplicable también al bosque y al lago:
 - el mismo camino principal con migas y su claro de descanso;
 - *vistas*: desde un claro alto se ve el hito antes de llegar;

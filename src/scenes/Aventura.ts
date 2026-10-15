@@ -8,7 +8,7 @@
 import Phaser from 'phaser';
 import { REG, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
-import { PALETAS_BIOMA } from '../data/biomas';
+import { PALETAS_BIOMA, enMacizo } from '../data/biomas';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { FORMAS } from '../data/pokedex';
 import type { Mision } from '../combate/misiones';
@@ -145,7 +145,7 @@ export class Aventura extends Phaser.Scene {
     const cat = this.registry.get(REG.dibujo) as { elementos: Elemento[] }, porId = new Map(cat.elementos.map(e => [e.id, e]));
     const bloques = this.crearEscenario(porId);
     this.mundo = new Mundo({
-      mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => this.terrain.esAgua(x, y),
+      mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y),   // el macizo de las zonas de bioma bloquea como el agua
       anatomia: this.anatomia, probShiny: this.probShiny,
     });
     this.ponerDetalles(cat.elementos, porId, bloques);
