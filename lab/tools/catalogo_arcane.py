@@ -109,6 +109,18 @@ if (_CIU / "piezas.txt").exists():
         ANCHO[_id] = int(_ancho)
         if _tipo == "losa":
             TIPO_JUEGO[_id] = "losa"
+# La ciudad por piezas (2026-10-16, docs/art/ARCANE.md «Ciudad por piezas»): cada edificio, seto, la fuente y la farola de
+# la ciudad pintada, repintados sueltos (assets/gen/arcane/ciudad/piezas/gen.sh). Elección en piezas/elegidos.json:
+# {id: [tipo, semilla, ancho en px de mundo, (caja)]}; en el catálogo, cd_<id>. caja: fracciones [x0, y0, x1, y1] del
+# recorte que bloquean, en vez de calcular_huella (los setos: casi todo su suelo).
+_CDP = REPO / "assets/gen/arcane/ciudad/piezas"
+HUELLA_CAJA = {}
+if (_CDP / "elegidos.json").exists():
+    for _id, (_tipo, _s, _ancho, *_caja) in json.loads((_CDP / "elegidos.json").read_text(encoding="utf-8")).items():
+        ELEGIDOS[f"cd_{_id}"] = (_tipo, f"assets/gen/arcane/ciudad/piezas/{_id}_s{_s}_0.png")
+        ANCHO[f"cd_{_id}"] = _ancho
+        if _caja:
+            HUELLA_CAJA[f"cd_{_id}"] = _caja[0]
 
 
 def alinear(id_, klein, e):
@@ -194,6 +206,9 @@ def main():
         e["k"] = round(ancho_mundo(id_, klein) / (e["w"] * F / PNG_X), 4)
         if id_ in REPINTADOS:
             print("  alineado con el dibujo, desplazamiento", alinear(id_, klein, e))
+        if id_ in HUELLA_CAJA:
+            fx0, fy0, fx1, fy1 = HUELLA_CAJA[id_]
+            e["huella"] = [round(e["w"] * fx0), round(e["h"] * fy0), round(e["w"] * fx1), round(e["h"] * fy1)]
         e["origen"] = img
         e["tipo"] = TIPO_JUEGO.get(id_, e["tipo"])
         if id_ in CON_SUELO:

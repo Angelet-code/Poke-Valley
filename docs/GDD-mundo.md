@@ -51,6 +51,14 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
 - **Solares libres** (`SOLARES`): dos trozos de césped al sur, para edificios futuros.
 - **Borde:** dos filas de árboles, con la boca del norte libre. Junto al huerto y al mercado la fila interior se aparta
   para no taparlos.
+- **Boca este** (2026-10-16, `SALIDA_ESTE_Y`): la calle del norte sigue hasta el borde este, sin árboles, y sale a la
+  ciudad.
+
+### 1c. La ciudad (2026-10-16)
+Código: [src/data/ciudad.ts](../src/data/ciudad.ts). Suelo de una imagen de Klein en estilo Arcane y, encima, cada
+edificio, seto, la fuente y las farolas como piezas sueltas ([ARCANE.md](art/ARCANE.md), «Ciudad por piezas»). En el mundo queda **al este del pueblo**
+(`data/mundo.ts`, casilla 1,3, camino pueblo–ciudad): se entra por la acera del oeste, que pasa por detrás del puesto,
+y se vuelve por ella al pueblo. Sin salvajes. El puente del sur aún no lleva a ninguna parte (al sur no hay zona).
 
 ### Formato de una zona (`MapaAventura`)
 `id`, `nombre`, `lema` (lo que dice el rótulo), `bienvenida` (aviso al entrar), `datos` (suelo: 0 césped, 1 tierra o

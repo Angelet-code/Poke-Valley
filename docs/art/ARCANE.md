@@ -253,3 +253,64 @@ y los muros (Klein `--edit` de la referencia sola, fondo verde liso).
 - **Escalinata** rehecha (la v1, que parecía un palé, en `ciudad/v1_escalera_plaza/`): "monumental flight of five
   steps… flanked by low carved stone side walls", semilla 2. En el mapa sube de la plaza a la acera del norte.
 - Pendiente: las casas sueltas quizá algo pequeñas frente a las fachadas.
+
+### Ciudad pintada (2026-10-16): sustituye al montaje con el kit
+El montaje con el kit suelto no gustó ("completamente rota": suelos rectangulares que cambian sin sentido, pegotes,
+farolas pequeñas). Ahora el mapa sale de **una sola imagen**: la ciudad entera pintada por Klein.
+- **Referencias** (`assets/gen/arcane/ciudad/referencia/`, hoja `hoja.jpg`):
+  - `gen.sh` (ideas A y B, solo la referencia de estilo): bonitas pero isométricas.
+  - `gen2.sh` (ideas C y D): Klein `--edit` con **dos imágenes**, la de estilo (`arcane_lago.png`) y una captura del
+    pueblo en el juego (`docs/art/arcane/pueblo_vista.jpg`) como referencia de cámara y escala. Así salen de frente,
+    con calles paralelas a los bordes. 1536×1152, ~150 s por imagen.
+  - Elegida por el usuario: **`ciudad_D_s1`** (copia en `docs/art/ref/arcane_ciudad.png`).
+- **Imagen del juego**: `lab/tools/ampliar.py` (RealESRGAN_x4plus, ×2) → `lab/assets/mapas_arcane/ciudad.jpg`
+  (3072×2304, Preload la carga como `mapa_ciudad`).
+- **Mapa** (`src/data/ciudad.ts`, `MapaAventura.pintado`, `Aventura.pintar`): 52×39 casillas (1248×936 px de mundo,
+  0,8125 px de mundo por px de la referencia). Las coordenadas del archivo van en px de la referencia.
+  - La imagen va encima del Terrain (profundidad −9500).
+  - **Tapas**: el polígono de cada edificio, árbol, seto, la fuente y cada farola (ceñida a la cabeza y el poste) se
+    recorta de la imagen y se dibuja con la profundidad de su base: quien pasa por detrás queda oculto.
+  - **Muros**: lo que no se pisa (siluetas enteras de edificios, setos y arboledas; pie de las farolas; carrito,
+    barriles y papeleras; canal), en una rejilla de 4 px (`muroPintado`), que bloquea como el agua.
+  - **Luces**: en la cabeza de las 8 farolas pintadas.
+  - Sin farol suelto junto al volador (sería un pegote).
+- Capturas: [día](arcane/ciudad_pintada_dia.jpg), [noche](arcane/ciudad_pintada_noche.jpg) y
+  [detrás de una farola](arcane/ciudad_pintada_farola.jpg). Entrar: `?zona=ciudad`.
+- El montaje anterior está en git (2932f47f); su kit (piezas, tiras y suelos) sigue en el catálogo.
+- Pendiente: las siluetas son polígonos a ojo (se nota poco porque los edificios no se pisan); no se puede pasar por
+  detrás de los edificios. Unida al pueblo el 2026-10-16: boca este del pueblo ↔ acera del oeste de la ciudad (GDD-mundo §1c).
+
+### Fumarola sin humo (2026-10-16)
+- El dibujo de la fumarola llevaba el humo pintado (y cortado). Ahora es solo el agujero con lava (`volcan/fumarola`, semilla 1; la versión con humo está en `assets/gen/arcane/biomas/volcan/v1_con_humo/` y `lab/assets/elementos_arcane/v1_fumarola_con_humo/`).
+- El humo y las brasas son partículas: `Aventura.humearFumarola` (textura `humo_suave` y `halo`), una pareja de emisores por fumarola.
+
+### Ciudad por piezas (2026-10-16): sustituye a la ciudad pintada
+La ciudad pintada "se veía como un dibujo". Se queda su distribución, pero cada cosa es un elemento suelto, como en el
+resto del juego (`assets/gen/arcane/ciudad/piezas/`):
+- **Suelo**: Klein `--edit` de la referencia pidiendo quitar edificios, árboles, setos, farolas, puestos y la fuente
+  (`gen.sh`). La semilla 2 sale limpia del todo; ampliada ×2 → `lab/assets/mapas_arcane/ciudad_suelo.jpg` (Preload:
+  `mapa_ciudad_suelo`). Se pinta con `MapaAventura.pintado` (sin tapas ni luces; los muros son solo el canal).
+- **Piezas**: `recortes.py` saca cada edificio, seto, la fuente y una farola por su polígono sobre verde, centrado en
+  1024²; Klein `--edit` con el recorte y la referencia de estilo lo repinta entero (completa lo que estaba cortado).
+  - Los setos con la receta de los edificios salían casas con hiedra (`v1_setos/`): tienen instrucción propia.
+  - La fuente fallaba al cargar su recorte en ComfyUI ("End of file"); guardado de nuevo (`recorte_fuente_plaza.png`) va.
+  - Hojas: `hoja_semillas.jpg`, `hoja_setos.jpg`. Elegidas en `elegidos.json` (`{id: [tipo, semilla, ancho, caja?]}`).
+- **Catálogo**: `catalogo_arcane.py` las lee de `piezas/elegidos.json` como `cd_<id>` (ampliar ×2 → `recortar.py`;
+  `caja` = huella en fracciones del recorte: setos casi enteros, la farola solo el pie). La luz de `cd_farola` está en
+  `puntoLuz` (`Dibujo.ts`).
+- **Mapa** (`src/data/ciudad.ts`, `PIEZAS`): cada pieza en el pie de su silueta en la referencia; árboles y arbustos del
+  catálogo Arcane (escalados ×1,3-1,8) y objetos pequeños del kit (carro, barriles, papeleras, buzón, maceta). Ahora se
+  pasa por detrás de los edificios y se vuelven translúcidos, como en el pueblo.
+- **Vista previa fuera del juego**: `python -I assets/gen/arcane/ciudad/piezas/vista.py [zoom]` → `piezas/vista.jpg`.
+- Capturas: [vista](arcane/ciudad_piezas_vista.jpg), [día](arcane/ciudad_piezas_dia.jpg),
+  [detrás de la iglesia](arcane/ciudad_piezas_iglesia.jpg) y [noche](arcane/ciudad_piezas_noche.jpg).
+- La ciudad pintada (`lab/assets/mapas_arcane/ciudad.jpg`) se queda en disco; su código (tapas y muros por polígonos)
+  sigue en `Aventura.pintar` y `muroPintado`.
+- **Colisiones de los edificios** (2026-10-16): `piezas/huellas.py` mide en cada `cd_*.png` el cuerpo (alfa sin el parche
+  verdoso ni la sombra), de pared a pared y desde la base hasta la mitad del alto, y lo guarda como `caja` en
+  `elegidos.json` (`--ver` → `piezas/huellas.jpg`). Antes, `calcular_huella` cogía solo un tercio del alto y se metía en
+  la sombra (se pisaba media fachada y había paredes invisibles).
+- **Retoques a mano**: el usuario retoca las `lab/assets/elementos_arcane/cd_*.png` (y sus `_sombra.png`). Pasar
+  `catalogo_arcane.py` por un `cd_*` las sobrescribe: antes, copiar la retocada a `piezas/retocadas/`. Si cambia el
+  tamaño de la imagen, volver a medir con `huellas.py`.
+- Lo mismo con el volcán grande (`montana_volcan`, semilla 3 de `muros/volcan`; con humo y con cielo azul quedan en `v1_con_humo/` y `v_cielo/`): sin humo en el dibujo, y su humo sale del cráter (`CRATER` en `Aventura.ts`, posición en fracciones del dibujo). Lava del volcán: ceniza, brasas y burbujas (`Aventura.chispearLava`).

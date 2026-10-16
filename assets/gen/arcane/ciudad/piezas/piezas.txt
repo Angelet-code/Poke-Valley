@@ -1,0 +1,18 @@
+centro_pokemon|the Pokemon Center with its red roof
+iglesia_reloj|the stone church with its clock tower
+ayuntamiento|the town hall with its clock and front steps
+puesto|the market stall with its red wooden roof on four posts and crates of goods under it
+tienda|the shop with its red metal roof, blue sign board and shop window
+casa_norte|the house with its pitched roof (complete the whole roof)
+casa_nordeste|the house with its pitched roof (complete the whole roof)
+casa_oscura|the dark wooden house with a slate roof, dormer window and chimney
+tienda_morada|the small shop with a purple slate roof and a striped awning over goods
+cobertizo|the small wooden shed with a red roof
+casa_este|the house with its red tiled roof (complete the whole house)
+fuente|the round stone fountain with water and a small spout
+farola|the black iron street lamp post with its glass lantern (complete the whole lamp, tall and slim)
+seto_1|the tall trimmed green hedge
+seto_2|the tall trimmed green hedge
+seto_3|the tall trimmed green hedge
+seto_4|the tall trimmed green hedge
+seto_5|the tall trimmed green hedge

@@ -10,6 +10,7 @@ import type { CargaMapa } from './carga';
 import { REG, ROW_FROM_ANGLE, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, abrirMacizo, enMacizo } from '../data/biomas';
+import { muroPintado } from '../data/ciudad';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
@@ -271,11 +272,12 @@ export class Aventura extends Phaser.Scene {
     this.mapa.colocados = tiras.colocados;
     despejarPuentes(this.mapa, tiras.pasos);
     this.pavimentar();
-    ponerTinteSombra(this.mapa.pavimentos ? 0xffb7ff : 0xffffff);
+    this.pintar();
+    ponerTinteSombra(this.mapa.pavimentos || this.mapa.pintado ? 0xffb7ff : 0xffffff);
     const bloques = this.crearEscenario(porId);
     this.abrirMacizoVacio();
     this.mundo = new Mundo({
-      mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => !enRect(tiras.pasos, x, y) && (this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y)),   // el macizo de las zonas de bioma bloquea como el agua
+      mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => !enRect(tiras.pasos, x, y) && (this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y) || muroPintado(this.mapa, x, y)),   // el macizo de las zonas de bioma y los muros de un mapa pintado bloquean como el agua
       anatomia: this.anatomia, probShiny: this.probShiny, natu: new URLSearchParams(location.search).get('natu') ?? undefined,
     });
     this.ponerVuelo(porId, bloques);
@@ -392,7 +394,7 @@ export class Aventura extends Phaser.Scene {
     }
     if (!sitio) return;
     const { x, y } = sitio, nuevos: Bloque[] = [];
-    const farol = porId.get(mapa.id === 'pueblo' ? 'farola' : 'farola_madera') ?? porId.get('farola');
+    const farol = mapa.pintado ? undefined : porId.get(mapa.id === 'pueblo' ? 'farola' : 'farola_madera') ?? porId.get('farola');   // en un mapa pintado, sin farol suelto
     if (farol) this.ponerElemento({ id: farol.id, x: x - FAROL_DX, y: y - 2 }, farol, nuevos);
     nuevos.push({ x, y: y + 3, w: 36, h: 14, rombo: true });
     mundo.anadirBloques(nuevos);
@@ -568,6 +570,29 @@ export class Aventura extends Phaser.Scene {
       ctx.fillStyle = pat; ctx.fillRect(0, 0, cv.width, cv.height); cv.refresh();
       this.add.image(p.x, p.y, key).setOrigin(0).setScale(1 / S).setDepth(-9500);
     }
+  }
+
+  // Mapa pintado (la ciudad, MapaAventura.pintado): la imagen entera de suelo, encima de todo el Terrain, y sus tapas
+  // (trozos recortados por su polígono, con la profundidad de su base, para que quien pase por detrás quede oculto). Las
+  // farolas pintadas llevan su luz.
+  private pintar(): void {
+    const p = this.mapa.pintado;
+    if (!p) return;
+    const src = this.textures.get(p.tex).getSourceImage() as HTMLImageElement;
+    this.add.image(0, 0, p.tex).setOrigin(0).setScale(p.k).setDepth(-9500);
+    for (const [i, t] of p.tapas.entries()) {
+      const xs = t.poli.map(q => q[0]), ys = t.poli.map(q => q[1]);
+      const x0 = Math.floor(Math.min(...xs)), y0 = Math.floor(Math.min(...ys)), x1 = Math.ceil(Math.max(...xs)), y1 = Math.ceil(Math.max(...ys));
+      const key = `tapa_${this.mapa.id}_${i}`, k = p.k;
+      if (this.textures.exists(key)) this.textures.remove(key);
+      const cv = this.textures.createCanvas(key, Math.ceil((x1 - x0) / k), Math.ceil((y1 - y0) / k))!, ctx = cv.getContext();
+      ctx.beginPath();
+      for (const [x, y] of t.poli) ctx.lineTo((x - x0) / k, (y - y0) / k);
+      ctx.closePath(); ctx.clip();
+      ctx.drawImage(src, -x0 / k, -y0 / k); cv.refresh();
+      this.add.image(x0, y0, key).setOrigin(0).setScale(k).setDepth(t.base);
+    }
+    for (const [x, y, d] of p.luces) this.encender(x, y, TIPOS_LUZ.farol, d);
   }
 
   private iluminar(go: Phaser.GameObjects.GameObject): void {
@@ -746,7 +771,7 @@ export class Aventura extends Phaser.Scene {
       this.camMapa = this.cameras.add(e.x, e.y, e.w, e.h).setZoom(e.zoom).centerOn(this.mapa.W / 2, this.mapa.H / 2).setBackgroundColor(0x1b120a);
       this.camMapa.ignore([this.barras, this.anillo, this.marcaG]);
       // El suelo reducido tanto sin suavizar se llena de puntitos (su grano): para el mapa, una copia ya reducida.
-      const suelo = this.children.list.find(o => o instanceof Phaser.GameObjects.Image && o.texture.key === 'ground') as Phaser.GameObjects.Image | undefined;
+      const suelo = this.children.list.find(o => o instanceof Phaser.GameObjects.Image && o.texture.key === (this.mapa.pintado?.tex ?? 'ground')) as Phaser.GameObjects.Image | undefined;
       const fuente = suelo?.texture.getSourceImage() as HTMLCanvasElement | undefined;
       if (suelo && fuente) {
         if (this.textures.exists('ground_mapa')) this.textures.remove('ground_mapa');

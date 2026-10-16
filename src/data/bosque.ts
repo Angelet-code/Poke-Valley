@@ -9,7 +9,7 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, SALIDA_ESTE_Y, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
@@ -20,10 +20,15 @@ import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 import type { Clima } from '../combate/reglas';
 
 export const T = 24;
-export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma | 'taller' | 'ciudad';   // taller: mapa de prueba de las tiras (taller.ts); ciudad: el kit de la ciudad (ciudad.ts)
+export type MapaId = 'pueblo' | 'bosque' | 'lago' | Bioma | 'taller' | 'ciudad';   // taller: mapa de prueba de las tiras (taller.ts); ciudad: mapa pintado (ciudad.ts)
 // Pavimento: un rectángulo de suelo con una textura repetible (lab/assets/suelo_arcane/ciudad/<tex>.png) a `escala` px de
 // mundo por px de textura, sobre el césped del Terrain y bajo todo lo demás.
 export interface Pavimento { tex: string; x: number; y: number; w: number; h: number; escala: number }
+// Mapa pintado (la ciudad, 2026-10-16): una imagen entera de IA hace de suelo y de escenario (ciudad.ts). `k`: px de mundo
+// por px de la imagen. Tapas: trozos de la imagen (polígono en px de mundo) delante de quien pase por detrás, con la
+// profundidad de su base. Muros: lo que no se pisa. Luces: [x, y, profundidad del halo] de las farolas pintadas.
+export type Poligono = [number, number][];
+export interface Pintado { tex: string; k: number; tapas: { poli: Poligono; base: number }[]; muros: Poligono[]; luces: [number, number, number][] }
 export interface Punto { x: number; y: number }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
@@ -53,7 +58,8 @@ export interface MapaAventura {
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
   suelo?: Bioma;                  // zonas de bioma: texturas y paleta del suelo (biomas.ts); si no, las del estilo
-  pavimentos?: Pavimento[];       // ciudad: suelos pavimentados (adoquín, losas…) encima del Terrain
+  pavimentos?: Pavimento[];       // suelos pavimentados (adoquín, losas…) encima del Terrain (el kit de la ciudad, sin uso ahora)
+  pintado?: Pintado;              // ciudad: el mapa es una imagen pintada (suelo y escenario), con tapas, muros y luces
   macizo?: Macizo;                // zonas de bioma: lo que no se puede cruzar (bosque cerrado, roca…), ver biomas.ts
 }
 
@@ -62,9 +68,9 @@ export function pueblo(): MapaAventura {
   const datos = terrenoPueblo(), [ix, iy] = datos.inicio ?? [504, 540];
   return {
     id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS_PUEBLO, { id: ARCANE ? 'tablon' : 'valla', x: TABLON.x, y: TABLON.y }], detalles: 40,
-    lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del norte lleva al bosque.',
-    llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: 46, dir: 0 } },
-    salidas: [{ x0: 520, y0: 0, x1: 600, y1: 14, a: 'bosque', texto: 'Al bosque' }],
+    lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del norte lleva al bosque y la calle del este, a la ciudad.',
+    llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: 46, dir: 0 }, ciudad: { x: W_PUEBLO - 40, y: (SALIDA_ESTE_Y[0] + SALIDA_ESTE_Y[1]) / 2, dir: 6 } },
+    salidas: [{ x0: 520, y0: 0, x1: 600, y1: 14, a: 'bosque', texto: 'Al bosque' }, { x0: W_PUEBLO - 14, y0: SALIDA_ESTE_Y[0], x1: W_PUEBLO, y1: SALIDA_ESTE_Y[1], a: 'ciudad', texto: 'A la ciudad' }],
     salvajes: [],
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).

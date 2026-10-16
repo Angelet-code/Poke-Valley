@@ -34,6 +34,7 @@ export const TENDERO = { x: 838, y: 562 };          // Kecleon, el tendero: dela
 export const BAYERO = { x: 712, y: 468 };           // Aipom, el obseso de las bayas: en el césped al este de la plaza, junto al camino a la tienda
 export const INICIO: P = [504, 540];                // donde apareces (en la plaza, al sur de la hoguera)
 export const SALIDA_X: [number, number] = [520, 600]; // boca norte del pueblo (al bosque)
+export const SALIDA_ESTE_Y: [number, number] = [314, 374]; // boca este (a la ciudad, 2026-10-16): la calle del norte sigue hasta el borde
 export const RELLANO_PUEBLO: P = [724, 150];          // rellano de vuelo, a la derecha de la boca norte (data/rellano.ts)
 // Parcelas del huerto (centro de cada corral) y solares libres para construir.
 export const PARCELAS: P[] = [[150, 640], [222, 640], [294, 640], [150, 712], [222, 712], [294, 712]];
@@ -42,7 +43,7 @@ export const SOLARES: Rect[] = [{ x0: 640, y0: 760, x1: 900, y1: 870 }, { x0: 33
 // ---- Calles (polilíneas) ----
 const AVENIDA: P[] = [[560, -10], [562, 120], [552, 240], [536, 334], [516, 400]];                        // losas: boca norte → plaza
 const CALLES: P[][] = [
-  [[110, 334], [300, 330], [470, 326], [640, 330], [900, 334]],      // calle del norte, delante de las puertas
+  [[110, 334], [300, 330], [470, 326], [640, 330], [900, 334], [960, 342], [1030, 344]],   // calle del norte, delante de las puertas, hasta la boca este
   [[510, 540], [540, 640], [556, 780]],                              // calle del sur: plaza → solares
   [[566, 168], [640, 160], [680, 154]],                              // avenida → rellano de vuelo
   [[582, 478], [700, 500], [780, 548], [800, 620], [800, 780]],      // plaza → tienda → almacén
@@ -119,7 +120,7 @@ const VERDE: Colocado[] = [
   { id: 'roca_4', x: 720, y: 830 }, { id: 'roca_6', x: 860, y: 860, s: 0.8 }, { id: 'roca_1', x: 380, y: 840, s: 0.8 },
   { id: 'tocon', x: 700, y: 400 },
 ];
-// Borde: dos filas de árboles (y alguna roca) alrededor, con la boca del norte libre.
+// Borde: dos filas de árboles (y alguna roca) alrededor, con la boca del norte y la del este libres.
 function borde(): Colocado[] {
   const out: Colocado[] = [];
   let n = 0;
@@ -130,10 +131,12 @@ function borde(): Colocado[] {
     out.push({ id: id(), x, y: H + 10 - (n % 2) * 10, flip: n % 2 === 1 });
   }
   for (let y = 150; y <= H - 30; y += 46) {
-    out.push({ id: id(), x: 24 + (n % 2) * 8, y }, { id: id(), x: W - 20 - (n % 2) * 8, y, flip: true });
+    const este = y > SALIDA_ESTE_Y[0] - 30 && y < SALIDA_ESTE_Y[1] + 40;   // la boca este
+    out.push({ id: id(), x: 24 + (n % 2) * 8, y });
+    if (!este) out.push({ id: id(), x: W - 20 - (n % 2) * 8, y, flip: true });
     // Fila interior, salvo donde están la casa de la chimenea y el huerto (oeste) y el mercado (este).
     if (y < 360 || y > 800) out.push({ id: id(), x: 64, y: y + 22, flip: true });
-    if (y < 400 || y > 820) out.push({ id: id(), x: W - 62, y: y + 22 });
+    if ((y < 400 || y > 820) && !(y + 22 > SALIDA_ESTE_Y[0] - 30 && y + 22 < SALIDA_ESTE_Y[1] + 40)) out.push({ id: id(), x: W - 62, y: y + 22 });
   }
   out.push({ id: 'roca_0', x: 120, y: 880, s: 0.9 }, { id: 'roca_2', x: 940, y: 190, s: 0.8 }, { id: 'roca_5', x: 70, y: 200 });
   return out;

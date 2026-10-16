@@ -32,6 +32,8 @@ export class Preload extends Phaser.Scene {
     for (const b of BIOMAS) for (const [k, f] of [['a', SUELO_BIOMA[b].a], ['b', SUELO_BIOMA[b].b]]) this.load.image(`suelo_${b}_${k}`, `${L}suelo_arcane/${b}/${f}.png`);
     // Pavimentos de la ciudad (data/ciudad.ts, MapaAventura.pavimentos): texturas repetibles.
     for (const t of SUELOS_CIUDAD) this.load.image(`ciudad_${t}`, `${L}suelo_arcane/ciudad/${t}.png`);
+    // El suelo de la ciudad (data/ciudad.ts, MapaAventura.pintado): una imagen entera; las piezas van encima.
+    this.load.image('mapa_ciudad_suelo', `${L}mapas_arcane/ciudad_suelo.jpg`);
     for (let i = 0; i < TREE_N; i++) this.load.image('arbol' + i, `${A}game/arboles/arbol_${i}.png`);
     // Pantalla de título (Title.ts): césped de fondo y flores.
     this.load.image('tit-cesped', `${A}game/cesped_0.png`);

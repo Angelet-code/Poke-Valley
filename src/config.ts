@@ -15,6 +15,8 @@ export const NUEVA = params.has('nueva');
 export const GRANJA = params.get('modo') === 'granja';
 // ?galeria: galería de animaciones de movimientos (scenes/Galeria.ts) en lugar del título.
 export const GALERIA = params.has('galeria');
+// ?zona=<mapa>: entra directo a ese mapa del modo aventura sin pasar por el título (p. ej. ?zona=ciudad).
+export const ZONA = params.get('zona');
 // El escenario va en estilo Arcane (docs/art/ARCANE.md), el de siempre desde 2026-10-15: catálogo
 // lab/assets/elementos_arcane/ (lo que aún no tenga sale del catálogo dibujo), suelo con lab/assets/suelo_arcane/ y
 // PALETA_ARCANE. ?set=dibujo vuelve al estilo dibujo, solo para comparar.

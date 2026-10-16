@@ -1,0 +1,7 @@
+semilla 1
+semilla 2
+semilla 3
+FIN
+tanda2 semilla 1
+tanda2 semilla 2
+FIN2

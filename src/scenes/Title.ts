@@ -2,7 +2,7 @@
 // (continuar, nueva partida, controles). Portada del diseño de Claude Design (1440×810 = 480×270 ×3):
 // las posiciones están en px del diseño y D() las pasa a px de pantalla.
 import Phaser from 'phaser';
-import { GRANJA, NUEVA, S, VH, VW } from '../config';
+import { GRANJA, NUEVA, S, VH, VW, ZONA } from '../config';
 import { Partida } from '../combate/partida';
 import { World } from '../sim/World';
 import { FUENTE } from './UIScene';
@@ -48,6 +48,7 @@ export class Title extends Phaser.Scene {
   constructor() { super('title'); }
 
   create(): void {
+    if (ZONA && !GRANJA) { this.scene.start('aventura', { mapa: ZONA }); return; }
     const aventura = GRANJA ? null : NUEVA ? null : Partida.resumen();
     const res = GRANJA ? (NUEVA ? null : World.resumenPartida()) : aventura ? { dia: aventura.dia, aldeanos: 0 } : null, hay = !!res;
     this.sel = 0; this.textos = []; this.botones = []; this.botonesAv = [];

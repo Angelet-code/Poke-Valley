@@ -208,6 +208,7 @@ export function puntoLuz(p: Pieza): [number, number] | null {
   if (p.el.id === 'hoguera') return [c.x, c.y - hM * 0.45];
   if (p.el.id === 'farola_ciudad') return [c.x, c.y - hM * 0.86];
   if (p.el.id === 'farola_doble') return [c.x, c.y - hM * 0.78];
+  if (p.el.id === 'cd_farola') return [c.x, c.y - hM * 0.88];   // la de la ciudad por piezas (data/ciudad.ts)
   return null;
 }
 
