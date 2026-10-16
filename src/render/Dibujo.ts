@@ -126,6 +126,9 @@ export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
   // Farolas: la huella del catálogo abarca medio poste (no se podía pasar por detrás); solo la base de piedra.
   let hu = el.huella ?? (el.huellas ? [Math.min(...el.huellas.map(q => q[0])), Math.min(...el.huellas.map(q => q[1])), Math.max(...el.huellas.map(q => q[2])), Math.max(...el.huellas.map(q => q[3]))] as Elemento['huella'] : null);
   if (hu && /^farola/.test(el.id)) hu = [hu[0], hu[3] - (hu[2] - hu[0]) * 0.45, hu[2], hu[3]];
+  // La de madera (puntos de vuelo): el poste va a la izquierda del ancla (x 14-105 del PNG) y la huella del catálogo
+  // abarcaba también el brazo y quedaba por encima de la punta; solo el pie del poste.
+  if (el.id === 'farola_madera' && el.w === 344) hu = [14, 1566, 108, 1612];
   const base = hu ? c.y + (hu[3] - ay) * k : c.y;
   const img = scene.add.image(c.x, c.y, key).setOrigin(ax / el.w, ay / el.h).setScale(1 / S).setFlipX(!!c.flip).setDepth(plano ? -9000 + c.y : base);
   if (el.tipo === 'arbol') {
