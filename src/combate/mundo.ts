@@ -909,7 +909,7 @@ export class Mundo {
     for (const m of this.partida.contar(tipo, linea, this.mapa.id)) {
       const n = this.partida.progresoMision(m), lista = n >= m.n;
       this.rotulo(this.jugador, lista ? '¡Misión cumplida!' : `${n}/${m.n}`, 'strong', 500);
-      if (lista) this.aviso('¡Misión cumplida! Entrégala en el tablón del pueblo.');
+      if (lista) this.aviso('¡Misión cumplida! Entrégala en el tablón del pueblo.');   // (solo derrotar/capturar/alfa: las de bayas no pasan por aquí)
     }
   }
   aceptarMision(m: Mision): void {
@@ -920,7 +920,7 @@ export class Mundo {
   entregarMision(m: Mision): void {
     if (!this.partida.entregar(m)) return;
     this.rotulo(this.jugador, `+${m.premio.exp} exp`, 'strong', 200);
-    this.aviso(`Recompensa: ${m.premio.exp} exp, ${m.premio.items.map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`).join(', ')}`);
+    this.aviso(`Recompensa: ${[`${m.premio.exp} exp`, ...(m.premio.oro ? [`${m.premio.oro} Pokécoins`] : []), ...m.premio.items.map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`)].join(', ')}`);
     this.procesar(this.partida.ganarExp(this.partida.activo, m.premio.exp));
     this.guardar();
   }

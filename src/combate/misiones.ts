@@ -9,21 +9,32 @@ import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { FORMAS } from '../data/pokedex';
 import { expPor, formaDe } from './reglas';
 
-export type TipoMision = 'derrotar' | 'capturar' | 'alfa';
+export type TipoMision = 'derrotar' | 'capturar' | 'alfa' | 'bayas';
 export type EstadoMision = 'nueva' | 'activa' | 'lista' | 'hecha';
 export interface Mision {
   id: string; zona: MapaId; tipo: TipoMision;
   linea: string;               // línea que cuenta (cualquiera de sus formas)
   dex: string;                 // la cara del icono
   n: number;
-  premio: { exp: number; items: [string, number][] };
+  baya?: string;               // 'bayas': la baya que hay que llevar (se entregan al terminar, como en el WoW)
+  previa?: string;             // si la hay, no se ofrece hasta haber entregado esa misión
+  premio: { exp: number; oro?: number; items: [string, number][] };
 }
+
+// Misiones de Aipom, el obseso de las bayas del pueblo (docs/GDD-mundo.md §2): una cadena de tres, cada una pide más y
+// mejores bayas y paga oro y experiencia. No salen en el tablón: F junto a Aipom.
+export const DEX_AIPOM = '0190';
+export const MISIONES_AIPOM: Mision[] = [
+  { id: 'aipom-1', zona: 'pueblo', tipo: 'bayas', linea: 'aipom', dex: DEX_AIPOM, n: 5, baya: 'oran', premio: { exp: 80, oro: 150, items: [] } },
+  { id: 'aipom-2', zona: 'pueblo', tipo: 'bayas', linea: 'aipom', dex: DEX_AIPOM, n: 6, baya: 'cheri', previa: 'aipom-1', premio: { exp: 150, oro: 250, items: [] } },
+  { id: 'aipom-3', zona: 'pueblo', tipo: 'bayas', linea: 'aipom', dex: DEX_AIPOM, n: 4, baya: 'sitrus', previa: 'aipom-2', premio: { exp: 300, oro: 450, items: [['pocion', 2]] } },
+];
 
 export const ZONAS_MISION: MapaId[] = ['bosque', 'lago'];
 export const NOMBRE_ZONA: Record<MapaId, string> = { pueblo: 'Pueblo', bosque: 'Bosque Verde', lago: 'Lago Celeste',
   costa: 'Costa Brisa', cantera: 'Cantera Gris', pantano: 'Pantano Umbrío', ruinas: 'Ruinas Antiguas', volcan: 'Volcán Ascua', nieve: 'Cumbres Heladas', taller: 'Taller', ciudad: 'Ciudad' };
 // Por zona: cuántos derrotar y lo que da cada misión además de la experiencia.
-const AJUSTE: Partial<Record<MapaId, { derrotar: number; items: Record<TipoMision, [string, number][]> }>> = {
+const AJUSTE: Partial<Record<MapaId, { derrotar: number; items: Record<Exclude<TipoMision, 'bayas'>, [string, number][]> }>> = {
 // Acorde al nivel de la zona (combate/botin.ts): en el bosque nada mejor que Poké Balls y Pociones; el alfa del lago
 // (Nv 12) ya da lo del siguiente escalón.
   bosque: { derrotar: 5, items: { derrotar: [['oran', 3]], capturar: [['pokeball', 3]], alfa: [['pokeball', 5], ['pocion', 3]] } },
@@ -60,6 +71,6 @@ function deZona(m: MapaAventura): Mision[] {
 // Las misiones del mundo de una partida (se calculan una vez por semilla: generar las zonas cuesta unos ms).
 let cache: { semilla: number; lista: Mision[] } | null = null;
 export function misionesDe(semilla: number): Mision[] {
-  if (cache?.semilla !== semilla) cache = { semilla, lista: ZONAS_MISION.flatMap(z => deZona(crearMapa(z, semilla))) };
+  if (cache?.semilla !== semilla) cache = { semilla, lista: [...ZONAS_MISION.flatMap(z => deZona(crearMapa(z, semilla))), ...MISIONES_AIPOM] };
   return cache.lista;
 }

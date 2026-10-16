@@ -48,7 +48,7 @@ export interface MapaAventura {
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
   tienda?: Punto;                 // el tendero (pueblo): F a su lado abre la tienda (Poké Balls y pociones)
-  bayero?: Punto;                 // el obseso de las bayas (pueblo): F a su lado, pedidos de bayas y venta de bayas
+  bayero?: Punto;                 // Aipom, el obseso de las bayas (pueblo): F a su lado, su cadena de misiones de bayas
   vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)

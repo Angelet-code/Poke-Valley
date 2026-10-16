@@ -82,9 +82,10 @@ const ICONO_DESCUBRIR = [
 // vendedor del WoW, una bolsa de dinero (pixel art). F a su lado abre la tienda (la pinta el HUD).
 export const DEX_TIENDA = '0352', NOMBRE_TIENDA = 'Kecleon';
 export const TIENDA_CERCA = 46;
-// El obseso de las bayas (pueblo): Snorlax. Pide bayas (misiones sin diálogo: la baya y cuántas) y las paga bien; las demás
-// bayas que lleves también se las queda a buen precio. Encima, una baya que flota.
-export const DEX_BAYERO = '0143', NOMBRE_BAYERO = 'Snorlax';
+// El obseso de las bayas (pueblo): Aipom. Como en el WoW, tiene una cadena de misiones (combate/misiones.ts, MISIONES_AIPOM):
+// F a su lado las ofrece y las recoge (bayas a cambio de oro y experiencia); encima, «!» si tiene una nueva y «?» si hay
+// una para entregar.
+export const DEX_BAYERO = '0190', NOMBRE_BAYERO = 'Aipom';
 export const BAYERO_CERCA = 54;
 // Lo que vende, por orden (precios de data/items.ts).
 export const VENTA = ['pokeball', 'superball', 'pocion', 'superpocion'];
@@ -147,7 +148,7 @@ export class Aventura extends Phaser.Scene {
   vueloNuevo = false;                 // el punto de vuelo de aquí se acaba de descubrir (al abrir el mapa de vuelo)
   vuelo: { x: number; y: number; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   tendero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
-  bayero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
+  bayero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Text; fila: number } | null = null;
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
   panel: 'movs' | 'misiones' | 'inv' | 'tienda' | 'bayas' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
@@ -447,12 +448,12 @@ export class Aventura extends Phaser.Scene {
     this.guardar();
     this.aviso(`Compras ${it.nombre} ×${n} por ${it.precio * n} Pokécoins`);
   }
-  // Snorlax, el obseso de las bayas, con su nombre, «‹Bayas›» y una baya encima; su huella se suma al mundo.
+  // Aipom, el obseso de las bayas, con su nombre, «‹Misiones›» y «!» o «?» encima; su huella se suma al mundo.
   private ponerBayero(bloques: Bloque[]): void {
     const t = this.mapa.bayero;
     if (!t) return;
     const { x, y } = t, an = ancla(DEX_BAYERO), ancho = Math.max(10, Math.min(40, an.ancho * 0.75));
-    const nuevo: Bloque = { x, y: y + 2, w: 26, h: 10, rombo: true };
+    const nuevo: Bloque = { x, y: y + 2, w: 16, h: 8, rombo: true };
     this.mundo!.anadirBloques([nuevo]); bloques.push(nuevo);
     const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
     poner(spr, DEX_BAYERO, 'Idle', 0);
@@ -460,38 +461,25 @@ export class Aventura extends Phaser.Scene {
     const placa = this.add.text(x, y - an.alto - 2, `${NOMBRE_BAYERO}
 ‹Bayas›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#f0a0c8', stroke: '#3a1630', strokeThickness: 2 * S, align: 'center' })
       .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
-    const icono = this.add.image(x, placa.y - 16, `icono_${this.partida.pedidoBaya.baya}`).setOrigin(0.5, 1).setDepth(1e5).setScale(0.8);
+    const icono = this.add.text(x, placa.y - 2, '!', { fontFamily: '"Pixelify Sans", "Segoe UI", sans-serif', fontSize: `${18 * S}px`, fontStyle: 'bold', color: '#ffd84a', stroke: '#3a2412', strokeThickness: 3 * S })
+      .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setVisible(false);
     for (const o of [sombra, placa, icono]) o.resetPipeline();
     this.bayero = { x, y, spr, placa, icono, fila: 0 };
   }
-  // Quieto, mira hacia ti cuando te acercas; la baya del pedido flota. El panel se cierra al alejarte.
+  // Las misiones de Aipom que se ofrecen ahora (la cadena avanza al entregar cada una).
+  get misionesBayero(): Mision[] { return this.partida.misiones.filter(m => m.zona === 'pueblo' && this.partida.disponible(m)); }
+  // Quieto, mira hacia ti cuando te acercas; «!» (nueva) o «?» (para entregar) flota encima. El panel se cierra al alejarte.
   private pasoBayero(): void {
     const v = this.bayero, p = this.mundo!.jugador;
     if (!v) return;
-    const baya = `icono_${this.partida.pedidoBaya.baya}`;
-    if (v.icono.texture.key !== baya && this.textures.exists(baya)) v.icono.setTexture(baya);
-    v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2.5 + 2)) * 3).setVisible(this.panel !== 'bayas');
+    const est = this.misionesBayero.map(m => this.partida.estadoMision(m)), c = est.includes('lista') ? '?' : est.includes('nueva') ? '!' : '';
+    v.icono.setVisible(!!c && this.panel !== 'bayas');
+    if (c && v.icono.text !== c) v.icono.setText(c).setColor(c === '?' ? '#ffe680' : '#ffd84a');
+    v.icono.setY(v.placa.y - 2 - Math.abs(Math.sin(this.mundo!.ahora * 3)) * 4);
     const d = Math.hypot(p.x - v.x, p.y - v.y);
     const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
     if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_BAYERO, 'Idle', fila); }
     if (this.panel === 'bayas' && d > BAYERO_CERCA + 30) this.panel = null;
-  }
-  // Entregar al pedido las bayas que lleves (clic en la tarjeta del pedido del HUD).
-  entregarBayas(): void {
-    if (this.panel !== 'bayas') return;
-    const pa = this.partida, { baya, n } = pa.pedidoBaya, nombre = ITEMS[baya]?.nombre ?? baya, antes = pa.pedidoBaya.dadas;
-    const { dadas, pago } = pa.entregarBayas();
-    if (!dadas) { this.aviso(`No llevas ${nombre}`); return; }
-    this.guardar();
-    this.aviso(pago ? `${NOMBRE_BAYERO} ha devorado ${nombre} ×${dadas}. ¡Pedido cumplido! +${pago} Pokécoins` : `Le das ${nombre} ×${dadas} a ${NOMBRE_BAYERO} (${antes + dadas}/${n})`);
-  }
-  // Venderle bayas sueltas a precio de gourmet (clic en la fila; Mayús, cinco).
-  venderBaya(id: string, n = 1): void {
-    if (this.panel !== 'bayas') return;
-    const pago = this.partida.venderBayas(id, n);
-    if (!pago) return;
-    this.guardar();
-    this.aviso(`${NOMBRE_BAYERO} se come tus bayas y te paga ${pago} Pokécoins`);
   }
   // Puntos de vuelo descubiertos (por zona, dónde está su volador). Se descubren hablando con él (F).
   get vuelosConocidos(): Record<string, { x: number; y: number; u: number; v: number }> { return this.partida.estado.vuelos ?? {}; }
@@ -1062,7 +1050,7 @@ export class Aventura extends Phaser.Scene {
   private pasoTablon(): void {
     const t = this.mapa.tablon, p = this.mundo!.jugador;
     if (!t || !this.senal) return;
-    const est = this.partida.misiones.map(m => this.partida.estadoMision(m)), c = est.includes('lista') ? '?' : est.includes('nueva') ? '!' : '';
+    const est = this.partida.misiones.filter(m => m.zona !== 'pueblo').map(m => this.partida.estadoMision(m)), c = est.includes('lista') ? '?' : est.includes('nueva') ? '!' : '';
     this.senal.setVisible(!!c && this.panel !== 'misiones');
     if (c && this.senal.text !== c) this.senal.setText(c).setColor(c === '?' ? '#ffe680' : '#ffd84a');
     this.senal.setY(t.y - 30 - Math.abs(Math.sin(this.mundo!.ahora * 3)) * 4);
