@@ -8,7 +8,7 @@
 // - Vuelo (F junto al volador, `Aventura.modoVuelo`): solo el mundo. Las zonas con punto de vuelo descubierto llevan
 //   el icono del volador donde está; clic en una (que no sea la tuya) y te lleva a su punto de vuelo.
 // En las dos vistas del mundo, el icono marca los puntos de vuelo descubiertos.
-import { rotulo } from '../entrada/rotulos';
+import { rotulo } from '../entrada/asignacion';
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, type G } from './UIScene';

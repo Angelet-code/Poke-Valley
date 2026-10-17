@@ -20,7 +20,7 @@
 import { LINEAS_ATAQUE, ROMANO, lineaAtaque, rangoAtaque } from '../data/lineasAtaque';
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
-import { rotulo } from '../entrada/rotulos';
+import { rotulo } from '../entrada/asignacion';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
 import { NOMBRE_BAYERO, NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';

@@ -295,6 +295,11 @@ Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; 
 - **En los menús**: cruceta o stick izquierdo = moverse, A o Start = aceptar (Enter), B o Select = atrás (Esc),
   X = F, Y = espacio.
 - Dentro de los paneles (K, I, tienda, misiones) sigue haciendo falta el ratón: pendiente navegarlos con el mando.
+- **Configurable**: en el título, «Mando» (`scenes/ConfigMando.ts`): lista de acciones con su botón; la marcada se reasigna
+  pulsando el botón en el mando (manteniendo «más» va a la segunda capa; un botón solo puede estar en una acción).
+  Rótulos de las caras por disposición (automática por el nombre del mando, o Xbox / Switch / PlayStation: en un mando
+  de Switch el botón de abajo se llama B). Se guarda en localStorage `pokemon-valley/mando` (`src/entrada/asignacion.ts`).
+  La cruceta se lee de los botones 12-15 y, en los mandos que Windows expone sin disposición standard, del "hat" (eje 9).
 - **Rótulos**: cuando lo último que se tocó fue el mando (`Aventura.conMando`, `mando.tUso` contra el último movimiento
   del ratón), la barra, la columna de ayuda, el pie del mapa y los avisos nombran los botones (`src/entrada/rotulos.ts`);
   al mover el ratón vuelven las teclas.

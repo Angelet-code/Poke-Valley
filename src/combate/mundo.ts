@@ -4,7 +4,7 @@
 // le llega como sucesos (`sacar()`). Está aparte para que, en multijugador, la pueda llevar el anfitrión.
 // El tiempo es el suyo (`ahora`, s): solo corre en `paso`, así que con la escena en pausa no pasa nada.
 import { ROW_FROM_ANGLE } from '../config';
-import { rotulo } from '../entrada/rotulos';
+import { rotulo } from '../entrada/asignacion';
 import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
 import { FORMAS, LINEAS } from '../data/pokedex';
 import { PROB_CLIMA, RAREZA_AVISO, lineasClima, momentoDe, puedeSalir, rarezaDe, tirarEspecie, type Cuando } from '../data/aparicion';

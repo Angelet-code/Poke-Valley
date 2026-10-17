@@ -69,6 +69,7 @@ export class Title extends Phaser.Scene {
       else this.scene.start('aventura', { nueva: false });
     };
     const controles: Opcion = { texto: 'Controles', detalle: GRANJA ? 'WASD, F, B, M…' : 'WASD, 1-0, Tab, K…', hacer: () => this.verControles() };
+    const mandoOp: Opcion[] = GRANJA ? [] : [{ texto: 'Mando', detalle: 'asigna los botones', hacer: () => this.scene.start('mando') }];
     const detalle = !res ? '' : aventura ? `${aventura.usuario ? aventura.usuario + ' · ' : ''}${aventura.nombre} Nv ${aventura.nivel} · ${aventura.equipo} Pokémon`
       : `Día ${res.dia} · ${res.aldeanos} ${res.aldeanos === 1 ? 'aldeano' : 'aldeanos'}`;
     // Nueva partida con una guardada: antes se pregunta, porque borra la anterior.
@@ -77,8 +78,8 @@ export class Title extends Phaser.Scene {
       ? [{ texto: 'Continuar', detalle, hacer: () => empezar(false) },
         { texto: 'Nueva partida', detalle: 'borra la partida guardada', hacer: nueva },
         ...(aventura ? [{ texto: 'Cambiar nombre', detalle: aventura.usuario ?? 'Jugador', hacer: () => this.cambiarNombre(aventura.usuario ?? '') }] : []),
-        controles]
-      : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'elige compañero y diez Poké Balls', hacer: () => empezar(true) }, controles];
+        controles, ...mandoOp]
+      : [{ texto: 'Empezar', detalle: GRANJA ? 'un valle vacío te espera' : 'elige compañero y diez Poké Balls', hacer: () => empezar(true) }, controles, ...mandoOp];
     if (GRANJA) this.menu(ops); else this.menuAventura(ops);
     if (GRANJA) this.poke('b-Idle', 684, 640, 72, 1600, 0);
     this.pie();
