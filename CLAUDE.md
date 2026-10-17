@@ -18,6 +18,8 @@ cerrados (pueblo + bosque procedural). El juego de antes, estilo Stardew (granja
   - `src/fx/`: animaciones de movimientos copiadas de Pokémon Colleja
     (`A:\PROYECTOS\OPENCODE\Pokemon Colleja Simulator\apps\web\src\features\battle\animation`) y adaptadas en
     `fx/stage.ts`.
+- `docs/GDD-progreso.md`: propuesta (2026-10-17) para que el juego no se acabe en 3 h: mundos heroicos, Pokédex con premios,
+  misiones diarias, botín por alfa y fusiones, logros, exp compartida. Nada hecho aún.
 - `docs/GDD-mundo.md`: las zonas del modo aventura (pueblo, Bosque Verde, Lago Celeste), cómo se conectan, lo que
   viene (misiones sin diálogo, alfas, mundo continuo) y el arte que falta. Prueba directa de una zona:
   `pv.scene.getScene('title').scene.start('aventura', {mapa: 'lago', desde: 'bosque'})`, o en la URL `?zona=lago`
