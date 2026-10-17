@@ -55,6 +55,8 @@ const TENDERO = [452, 862];
 export const VENTA_CIUDAD = ['pokeball', 'superball', 'ultraball', 'pocion', 'superpocion', 'hiperpocion'];
 // Slowbro, el posadero de la ciudad (2026-10-18): en la acera al oeste de la plaza de la fuente, junto al camino al puente.
 const POSADERO = [610, 700];
+// Meowth y su gachapón (2026-10-18): en la plaza, al nordeste de la fuente (combate/gacha.ts).
+const GACHAPON = [880, 540];
 // El patio de prácticas (2026-10-17): cinco muñecos en el césped al sureste de la plaza, entre la acera y el cobertizo
 // (combate/mundo.ts hacerMunieco: quietos, sin captura, no caen).
 const MUNECOS = [[915, 612], [988, 640], [915, 690], [988, 718], [950, 778]];
@@ -83,6 +85,7 @@ export function ciudad(): MapaAventura {
     vuelo: { x: VUELO[0] * K, y: VUELO[1] * K },
     tablon: { x: TABLON[0] * K, y: TABLON[1] * K },
     posadero: { x: POSADERO[0] * K, y: POSADERO[1] * K },
+    gachapon: { x: GACHAPON[0] * K, y: GACHAPON[1] * K },
     tienda: { x: TENDERO[0] * K, y: TENDERO[1] * K, shiny: true, venta: VENTA_CIUDAD },
   };
 }

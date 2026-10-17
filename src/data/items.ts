@@ -2,7 +2,7 @@
 // `icono` es la clave de textura (los recolectables usan su propio sprite pixel art;
 // las bayas, el icono de 24×24 de Esmeralda).
 
-export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina' | 'equipable' | 'evolutivo';   // equipable: combate/objetos.ts; evolutivo: data/pokedex.ts EVO_OBJETO
+export type ItemKind = 'recolectable' | 'baya' | 'pokeball' | 'medicina' | 'equipable' | 'evolutivo' | 'especial';   // equipable: combate/objetos.ts; evolutivo: data/pokedex.ts EVO_OBJETO; especial: el gachapón (combate/gacha.ts)
 
 export interface ItemDef {
   id: string;
@@ -45,6 +45,11 @@ export const ITEMS: Record<string, ItemDef> = {
   firestone: { id: 'firestone', nombre: 'Piedra Fuego', precio: 200, tipo: 'evolutivo', icono: 'icono_firestone' },
   leafstone: { id: 'leafstone', nombre: 'Piedra Hoja', precio: 200, tipo: 'evolutivo', icono: 'icono_leafstone' },
   icestone: { id: 'icestone', nombre: 'Piedra Hielo', precio: 200, tipo: 'evolutivo', icono: 'icono_icestone' },
+  // Gachapón de Meowth (combate/gacha.ts): la moneda la sueltan los alfas; el caramelo y el huevo salen de la máquina.
+  // Iconos de tools/iconos_gacha.py.
+  moneda_meowth: { id: 'moneda_meowth', nombre: 'Moneda Meowth', precio: 0, tipo: 'especial', icono: 'icono_moneda_meowth' },
+  rarecandy: { id: 'rarecandy', nombre: 'Caramelo Raro', precio: 300, tipo: 'especial', icono: 'icono_rarecandy' },
+  huevo: { id: 'huevo', nombre: 'Huevo', precio: 0, tipo: 'especial', icono: 'icono_huevo' },
 };
 
 // Las bayas del catálogo se registran al cargar bayas.json (una entrada por baya).

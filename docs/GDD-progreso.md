@@ -68,6 +68,19 @@ color con Ball (capturada). Por zona dice "capturadas 9/21" y el momento en que 
   la distancia.
 - Coste: 1,5 días.
 
+### D2. Gachapón de Meowth — HECHO (2026-10-18)
+- **Dónde**: Meowth en la plaza de la ciudad, al nordeste de la fuente (`data/ciudad.ts` GACHAPON). F abre la máquina; F
+  otra vez (o el botón) tira.
+- **Moneda**: la Moneda Meowth, una por tirada. La sueltan los alfas: 1 y, el 30 % de las veces, 2.
+- **Premios** (`src/combate/gacha.ts` TABLA, pesos sobre ~10 000): bayas, Balls y curas (la mayoría); equipables
+  común 15 %, raro 7 %, épico 2,5 %; piedra 3 %, Caramelo Raro 2,5 %, Huevo 1,5 %, Master Ball 0,2 %; y los Pokémon del
+  casino de Azulona: Abra 0,4 %, Clefairy 0,3 %, Scyther y Pinsir 0,15 %, **Dratini 0,02 % (1 de cada 5 000)**. Shiny
+  con la probabilidad normal. Faltan Porygon y Nidorina/Nidorino: aún no están en la Pokédex.
+- **Caramelo Raro**: +1 nivel al que manejas (inventario I o barra), fuera de combate.
+- **Huevo**: se abre tras 25 derrotas con él en la mochila (`estado.incubando`); sale un bebé a nivel 1 (Pichu, Cleffa,
+  Azurill, Togepi, Elekid, Magby, Smoochum, Riolu, Munchlax o Eevee) que va al pueblo.
+- Iconos 16×16 de `tools/iconos_gacha.py`. Pendiente: el arte de la máquina (pieza `cd_gachapon`, con IA).
+
 ### E. Logros — la sensación de avanzar
 Lista de hitos con barra (panel L o pestaña de la Pokédex): 10/100/1 000 derrotas, 10/50/100 capturas, primer shiny,
 todos los alfas, todas las zonas, todos los puntos de vuelo, 5 Pokémon a nivel 30, un Pokémon de cada tipo,

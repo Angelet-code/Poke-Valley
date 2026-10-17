@@ -34,14 +34,14 @@ import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { MoveCue } from '../fx/tipos';
 import { CASILLAS, PROB_SHINY, Partida } from '../combate/partida';
 import { ALCANCE_DISTANCIA, ALREDEDOR_RADIO, CONO_ANGULO, CONO_LARGO, NOMBRE_ESTADO, NOMBRE_STAT, ZONA_RADIO, formaArea, formaDe, statsDe, type Clima, type FormaArea, type Golpe } from '../combate/reglas';
-import { ALFA_RADIO, DEX_MUNECO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
+import { ALFA_RADIO, DEX_MUNECO, Mundo, RAYO_AVISO, RAYO_RADIO, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
 import { chatDeLaPagina } from '../ui/chat';
 import { TRATO_LEJOS, Tradeo, type MensajeTrato, type Recibido } from '../combate/tradeo';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
 const PIE_MUNECO = 5;   // px del sprite del muñeco de prácticas por debajo de sus pies (el centro de su base redonda)
-import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje } from '../fx/estados';
+import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje, rayoTormenta } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
 import type { DatosEvolucion } from './Evolucion';
 
@@ -94,6 +94,10 @@ export const BAYERO_CERCA = 54;
 // en esa posada (Mundo.descansar). Encima, una luna.
 export const DEX_POSADERO = '0080', NOMBRE_POSADERO = 'Slowbro';
 export const POSADERO_CERCA = 54;
+// El gachapón (ciudad): Meowth, el de Día de Pago. F a su lado abre la máquina (la pinta el HUD); una Moneda Meowth por
+// tirada (combate/gacha.ts). Encima, su moneda.
+export const DEX_GACHA = '0052', NOMBRE_GACHA = 'Meowth';
+export const GACHA_CERCA = 54;
 const ICONO_POSADA = [
   '...ddddd...',
   '..dYYYyd...',
@@ -172,8 +176,10 @@ export class Aventura extends Phaser.Scene {
   tendero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   bayero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Text; fila: number } | null = null;
   posadero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
+  gacha: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
+  ultimaTirada: (ReturnType<Mundo['tirarGacha']> & { t: number }) | null = null;   // lo último que salió del gachapón (el HUD abre la cápsula)
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
-  panel: 'movs' | 'misiones' | 'inv' | 'tienda' | 'bayas' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
+  panel: 'movs' | 'misiones' | 'inv' | 'tienda' | 'bayas' | 'gacha' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
   listo = false;
   evolucionando = false;
@@ -251,7 +257,7 @@ export class Aventura extends Phaser.Scene {
     carga?.progreso(0.08);
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
-    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null; this.bayero = null; this.posadero = null;
+    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null; this.bayero = null; this.posadero = null; this.gacha = null;
     this.placas.clear(); this.bocadillos.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial, data.usuario);
@@ -281,6 +287,7 @@ export class Aventura extends Phaser.Scene {
     if (this.mapa.tienda) formas.push(this.dexTendero);
     if (this.mapa.bayero) formas.push(DEX_BAYERO);
     if (this.mapa.posadero) formas.push(DEX_POSADERO);
+    if (this.mapa.gachapon) formas.push(DEX_GACHA);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
     // Progreso: los sprites van en dos pasadas del cargador (AnimData.xml y luego las hojas); el suelo, aparte.
@@ -315,6 +322,7 @@ export class Aventura extends Phaser.Scene {
     this.ponerTendero(bloques);
     this.ponerBayero(bloques);
     this.ponerPosadero(bloques);
+    this.ponerGacha(bloques);
     this.ponerDetalles(cat.elementos, porId, bloques);
     const mundo = this.mundo;
     if (data.pos) { mundo.jugador.x = data.pos.x; mundo.jugador.y = data.pos.y; }
@@ -609,6 +617,39 @@ export class Aventura extends Phaser.Scene {
     const d = Math.hypot(p.x - v.x, p.y - v.y);
     const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
     if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_POSADERO, 'Idle', fila); }
+  }
+  // Meowth y su gachapón, con su nombre, «‹Gachapón›» y la moneda encima; su huella se suma al mundo.
+  private ponerGacha(bloques: Bloque[]): void {
+    const t = this.mapa.gachapon;
+    if (!t) return;
+    const { x, y } = t, an = ancla(DEX_GACHA), ancho = Math.max(10, Math.min(40, an.ancho * 0.75));
+    const nuevo: Bloque = { x, y: y + 2, w: 16, h: 8, rombo: true };
+    this.mundo!.anadirBloques([nuevo]); bloques.push(nuevo);
+    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
+    poner(spr, DEX_GACHA, 'Idle', 0);
+    const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
+    const placa = this.add.text(x, y - an.alto - 2, `${NOMBRE_GACHA}
+‹Gachapón›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#ffd86a', stroke: '#3a2a10', strokeThickness: 2 * S, align: 'center' })
+      .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
+    const icono = this.add.image(x, placa.y - 16, 'icono_moneda_meowth').setOrigin(0.5, 1).setDepth(1e5);
+    for (const o of [sombra, placa, icono]) o.resetPipeline();
+    this.gacha = { x, y, spr, placa, icono, fila: 0 };
+  }
+  // Quieto, mira hacia ti cuando te acercas; la moneda flota. La máquina se cierra al alejarte.
+  private pasoGacha(): void {
+    const v = this.gacha, p = this.mundo!.jugador;
+    if (!v) return;
+    v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2.2 + 0.5)) * 3).setVisible(this.panel !== 'gacha');
+    const d = Math.hypot(p.x - v.x, p.y - v.y);
+    const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
+    if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_GACHA, 'Idle', fila); }
+    if (this.panel === 'gacha' && d > GACHA_CERCA + 30) this.panel = null;
+  }
+  // Tirar del gachapón (clic en el HUD o F con la máquina abierta).
+  tirarGacha(): void {
+    if (this.panel !== 'gacha' || !this.mundo) return;
+    const r = this.mundo.tirarGacha();
+    if (r) { this.ultimaTirada = { ...r, t: this.time.now }; if (r.premio.tipo === 'poke') cargar(this, [idSprite(formaDe(r.premio.linea, r.premio.nivel).dex, r.shiny)]); }
   }
   // Las misiones de Aipom que se ofrecen ahora (la cadena avanza al entregar cada una).
   get misionesBayero(): Mision[] { return this.partida.misiones.filter(m => m.zona === 'pueblo' && this.partida.disponible(m)); }
@@ -983,6 +1024,8 @@ export class Aventura extends Phaser.Scene {
     if (ti && Math.hypot(ti.x - p.x, ti.y - p.y) < TIENDA_CERCA) { this.panel = this.panel === 'tienda' ? null : 'tienda'; this.asignando = null; return; }
     const by = this.bayero;
     if (by && Math.hypot(by.x - p.x, by.y - p.y) < BAYERO_CERCA) { this.panel = this.panel === 'bayas' ? null : 'bayas'; this.asignando = null; return; }
+    const ga = this.gacha;
+    if (ga && Math.hypot(ga.x - p.x, ga.y - p.y) < GACHA_CERCA) { if (this.panel === 'gacha') this.tirarGacha(); else { this.panel = 'gacha'; this.ultimaTirada = null; } this.asignando = null; return; }
     const po = this.posadero;
     if (po && Math.hypot(po.x - p.x, po.y - p.y) < POSADERO_CERCA) {
       if (mundo.salvajes.some(s => s.modo === 'pelear' && s.rival === p && !s.muerto)) { this.aviso('No se puede descansar en pleno combate'); return; }
@@ -1039,6 +1082,7 @@ export class Aventura extends Phaser.Scene {
       }
       case 'mov': void this.animarMov(mundo, s); break;
       case 'area': this.destelloArea(s); break;
+      case 'rayo': { const k = this.stage.k; rayoTormenta(this.stage, s.x * k, s.y * k, 40 * k); break; }
       case 'ball': this.lanzarBall(s); break;
       case 'ballFin': this.finBall(s); break;
       case 'debilitado': { const v = this.vistas.get(s.uid); if (v) this.tweens.add({ targets: v.fx, alpha: 0, delay: 700, duration: 600 }); break; }
@@ -1106,6 +1150,12 @@ export class Aventura extends Phaser.Scene {
       const p = c.punto, color = l.rol === 'salvaje' ? 0xff4a2a : COLOR_TIPO[m.type], f = mundo.lanzaFrac(l);
       const x = fa === 'zona' && p ? p.x : l.x, y = fa === 'zona' && p ? p.y : l.y, ang = p ? Math.atan2(p.y - l.y, p.x - l.x) : 0;
       forma(fa, x, y, ang, color, 0.1 + 0.15 * (c.canal ? 1 : f), 0.5 + 0.4 * Math.abs(Math.sin(mundo.ahora * 8)));
+    }
+    // Rayos de la tormenta avisados: el círculo amarillo y, dentro, otro que crece hasta llenarlo cuando cae.
+    for (const r of mundo.rayos) {
+      const f = Math.max(0, Math.min(1, 1 - (r.cae - mundo.ahora) / RAYO_AVISO)), w = RAYO_RADIO * 2, h = RAYO_RADIO * 1.3;
+      g.fillStyle(0xffd21a, 0.1 + 0.12 * f).lineStyle(1.5, 0xffe46a, 0.55 + 0.4 * Math.abs(Math.sin(mundo.ahora * 10))).fillEllipse(r.x, r.y, w, h).strokeEllipse(r.x, r.y, w, h);
+      g.fillStyle(0xfff07a, 0.25).fillEllipse(r.x, r.y, w * f, h * f);
     }
     // Protección y familia: una burbuja alrededor mientras dura la ventana (naranja, Aguante).
     const eg = this.escudoG.clear();
@@ -1502,6 +1552,7 @@ ${l.nombre} Nv.${l.nivel}`;
     this.pasoTendero();
     this.pasoBayero();
     this.pasoPosadero();
+    this.pasoGacha();
     this.pintarHogar();
     this.dibujarBarras();
     this.stage.actualizar(t, dtMs);

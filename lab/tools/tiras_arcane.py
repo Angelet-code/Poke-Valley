@@ -309,7 +309,7 @@ def hoja_muros(hechos):
     """Cada tira montada: H = izq + tramo×3 + der (y una fila con su inserto), V = arr + tramo×3 + abj; sueltas aparte."""
     Z = 2.0   # px de la hoja por px de mundo (cada pieza a su tamaño real)
     filas = []
-    bios = ["comun", "costa", "cantera", "pantano", "ruinas", "volcan", "nieve", "ciudad"]
+    bios = ["comun", "costa", "cantera", "pantano", "ruinas", "volcan", "nieve", "llanura", "ciudad"]
     bios += sorted({e["id"].rsplit("_", 1)[-1] for e in hechos.values() if "tira" in e and e["tira"]["forma"] == "S"} - set(bios))
     bios += sorted({e["tira"]["id"].rsplit("_", 1)[-1] for e in hechos.values() if "tira" in e} - set(bios))
     for bio in bios:

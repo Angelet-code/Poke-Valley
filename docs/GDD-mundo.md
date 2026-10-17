@@ -367,8 +367,12 @@ y de noche salen especies distintas** (noche: de las 20:00 hasta que amanece, `m
 - **7 comunes**, que salen igual de a menudo (11,5 % cada una): 3 que salen a todas horas (`siempre`) y 4 de su
   momento (`dia` / `noche`: Pidgey, Combee… de día; Hoothoot, Spinarak… de noche).
 - **7 raras de su momento** (`raras.dia` / `raras.noche`), cada una menos que la anterior: 6 %, 4,5 %, 3,5 %, 2,5 %,
-  1,5 %, 1 % y **0,5 %** la rarísima. Algunas cambian con la hora: en el bosque, Munchlax de día y Noibat de noche; en
-  el volcán, Larvesta de día y Deino de noche; en las ruinas, Solrock de día y Lunatone de noche.
+  1,5 %, 1 % y **0,5 %** la rarísima. Algunas cambian con la hora (en las ruinas, Solrock de día y Lunatone de noche).
+- **Ultra raras** (`ultra`, 2026-10-18): pseudolegendarios y joyas, a cualquier hora. Entre todas, **1 de cada 1000**
+  apariciones (`PROB_ULTRA`): bosque Munchlax; lago Goomy; costa Feebas y Lapras; cantera Larvitar y Aron; pantano
+  Dreepy y Misdreavus; ruinas Togepi; volcán Axew, Bagon, Gible, Deino, Larvesta y Dratini; cumbres Frigibax y
+  Beldum. Antes estaban entre las raras (Axew al 6 % en el volcán) y salían demasiado pronto; su hueco lo ocupan
+  especies normales del bioma. Aviso: «¡¡Un Dratini ultra raro ronda por aquí!!».
 - **Clima:** mientras hace el clima de la zona (o uno de un movimiento que la zona tenga en su tabla), el 35 % de los
   que salen son de su lista, que solo sale entonces: lluvia en el bosque (Surskit, Shroomish, Paras), en el lago
   (Tympole, Surskit, Poliwag), en la costa (Shellos, Clauncher, Mantyke) y en el pantano (Barboach, Tympole, Wooper);
@@ -383,14 +387,38 @@ y de noche salen especies distintas** (noche: de las 20:00 hasta que amanece, `m
   salen a todas horas.
 - Si sale una de las dos últimas raras (1 % o 0,5 %), se avisa: «Un Riolu muy raro ronda por aquí» / «¡Un Larvitar
   rarísimo ronda por aquí!». Pasa en un 15-20 % de las entradas a una zona.
-- Aparte, la **rareza del rincón secreto** de cada bioma (`diseno.rara` en `biomas.ts`) sigue siempre ahí y no está
-  en la tabla (`Ronda.fija`). La de la cantera pasó de Larvitar a Aron: Larvitar salía demasiado y ahora es la
-  rarísima de la cantera.
+- El **rincón secreto** de cada bioma (`diseno.rara` en `biomas.ts`, `Ronda.secreto`) ya no tiene siempre su rareza:
+  sale el 1 % de las veces que aparece alguien allí (`PROB_SECRETO`, `tirarSecreto`); si no, una de las tres
+  últimas raras del momento, al nivel del rincón. Antes era fija y reaparecía cada 40 s: Dratini se podía farmear.
 - Los iniciales no salen como salvajes. Las tres últimas raras de día y de noche de cada tabla no se ofrecen como
   compañero al empezar (`ULTRA_RAROS` en `scenes/Eleccion.ts`).
 - Para estas tablas se añadieron 94 líneas a la Pokédex (stats y tipos del Showdown de Colleja; normales con
   `tools/normales_pokemon.py`; hojas y paletas shiny de SpriteCollab con `tools/shiny_paletas.py`, comparativa en
   `assets/gen/shiny/nuevas_shiny.png` y `noche_clima_shiny.png`).
+
+### 4d. Llanura Tormenta (2026-10-18)
+La séptima zona de bioma, para el grupo de tipos que no tenía casa: **Eléctrico** (y Normal). Nivel 16-22, encima de
+las ruinas (salida norte de las ruinas; en el mapa del mundo, una fila nueva arriba). Prueba: `?zona=llanura`.
+
+- **Idea:** pradera alta y abierta con tormenta casi siempre (lluvia 60 %): pocos muros, mucho sitio para moverse.
+- **Rayos** (`MapaAventura.rayos`, `Mundo.pasoRayos`): mientras llueve (de la zona o de Danza Lluvia), cada 3-7 s
+  un círculo amarillo avisa en el suelo cerca de ti (o de un salvaje cercano) y a los 1,3 s cae el rayo: quita el 20 %
+  de la vida máxima a quien esté dentro (radio 30 px). A los de tipo Eléctrico y Tierra no les hace nada. Efecto:
+  `rayoTormenta` en `fx/estados.ts` (el final de Trueno: rayo del cielo, fogonazo, anillo, chispas y luz).
+- **Hito:** `piedra_trueno` (piedra de cristal con forma de rayo), con el alfa **Luxray** nivel 24 delante.
+  Rincón secreto: **Eevee** nivel 22.
+- **Especies** (`aparicion.ts`): siempre Mareep, Shinx y Electrike; de día Pikachu, Plusle, Minun y Helioptile; de
+  noche Voltorb, Joltik, Hoothoot y Tynamo; raras de día Yamper, Tauros, Miltank, Emolga, Pawmi, Elekid y Dedenne
+  (de noche Chinchou, Magnemite y Rotom en lugar de Tauros, Miltank y Dedenne); ultra raras Eevee y Munchlax; con
+  lluvia Tympole, Chinchou y Tynamo.
+- **Líneas nuevas en la Pokédex** (17): mareep, shinx, electrike, voltorb, joltik, elekid, helioptile, emolga, plusle,
+  minun, dedenne, tynamo, rotom, yamper, pawmi y tauros (stats oficiales; `node tools/datos_combate.mjs` para sus
+  movimientos; normales con `tools/normales_pokemon.py`). **Falta:** sus hojas y paletas shiny (`tools/shiny_paletas.py`,
+  descarga de SpriteCollab).
+- **Arte** (`assets/gen/arcane/biomas/piezas.txt` y `muros/piezas.txt`, bioma `llanura`): árbol doblado por el viento,
+  árbol partido por un rayo, roca imán, aguja pararrayos, cristal eléctrico, hierba alta, flores amarillas, charco de
+  tormenta, nido de lana de Mareep y la piedra trueno; tiras (acantilado, muro, valla, puente…), montaña y arboleda.
+  Suelos: pradera y tierra mojada.
 
 ## 5. Diseño de zonas: lo investigado y cómo se aplica (2026-10-15)
 | Principio | De dónde | En el generador (`diseno` de cada bioma) |

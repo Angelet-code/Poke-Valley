@@ -38,7 +38,8 @@ export interface Salida { x0: number; y0: number; x1: number; y1: number; a: Map
 // Un salvaje en su sitio. `fija`: siempre la misma especie (la rareza del rincón secreto); si no, al reaparecer se
 // vuelve a tirar de la tabla de la zona (data/aparicion.ts).
 // `munieco`: el muñeco de prácticas del pueblo (combate/mundo.ts hacerMunieco): quieto, sin IA ni captura, no cae.
-export interface Ronda { linea: string; nivel: number; x: number; y: number; fija?: boolean; munieco?: boolean }
+// `secreto`: el rincón secreto de un bioma; su rareza (esa línea) solo sale a veces (data/aparicion.ts, `tirarSecreto`).
+export interface Ronda { linea: string; nivel: number; x: number; y: number; fija?: boolean; munieco?: boolean; secreto?: string }
 // El alfa (élite) de una zona: una forma concreta (Pidgeotto a nivel 9, aunque Pidgey evolucione a los 18) en un sitio fijo.
 export interface Alfa extends Ronda { forma: string }
 // Clima de base de una zona: cada tramo de CLIMA_TRAMO s hay `prob` de que haga este clima (0,8 = el 80 % del tiempo).
@@ -55,10 +56,12 @@ export interface MapaAventura {
   salvajes: Ronda[];
   alfa?: Alfa;
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
+  rayos?: boolean;                // con lluvia caen rayos (Llanura Tormenta; combate/mundo.ts pasoRayos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
   tienda?: Tienda;                // el tendero: F a su lado abre la tienda (Poké Balls y pociones; la ciudad vende más)
   bayero?: Punto;                 // Aipom, el obseso de las bayas (pueblo): F a su lado, su cadena de misiones de bayas
   posadero?: Punto;               // Slowbro, el posadero (pueblo y ciudad): F a su lado cura al equipo y fija aquí la piedra de hogar
+  gachapon?: Punto;               // Meowth y su gachapón (ciudad): F a su lado, una Moneda Meowth por tirada (combate/gacha.ts)
   vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)

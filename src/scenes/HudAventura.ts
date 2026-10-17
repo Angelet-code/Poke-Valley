@@ -23,7 +23,7 @@ import { S, VH, VW } from '../config';
 import { rotulo } from '../entrada/asignacion';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
-import { NOMBRE_BAYERO, NOMBRE_TIENDA, type Aura, type Aventura, type Luchador } from './Aventura';
+import { NOMBRE_BAYERO, NOMBRE_GACHA, NOMBRE_TIENDA, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES, RAREZAS, SLOTS, colorRareza, slotIdx } from '../combate/objetos';
@@ -36,6 +36,7 @@ import { redDeLaPagina } from '../combate/red';
 import { TRATO_OBJS, TRATO_POKES } from '../combate/tradeo';
 import { idSprite } from '../combate/sprites';
 import type { Miembro } from '../combate/partida';
+import { HUEVO_DERROTAS, MONEDA as MONEDA_GACHA, TABLA as TABLA_GACHA, probDe, type Clase } from '../combate/gacha';
 
 const CW = 32, CH = 22, HUECO = 2;                       // casilla de la barra (px de juego)
 const BW = 8 + CASILLAS * CW + (CASILLAS - 1) * HUECO, BX = Math.round((VW - BW) / 2), BY = VH - 5 - (CH + 8);
@@ -139,6 +140,10 @@ export class HudAventura extends Phaser.Scene {
   private tiClave = '';
   private tiZonas: { x: number; y: number; w: number; h: number; id: string }[] = [];
   private tiCaja: { x: number; y: number; w: number; h: number } | null = null;
+  private gaObjs: Phaser.GameObjects.GameObject[] = [];
+  private gaClave = '';
+  private gaBoton: { x: number; y: number; w: number; h: number } | null = null;
+  private gaCaja: { x: number; y: number; w: number; h: number } | null = null;
   private trObjs: Phaser.GameObjects.GameObject[] = [];
   private trClave = '';
   private trZonas: { x: number; y: number; w: number; h: number; clic?: (mayus: boolean) => void; ficha?: string }[] = [];
@@ -159,6 +164,7 @@ export class HudAventura extends Phaser.Scene {
     this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null; this.invElegido = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.tiObjs = []; this.tiClave = ''; this.tiZonas = []; this.tiCaja = null;
+    this.gaObjs = []; this.gaClave = ''; this.gaBoton = null; this.gaCaja = null;
     this.trObjs = []; this.trClave = ''; this.trZonas = []; this.trCaja = null;
     this.yo = this.crearMarco(4, 4);
     this.obj = this.crearMarco(Math.round(VW / 2 - 64), 4);
@@ -229,6 +235,8 @@ export class HudAventura extends Phaser.Scene {
       const mz = this.misZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h);
       const tz = this.av.panel === 'tienda' ? this.tiZonas.find(q => x >= q.x && x < q.x + q.w && y >= q.y && y < q.y + q.h) : undefined;
       if (tz) { this.av.comprar(tz.id, (p.event as MouseEvent | undefined)?.shiftKey ? 5 : 1); return; }
+      const gb = this.av.panel === 'gacha' ? this.gaBoton : null;
+      if (gb && x >= gb.x && x < gb.x + gb.w && y >= gb.y && y < gb.y + gb.h) { this.av.tirarGacha(); return; }
       if (mz) {
         const st = this.av.partida.estadoMision(mz.m);
         if (st === 'nueva') this.av.aceptarMision(mz.m); else if (st === 'lista') this.av.entregarMision(mz.m);
@@ -249,6 +257,7 @@ export class HudAventura extends Phaser.Scene {
     if (tc && x >= tc.x && x < tc.x + tc.w && y >= tc.y && y < tc.y + tc.h) return true;
     return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && !!this.panelCaja && x >= this.panelCaja.x && x < this.panelCaja.x + this.panelCaja.w && y >= this.panelCaja.y && y < this.panelCaja.y + this.panelCaja.h)
       || ((this.av.panel === 'misiones' || this.av.panel === 'bayas') && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h)
+      || (this.av.panel === 'gacha' && !!this.gaCaja && x >= this.gaCaja.x && x < this.gaCaja.x + this.gaCaja.w && y >= this.gaCaja.y && y < this.gaCaja.y + this.gaCaja.h)
       || (this.av.panel === 'tienda' && !!this.tiCaja && x >= this.tiCaja.x && x < this.tiCaja.x + this.tiCaja.w && y >= this.tiCaja.y && y < this.tiCaja.y + this.tiCaja.h)
       || (this.av.panel === 'inv' && !!this.invCaja && x >= this.invCaja.x && x < this.invCaja.x + this.invCaja.w && y >= this.invCaja.y && y < this.invCaja.y + this.invCaja.h);
   }
@@ -428,6 +437,7 @@ export class HudAventura extends Phaser.Scene {
     this.pintarInventario();
     this.pintarMisiones();
     this.pintarTienda();
+    this.pintarGacha();
     this.pintarTrato();
     this.pintarSeguimiento(cl ? 44 : 30);
   }
@@ -509,6 +519,66 @@ export class HudAventura extends Phaser.Scene {
     }
     if (hecha) rect(g, C.hueco, 0.55, x, y, MW, MH);   // entregada: apagada
     this.misZonas.push({ x, y, w: MW, h: MH, m });
+  }
+
+  // Gachapón (F junto a Meowth): arriba las monedas; en medio la cápsula (tiembla, se abre con el color de lo que sale y
+  // enseña el premio); debajo el botón de tirar y la tabla de premios con su probabilidad.
+  private pintarGacha(): void {
+    const av = this.av, pa = av.partida, ul = av.ultimaTirada;
+    const fase = ul ? Math.min(12, Math.floor((this.time.now - ul.t) / 70)) : -1;   // 0-11: la cápsula tiembla y se abre; 12: el premio
+    const dexPremio = ul?.premio.tipo === 'poke' ? idSprite(formaDe(ul.premio.linea, ul.premio.nivel).dex, ul.shiny) : '';
+    const k = av.panel === 'gacha' ? `${pa.tiene(MONEDA_GACHA)}|${pa.tiene('huevo')}|${pa.estado.incubando ?? 0}|${ul?.t}|${fase}|${dexPremio && listo(this, dexPremio)}` : '';
+    if (k === this.gaClave) return;
+    this.gaClave = k;
+    this.gaObjs.forEach(o => o.destroy()); this.gaObjs = []; this.gaBoton = null; this.gaCaja = null;
+    if (av.panel !== 'gacha') return;
+    const COLOR: Record<Clase, number> = { comun: 0xb8a98a, raro: 0x4a8fd8, epico: 0xb05ad0, especial: 0xe8b830 };
+    const FILAS = Math.ceil(TABLA_GACHA.length / 2), CAP = 46, w = 196, h = 16 + CAP + 4 + 16 + 6 + 10 + FILAS * 7 + 6, x = 4, y = 36;
+    this.gaCaja = { x, y, w, h };
+    const g = this.add.graphics().setDepth(6);
+    this.gaObjs.push(g);
+    marco(g, x, y, w, h, PANEL);
+    const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.gaObjs.push(q); return q; };
+    t(x + 6, y + 5, `GACHAPÓN DE ${NOMBRE_GACHA.toUpperCase()}`, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    const n = t(x + w - 6, y + 4, String(pa.tiene(MONEDA_GACHA)), 6.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
+    this.iconoItem(x + w - 6 - n.width / S - 6, y + 8.5, MONEDA_GACHA, 9, this.gaObjs, 8);
+    // La cápsula.
+    const cx = x + 6, cy = y + 16, cw = w - 12, mx = cx + cw / 2, my = cy + CAP / 2;
+    rect(g, C.huecoSombra, 1, cx - 1, cy - 1, cw + 2, CAP + 2);
+    rect(g, C.bandejaSombra, 1, cx, cy, cw, CAP);
+    if (!ul) {
+      t(mx, my, pa.tiene(MONEDA_GACHA) ? 'Una moneda, una cápsula' : 'Sin Monedas Meowth: las sueltan los alfas', 5.5, C.tinta).setOrigin(0.5).setAlpha(0.75);
+    } else if (fase < 12) {
+      // Tiembla en rojo y blanco; al abrirse, la mitad de arriba es del color de lo que sale (y un destello).
+      const col = fase < 7 ? 0xd84a3a : COLOR[ul.clase], dx = fase < 7 ? (fase % 2 ? 2 : -2) : 0, abre = fase < 7 ? 0 : (fase - 6) * 2, R = 11;
+      g.fillStyle(0x000000, 0.18).fillEllipse(mx * S, (my + 13) * S, 26 * S, 5 * S);
+      if (fase >= 7) g.fillStyle(COLOR[ul.clase], 0.5 - (fase - 7) * 0.08).fillCircle(mx * S, my * S, (14 + (fase - 7) * 6) * S);
+      g.fillStyle(0xf4eee0, 1).slice((mx + dx) * S, (my + abre) * S, R * S, 0, Math.PI, false).fillPath();
+      g.fillStyle(col, 1).slice((mx + dx) * S, (my - abre) * S, R * S, Math.PI, 0, false).fillPath();
+      g.fillStyle(0x3a2a1a, 1).fillRect((mx + dx - R) * S, (my - abre - 0.5) * S, 2 * R * S, 1 * S);
+      if (abre) g.fillStyle(0x3a2a1a, 1).fillRect((mx + dx - R) * S, (my + abre - 0.5) * S, 2 * R * S, 1 * S);
+    } else {
+      rect(g, COLOR[ul.clase], 0.25, cx, cy, cw, CAP);
+      if (ul.premio.tipo === 'item') this.iconoItem(mx, my - 6, ul.premio.id, 20, this.gaObjs, 8);
+      else if (listo(this, dexPremio)) this.cara(mx, my - 6, dexPremio, 28, this.gaObjs, 8);
+      t(mx, cy + CAP - 4, ul.nombre, 6, C.tinta, { fontStyle: 'bold' }).setOrigin(0.5, 1);
+    }
+    // El botón.
+    const by = cy + CAP + 4, bw = 92, bx = x + w / 2 - bw / 2, puede = pa.tiene(MONEDA_GACHA) > 0;
+    marco(g, bx, by, bw, 16, { borde: C.madera, fondo: puede ? C.bandeja : C.hueco, luz: C.bandejaLuz, osc: C.bandejaSombra, sombra: true });
+    t(bx + bw / 2, by + 8, 'Tirar · 1 moneda (F)', 5.5, puede ? C.tinta : 0x8a7a66, { fontStyle: 'bold' }).setOrigin(0.5);
+    this.gaBoton = { x: bx, y: by, w: bw, h: 16 };
+    // El huevo que se incuba y la tabla de premios.
+    const ty = by + 16 + 6;
+    t(x + 6, ty, 'PREMIOS', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    if (pa.tiene('huevo')) t(x + w - 6, ty, `Huevo: ${pa.estado.incubando ?? 0}/${HUEVO_DERROTAS} derrotas`, 4.5, C.tinta).setOrigin(1, 0);
+    const pct = (p: number) => `${(p * 100).toFixed(p >= 0.1 ? 0 : p >= 0.01 ? 1 : 2)} %`.replace('.', ',');
+    TABLA_GACHA.forEach((c, i) => {
+      const col = Math.floor(i / FILAS), fila = i % FILAS, fx = x + 6 + col * ((w - 12) / 2), fy = ty + 10 + fila * 7;
+      rect(g, COLOR[c.clase], 1, fx, fy + 1.5, 3, 3);
+      t(fx + 5, fy, c.nombre, 4.5, C.tinta);
+      t(fx + (w - 12) / 2 - 5, fy, pct(probDe(c)), 4.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
+    });
   }
 
   // Tienda (F junto a Kecleon): una fila por cosa, con su icono, lo que hace, cuántas llevas y el precio. Lo que no
@@ -675,7 +745,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
   private pintarPanel(): void {
     const av = this.av, m = av.partida.activo;
     if (av.panel !== 'movs') this.panelDesp = 0;
-    const items = av.panel === 'movs' ? Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id] && !EQUIPABLES[id]) : [];   // los equipables, en el inventario (I)
+    const items = av.panel === 'movs' ? Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id] && !EQUIPABLES[id] && id !== MONEDA_GACHA && id !== 'huevo') : [];   // los equipables (y la moneda y el huevo), en el inventario (I)
     const PAD = 14, ARRIBA = 32, alto = BY - 6 - ARRIBA;   // sitio entre los bufos de tu marco y la barra
     const colsMax = Math.max(3, Math.min(5, Math.floor((VW - 9) / 81)));
     const altura = (c: number) => 16 + Math.ceil(m.movs.length / c) * 18 + (items.length ? 13 + Math.ceil(items.length / c) * 18 : 0) + PAD;
@@ -738,7 +808,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
   private clicInventario(z: { id: string | null; hueco?: number }): void {
     const av = this.av;
     if (z.hueco !== undefined) { av.equipar(null, z.hueco); return; }
-    if (z.id && ITEMS[z.id]?.tipo === 'evolutivo') { av.usarItem(z.id); return; }   // piedra: en el que manejas
+    if (z.id && (ITEMS[z.id]?.tipo === 'evolutivo' || z.id === 'rarecandy')) { av.usarItem(z.id); return; }   // piedra o caramelo: en el que manejas
     if (!z.id || !EQUIPABLES[z.id]) return;
     av.equipar(z.id, slotIdx(EQUIPABLES[z.id].slot));   // a su ranura; si ya había otro, vuelve a la mochila
   }
@@ -747,7 +817,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
   private pintarInventario(): void {
     const av = this.av, m = av.partida.activo, obs = av.partida.objetos(m), dex = av.jugador?.dex ?? '';
     const orden = (id: string) => EQUIPABLES[id] ? slotIdx(EQUIPABLES[id].slot) * 100 + RAREZAS.findIndex(r => r.id === EQUIPABLES[id].rareza) : 999;
-    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && (EQUIPABLES[id] || ITEMS[id]?.tipo === 'evolutivo'))   // y las piedras evolutivas
+    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && (EQUIPABLES[id] || ITEMS[id]?.tipo === 'evolutivo' || ITEMS[id]?.tipo === 'especial'))   // y las piedras evolutivas y lo del gachapón
       .sort((a, b) => orden(a[0]) - orden(b[0]));   // por ranura y, dentro, de común a épico
     if (av.panel !== 'inv') this.invElegido = null;
     const k = av.panel === 'inv' ? `${av.partida.dinero}|${m.uid}|${dex}|${m.nivel}|${JSON.stringify(av.jugador?.boosts)}|${obs.join()}|${JSON.stringify(eq)}|${this.invElegido}|${listo(this, dex)}` : '';
@@ -844,6 +914,9 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       desc = `Hace evolucionar a ${Object.entries(EVO_OBJETO).filter(([, o]) => o[id]).map(([l, o]) => `${nom(l)} en ${nom(o[id])}`).join(', ')}`;
       uso = dest ? `Clic: usarla (${this.av.jugador.nombre} → ${nom(dest)})` : `A ${this.av.jugador.nombre} no le hace nada`;
     }
+    if (id === MONEDA_GACHA) { desc = 'La sueltan los alfas. Una tirada en el gachapón de Meowth (ciudad)'; uso = 'F junto a Meowth'; }
+    if (id === 'rarecandy') { desc = 'Sube un nivel al que manejas'; uso = 'Clic: usarlo (fuera de combate)'; }
+    if (id === 'huevo') { desc = `Se abre tras ${HUEVO_DERROTAS} derrotas con él en la mochila. Lleva ${this.av.partida.estado.incubando ?? 0}`; uso = 'Lo que salga va al pueblo'; }
     this.ficha.setText(`${ITEMS[id]?.nombre ?? id}\n${desc}\n${uso}`).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, c = this.invCaja;
     const x = c ? c.x + c.w + 3 : z.x + z.w + 3, y = Math.max(4, Math.min(VH - h - 4, z.y + z.h / 2 - h / 2));

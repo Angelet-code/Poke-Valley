@@ -97,3 +97,15 @@ ciudad|seto|V|A long neatly trimmed rectangular green box hedge
 ciudad|fachada|H|A long continuous row of narrow attached two-storey town houses with different pastel plaster facades, wooden doors, shuttered windows, flower boxes and red and slate tiled roofs, seen from the street
 ciudad|fachada_tienda|H|A long continuous row of attached town house shops with colorful striped awnings over shop windows on the ground floor, wooden doors and tiled roofs, seen from the street
 ciudad|bordillo|H|A long straight raised stone curb edge of a sidewalk, a narrow strip of grey cut stone
+llanura|acantilado|H|A long section of a tall cliff wall of layered brown and dark grey rock with golden prairie grass along its flat top edge and scorched marks from lightning
+llanura|acantilado|V|A long ridge of tall cliffs of layered brown and dark grey rock with golden prairie grass on top
+llanura|escalera|H|A section of a tall cliff wall of layered brown and dark grey rock with golden grass on top and rough stone stairs climbing up its middle to the top
+llanura|montana|S|A huge dark grey rocky hill with golden grass patches and a few tall pointed rock spires on top, wide and impassable
+llanura|arboleda|S|A dense impassable clump of many windswept olive green trees packed tightly together, all leaning the same way
+llanura|muro|H|A long low wall of stacked flat dark grey stones with tufts of golden grass
+llanura|muro|V|A long low wall of stacked flat dark grey stones with tufts of golden grass
+llanura|porton|H|A section of a low wall of stacked flat dark grey stones with an open wooden gate in its middle
+llanura|valla|H|A long weathered wooden ranch fence of posts with two horizontal rails, slightly leaning
+llanura|valla|V|A long weathered wooden ranch fence of posts with two horizontal rails, slightly leaning
+llanura|puente|H|A long straight weathered wooden plank bridge with rope railings on both sides
+llanura|puente|V|A long straight weathered wooden plank bridge with rope railings on both sides

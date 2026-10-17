@@ -3,6 +3,7 @@
 // animación de Colleja (TYPE_FX); el tinte del sprite lo pone la escena (TINTE_ESTADO).
 import { pick, rand } from './fx/engine';
 import { TYPE_FX } from './fx/palette';
+import { bolt, flash, ring, sparks } from './fx/effects';
 import type { SlotGeometry, Stage } from './stage';
 
 export const ESTADO_CADA = 700;
@@ -38,6 +39,18 @@ export function drenaje(stage: Stage, de: SlotGeometry, a: SlotGeometry): void {
     x: a.center.x + rand(-a.size * 0.25, a.size * 0.25), y: a.center.y + rand(-a.size * 0.1, a.size * 0.25), vy: -rand(30, 60),
     life: 500, delay: life + i * 60, size: rand(2.5, 4), sizeEnd: 0.5, color: pick([p.glow, p.hot]), shape: 'star', spin: rand(-3, 3),
   }));
+}
+
+// Rayo de la tormenta (combate/mundo.ts pasoRayos): cae del cielo al punto (x, y, en px de escenario) con fogonazo,
+// anillo en el suelo y chispas; como el final de Trueno, sin la nube ni el oscurecido.
+export function rayoTormenta(stage: Stage, x: number, y: number, s: number): void {
+  const p = TYPE_FX.Electric, fx = stage.fx, desde = { x: x + rand(-s * 0.4, s * 0.4), y: stage.top - 10 }, a = { x, y };
+  fx.add(bolt({ from: desde, to: a, palette: p, duration: 380, width: 9, branches: 4 }));
+  fx.add(bolt({ from: { x: desde.x + s * 0.5, y: desde.y }, to: a, palette: p, duration: 300, width: 4, branches: 2, delay: 40 }));
+  fx.add(flash({ color: '#ffffff', alpha: 0.45, duration: 240 }));
+  fx.add(ring({ at: a, from: s * 0.2, to: s * 1.4, width: 5, color: p.glow, duration: 420, squash: 0.45 }));
+  sparks(fx, a, { count: 22, speed: [180, 420], palette: p, shape: 'streak' });
+  stage.luz(a, p.glow, s * 4, 1.6, 420, 'Electric');
 }
 
 export function auraEstado(stage: Stage, at: SlotGeometry, estado: string): void {

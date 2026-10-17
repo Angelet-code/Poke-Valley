@@ -10,3 +10,5 @@ volcan|ceniza|dark grey volcanic ash
 volcan|roca_volcanica|cracked dark volcanic rock with faint glowing orange cracks
 nieve|nieve|fresh soft white snow
 nieve|hielo|pale blue cracked ice
+llanura|pradera|olive green windswept prairie grass, slightly golden
+llanura|tierra_mojada|dark wet brown earth with small rain puddles

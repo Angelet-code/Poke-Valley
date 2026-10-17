@@ -1,2 +1,2 @@
 assets\gen\arcane\muros\volcan\montana_s1_0.png
-130.6s
+175.2s

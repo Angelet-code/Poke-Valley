@@ -23,6 +23,7 @@ const BORDES: Record<Bioma, { h: [string, number][]; v: [string, number][]; p: n
   ruinas: { h: [['muro', 0.6], ['acantilado', 0.4]], v: [['muro_v', 1]], p: 0.8 },
   volcan: { h: [['acantilado', 0.8], ['muro', 0.2]], v: [], p: 0.8 },
   nieve: { h: [['acantilado', 0.7], ['muro', 0.3]], v: [], p: 0.75 },
+  llanura: { h: [['acantilado', 0.75], ['muro', 0.25]], v: [], p: 0.7 },
 };
 const BANDA = 6;     // celdas que puede subir y bajar el borde dentro de un tramo (48 px); la tira lo endereza
 const MAX = 80;      // celdas de largo máximo de un tramo (640 px): más largo, se parte
@@ -178,6 +179,7 @@ const VESTIR: Record<Bioma, { grande: [string, number][]; medio: string[]; bajo:
   ruinas: { grande: [['arboleda', 1], ['montana', 0.45]], medio: ['arbol_flores', 'columna_rota', 'arbol_flores'], bajo: ['columna_rota', 'flores_hada'] },
   volcan: { grande: [['montana', 0.8], ['arboleda', 1]], medio: ['roca_basalto', 'roca_magma', 'arbol_quemado', 'obsidiana'], bajo: ['roca_magma', 'obsidiana'] },
   nieve: { grande: [['arboleda', 1], ['montana', 0.7]], medio: ['pino_nevado', 'roca_nevada', 'pino_nevado'], bajo: ['roca_nevada', 'monton_nieve', 'arbusto_nevado'] },
+  llanura: { grande: [['arboleda', 1], ['montana', 0.6]], medio: ['arbol_viento', 'roca_iman', 'arbol_viento', 'pararrayos_roca'], bajo: ['roca_iman', 'hierba_alta'] },
 };
 // Cuántas piezas se pusieron y cuánto macizo quedó sin cubrir (celdas) en la última zona, para ajustar.
 export const VESTIDO: { piezas: number; sinCubrir: number } = { piezas: 0, sinCubrir: 0 };

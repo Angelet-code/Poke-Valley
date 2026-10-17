@@ -51,3 +51,13 @@ nieve|estanque_helado|estanque|90|A small frozen pond with cracked pale blue ice
 nieve|arbusto_nevado|roca|30|A small round bush covered with snow
 nieve|tronco_nevado|roca|50|A fallen log covered with snow lying on the ground
 nieve|cristal_hielo|roca|30|A cluster of glowing pale blue ice crystals
+llanura|arbol_viento|arbol|74|A single lone tree bent sideways by strong wind, with a leaning trunk and a windswept canopy of olive green leaves
+llanura|arbol_partido|arbol|66|A single dead tree split in half by a lightning strike, with a charred black crack down its trunk and a few faint yellow electric sparks
+llanura|roca_iman|roca|44|A dark grey magnetic boulder with small iron pebbles stuck to it and faint blue static arcs on its surface
+llanura|pararrayos_roca|roca|34|A single tall pointed rock spire with a metallic tip, scorched black where lightning hits it
+llanura|cristal_electrico|roca|30|A cluster of glowing bright yellow electric crystals growing from a rock, with tiny sparks
+llanura|hierba_alta|detalle|26|A tuft of tall golden-green prairie grass bending in the wind
+llanura|flores_amarillas|detalle|22|A small cluster of bright yellow wild flowers
+llanura|charco_tormenta|estanque|64|A small shallow rain puddle with dark grey water reflecting a stormy sky, flat on the ground
+llanura|piedra_trueno|roca|84|A huge ancient standing stone of pale yellow crystal shaped like a thunderbolt, glowing with electric sparks, planted on a small rocky mound
+llanura|nido_mareep|losa|44|A small soft nest of fluffy cream wool tufts lying flat on the ground

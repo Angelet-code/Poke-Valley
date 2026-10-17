@@ -1,0 +1,2 @@
+assets\gen\arcane\muros\llanura\escalera_s1_0.png
+94.8s

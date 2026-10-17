@@ -61,7 +61,8 @@ export interface Estado {
   regalo?: boolean;                           // recibió el regalo de equipables por error: se le retira al cargar
   dinero?: number;                            // Pokécoins: se ganan derrotando salvajes y se gastan en la tienda del pueblo
   derrotas?: Record<string, number>;          // por línea: cuántos has derrotado (racha de shiny, RACHA_SHINY)
-  vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
+  vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;
+  incubando?: number;                         // derrotas que lleva el primer huevo de la mochila (combate/gacha.ts HUEVO_DERROTAS)   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
 }
 export type Aviso =
   | { tipo: 'nivel'; uid: number; nivel: number }

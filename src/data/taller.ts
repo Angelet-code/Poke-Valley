@@ -1,6 +1,6 @@
 // Taller (2026-10-15): un mapa de prueba con las barreras y piezas para construir de un bioma (docs/art/ARCANE.md,
 // "Muros y barreras"): acantilado con escalera, muro con portón, valla, puente sobre un río, las mismas en vertical,
-// montaña y arboleda. Se elige el bioma con ?taller=<bioma> (comun, costa, cantera, pantano, ruinas, volcan, nieve).
+// montaña y arboleda. Se elige el bioma con ?taller=<bioma> (comun, costa, cantera, pantano, ruinas, volcan, nieve, llanura).
 // Entrar: pv.scene.getScene('title').scene.start('aventura', {mapa: 'taller'}).
 // Cada tira es un Colocado con `tira` (Dibujo.expandirTiras la cambia por sus piezas).
 import type { Colocado } from './mapaDibujo';

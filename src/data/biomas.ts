@@ -1,4 +1,4 @@
-// Zonas de los biomas (docs/GDD-mundo.md §4): costa, cantera, pantano, ruinas, volcán y cumbres. Las seis salen de un
+// Zonas de los biomas (docs/GDD-mundo.md §4): costa, cantera, pantano, ruinas, volcán, cumbres y llanura. Las siete salen de un
 // generador común (`zona`) con lo que declara cada bioma: piezas del borde y del relleno, agua (mar o lagunas), piezas
 // sueltas, hito con su alfa, salidas, especies y niveles. El mundo es fijo: cada zona sale siempre igual con la semilla
 // de la partida. Las piezas son del catálogo Arcane (assets/gen/arcane/biomas/); el suelo, las texturas de
@@ -37,7 +37,7 @@ import { RELLANO, enRellano, sitioVolador, tapaRellano } from './rellano';
 
 type Rect = { x0: number; y0: number; x1: number; y1: number };
 
-export type Bioma = 'costa' | 'cantera' | 'pantano' | 'ruinas' | 'volcan' | 'nieve';
+export type Bioma = 'costa' | 'cantera' | 'pantano' | 'ruinas' | 'volcan' | 'nieve' | 'llanura';
 // Lo que no se puede cruzar: 1 en las celdas de macizo. Lo consulta la escena junto con el agua (Aventura → Mundo).
 export interface Macizo { cel: number; cols: number; filas: number; datos: Uint8Array }
 export function enMacizo(m: { macizo?: Macizo }, x: number, y: number): boolean {
@@ -87,6 +87,7 @@ interface DefZona {
   diseno: { puntos: string[]; marco: string; miga: string; descanso: string[]; rara: { linea: string; nivel: number } };
   hitoEscala?: number; alrededorHito?: [string, number];   // hito pequeño: más grande y con piezas alrededor
   clima?: ClimaBase;                  // clima de base de la zona
+  rayos?: boolean;                    // con lluvia caen rayos (combate/mundo.ts pasoRayos)
 }
 
 const T = 24, MW = 56, MH = 44;
@@ -96,6 +97,7 @@ const T = 24, MW = 56, MH = 44;
 export const SUELO_BIOMA: Record<Bioma, { a: string; b: string }> = {
   costa: { a: 'arena', b: 'arena_humeda' }, cantera: { a: 'tierra_roca', b: 'grava' }, pantano: { a: 'musgo', b: 'barro_claro' },
   ruinas: { a: 'cesped_flores', b: 'losas' }, volcan: { a: 'roca_volcanica', b: 'ceniza_clara' }, nieve: { a: 'nieve', b: 'hielo' },
+  llanura: { a: 'pradera', b: 'tierra_mojada' },
 };
 type RGB = [number, number, number];
 const pal = (a: [RGB, RGB], b: [RGB, RGB], agua: RGB, aguaTonos: [RGB, RGB], aguaSombra: RGB, orillaClara: RGB): Paleta => ({
@@ -110,6 +112,7 @@ export const PALETAS_BIOMA: Record<Bioma, Paleta> = {
   ruinas: pal([[140, 156, 118], [154, 168, 128]], [[112, 114, 115], [138, 139, 137]], [78, 128, 140], [[64, 112, 126], [100, 152, 160]], [54, 92, 104], [176, 180, 150]),
   volcan: pal([[52, 53, 59], [70, 71, 80]], [[118, 118, 122], [130, 131, 134]], [226, 98, 28], [[200, 70, 20], [250, 160, 60]], [150, 40, 16], [96, 80, 70]),
   nieve: pal([[226, 232, 240], [238, 243, 250]], [[172, 199, 214], [196, 216, 227]], [120, 168, 196], [[98, 148, 180], [150, 194, 214]], [80, 124, 152], [246, 248, 252]),
+  llanura: pal([[112, 122, 70], [134, 140, 82]], [[86, 72, 58], [104, 88, 70]], [70, 92, 104], [[58, 78, 92], [96, 118, 128]], [46, 62, 74], [150, 146, 104]),
 };
 
 // Punto del borde de una puerta, el de un poco más adentro y la dirección hacia dentro (fila del sprite).
@@ -472,7 +475,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
       if (!enAgua(x, y, 10)) salvajes.push({ linea: especie(), nivel: Math.round(base + (r() < 0.4 ? 1 : 0)), x, y });
     }
   });
-  if (sec) salvajes.push({ linea: D.rara.linea, nivel: D.rara.nivel, fija: true, x: Math.round(sec.x), y: Math.round(sec.y + 10) });
+  if (sec) salvajes.push({ linea: D.rara.linea, nivel: D.rara.nivel, secreto: D.rara.linea, x: Math.round(sec.x), y: Math.round(sec.y + 10) });
   bolsas.forEach((b, i) => { if (i % 2 === 0) salvajes.push({ linea: especie(), nivel: Math.round((def.niveles[0] + def.niveles[1]) / 2 + 1), x: Math.round(b.x), y: Math.round(b.y + 8) }); });
   // Explanadas: 3 salvajes más en cada una (es el espacio de combate), con el nivel de su tramo del recorrido.
   explanadas.slice(0, -1).forEach((f, i) => {
@@ -489,7 +492,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   const llegada: Partial<Record<MapaId | 'inicio', Llegada>> = { inicio: { ...sitios[0].dentro, dir: sitios[0].dir } };
   def.puertas.forEach((p, i) => { llegada[p.a] = { x: Math.round(sitios[i].dentro.x), y: Math.round(sitios[i].dentro.y), dir: sitios[i].dir }; });
   return {
-    id: def.id, nombre: def.nombre, lema: def.lema, bienvenida: def.bienvenida, alfa, suelo: def.bioma, clima: def.clima,
+    id: def.id, nombre: def.nombre, lema: def.lema, bienvenida: def.bienvenida, alfa, suelo: def.bioma, clima: def.clima, rayos: def.rayos,
     datos: { mw: MW, mh: MH, vert, inicio: [Math.round(sitios[0].dentro.x), Math.round(sitios[0].dentro.y)] }, W, H, colocados: col, detalles: 0,
     llegada, salidas: def.puertas.map(p => salida(p, W, H)), salvajes: alcanzables,
     macizo: { cel: CEL, cols: GC, filas: GF, datos: mMacizo },
@@ -497,7 +500,7 @@ function zona(def: DefZona, semilla: number): MapaAventura {
   };
 }
 
-// ---- Los seis biomas ----
+// ---- Los siete biomas ----
 const DEFS: Record<Bioma, DefZona> = {
   costa: {
     id: 'costa', bioma: 'costa', bajo: ['roca_costa', 'hierba_duna', 'roca_costa'], diseno: { puntos: ['barca', 'poza_marea', 'red_pesca', 'madera_deriva'], marco: 'roca_costa', miga: 'conchas', descanso: ['hoguera', 'madera_deriva'], rara: { linea: 'lapras', nivel: 16 } },
@@ -536,7 +539,8 @@ const DEFS: Record<Bioma, DefZona> = {
     id: 'ruinas', bioma: 'ruinas', bajo: ['muro_roto', 'columna_rota', 'flores_hada'], rio: true, diseno: { puntos: ['altar', 'estatua', 'cristal_psiquico', 'columna_rota'], marco: 'estatua', miga: 'flores_hada', descanso: ['hoguera', 'columna_rota'], rara: { linea: 'togepi', nivel: 22 } },
     nombre: 'Ruinas Antiguas', lema: 'Nivel 14-20 · Psíquico y Hada', sal: 0x2a1b5e, caminoLosas: true, clima: { tipo: 'arena', prob: 0.3 },
     bienvenida: 'Las ruinas. Columnas rotas, cristales que brillan y un arco al fondo.',
-    puertas: [{ lado: 's', t: 0.6, a: 'ciudad', texto: 'A la ciudad' }, { lado: 'o', t: 0.4, a: 'volcan', texto: 'Al volcán' }, { lado: 'e', t: 0.4, a: 'nieve', texto: 'A las cumbres' }],
+    puertas: [{ lado: 's', t: 0.6, a: 'ciudad', texto: 'A la ciudad' }, { lado: 'o', t: 0.4, a: 'volcan', texto: 'Al volcán' }, { lado: 'e', t: 0.4, a: 'nieve', texto: 'A las cumbres' },
+      { lado: 'n', t: 0.45, a: 'llanura', texto: 'A la llanura' }],
     muro: ['arbol_flores'], relleno: ['arbol_flores', 'muro_roto', 'columna_rota'], claros: 6,
     extras: [['estatua', 4, 'borde'], ['altar', 2, 'claro'], ['cristal_psiquico', 6, 'borde'], ['losas_ruina', 6, 'claro'], ['flores_hada', 14, 'claro'], ['columna_rota', 9, 'borde']],   // sin muro_roto suelto (un bloque cuadrado que parecía un pilar puesto al azar)
     hito: 'arco_ruinas', alfa: { linea: 'ralts', forma: 'kirlia', nivel: 22 },
@@ -563,6 +567,18 @@ const DEFS: Record<Bioma, DefZona> = {
     hito: 'estanque_helado', alfa: { linea: 'snorunt', forma: 'glalie', nivel: 28 },
     clima: { tipo: 'granizo', prob: 0.8 },
     niveles: [20, 26],
+  },
+  // Llanura Tormenta (2026-10-18): pradera abierta con tormenta casi siempre; con lluvia caen rayos (combate/mundo.ts).
+  llanura: {
+    id: 'llanura', bioma: 'llanura', bajo: ['roca_iman', 'hierba_alta', 'flores_amarillas'], rio: true, diseno: { puntos: ['pararrayos_roca', 'arbol_partido', 'cristal_electrico', 'roca_iman'], marco: 'pararrayos_roca', miga: 'flores_amarillas', descanso: ['hoguera', 'nido_mareep'], rara: { linea: 'eevee', nivel: 22 } },
+    nombre: 'Llanura Tormenta', lema: 'Nivel 16-22 · Eléctrico y Normal', sal: 0x7a3e51,
+    bienvenida: 'La llanura. Hierba alta, viento y tormenta. Cuando llueve caen rayos: si ves un círculo en el suelo, apártate.',
+    puertas: [{ lado: 's', t: 0.5, a: 'ruinas', texto: 'A las ruinas' }],
+    agua: { tipo: 'lagunas', n: 2 }, muro: ['arbol_viento', 'arbol_viento', 'roca_iman'], relleno: ['arbol_viento', 'hierba_alta', 'roca_iman', 'arbol_partido'], claros: 7,
+    extras: [['hierba_alta', 18, 'claro'], ['flores_amarillas', 10, 'claro'], ['pararrayos_roca', 5, 'borde'], ['cristal_electrico', 5, 'borde'], ['arbol_partido', 4, 'borde'], ['charco_tormenta', 4, 'claro'], ['nido_mareep', 3, 'claro']],
+    hito: 'piedra_trueno', alfa: { linea: 'shinx', forma: 'luxray', nivel: 24 },
+    clima: { tipo: 'lluvia', prob: 0.6 }, rayos: true,
+    niveles: [16, 22],
   },
 };
 export const BIOMAS = Object.keys(DEFS) as Bioma[];

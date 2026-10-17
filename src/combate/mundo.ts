@@ -7,13 +7,13 @@ import { ROW_FROM_ANGLE } from '../config';
 import { rotulo } from '../entrada/asignacion';
 import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
 import { FORMAS, LINEAS } from '../data/pokedex';
-import { PROB_CLIMA, RAREZA_AVISO, lineasClima, momentoDe, puedeSalir, rarezaDe, tirarEspecie, type Cuando } from '../data/aparicion';
+import { PROB_CLIMA, RAREZA_AVISO, RAREZA_ULTRA, lineasClima, momentoDe, puedeSalir, rarezaDe, tirarEspecie, tirarSecreto, type Cuando } from '../data/aparicion';
 import { ESPECIES } from '../data/especies';
 import { BALL, ITEMS } from '../data/items';
 import { alturaDe, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
 import type { LabelTone } from '../fx/stage';
 import { dentroDe } from '../util';
-import { HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
+import { HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, PROB_SHINY, Partida, movsHasta, tirarSexo, type Atajo, type Aviso, type Miembro, type Sexo } from './partida';
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
 import { MEJOR, PROB_PIEDRA_ALFA, PROB_PIEDRA_SUELO, nivelZona, sortear, sortearPiedra, tierDe } from './botin';
@@ -24,10 +24,11 @@ import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, RITMO, NOMBRE_ESTADO, NOMBRE_STAT,
   ALCANCE_CUERPO, ATRAS_LARGO, ATRAS_VEL, CARGA_ALCANCE, CARGA_VEL, EMBESTIDA_LARGO, EMBESTIDA_VEL, movilidad, type Movilidad,
   ALCANCE_DISTANCIA, ALCANCE_PROYECTIL, RADIO_PROYECTIL, VEL_PROYECTIL, dirigido, ALREDEDOR_RADIO, AREA_VARIOS, CONO_ANGULO, CONO_LARGO, ZONA_RADIO, formaArea, type FormaArea,
-  ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
+  ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expDeNivel, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
   velAndar, type Clima, type Golpe, type Perfil, type Stats,
 } from './reglas';
 import type { AnimId } from './sprites';
+import { HUEVO_DERROTAS, MONEDA as MONEDA_GACHA, MONEDAS_ALFA, PROB_MONEDA_EXTRA, abrirHuevo, tirar as tirarCapsula, type Clase, type Premio } from './gacha';
 
 const VEL = 84;                    // px/s del jugador
 const ANCHO = 9;                   // medio ancho del cuerpo contra paredes
@@ -45,6 +46,12 @@ const LEJOS_CAMBIO = 300;
 const HALLAZGOS = 5;               // objetos tirados por el suelo en cada zona (no en el pueblo)
 const HALLAZGO_VUELVE = 10 * 60e3;  // ms (reales) hasta que vuelve a haber algo donde cogiste uno
 const HALLAZGO_COGER = 12;          // px: se coge al pisarlo
+// Rayos de la tormenta (zonas con `rayos`, la Llanura Tormenta): mientras llueve, cada 3-7 s un círculo avisa en el
+// suelo cerca de ti (o de un salvaje cercano) y RAYO_AVISO s después cae el rayo: quita RAYO_DANO de la vida máxima a
+// quien esté dentro de RAYO_RADIO (elipse aplastada como el suelo). A los de tipo Eléctrico y Tierra no les hace nada.
+const RAYO_CADA: [number, number] = [3, 7];
+export const RAYO_AVISO = 1.3, RAYO_RADIO = 30;
+const RAYO_DANO = 0.2;
 const CORREA = 330;                // px: un salvaje que te persigue más lejos de su sitio se vuelve (y se cura)
 export const CURA_FUERA = 0.05;    // fracción de vida por segundo fuera de combate (6 s sin pegar ni recibir)
 // Alfas (docs/GDD-mundo.md §2): más grandes, con aura, el triple de vida y un golpe anunciado en el suelo.
@@ -191,7 +198,8 @@ export type Suceso =
   | { tipo: 'clima'; clima: Clima | null }
   | { tipo: 'evoluciona'; antes: ReturnType<typeof formaDe>; aprende: string[] }
   | { tipo: 'ir'; mapa: MapaId; desde: MapaId | 'inicio' }
-  | { tipo: 'drena'; de: string; a: string };   // Drenadoras: la vida va de `de` (el sembrado) a `a` (quien sembró)
+  | { tipo: 'drena'; de: string; a: string }
+  | { tipo: 'rayo'; x: number; y: number };   // cae un rayo de la tormenta (pasoRayos)   // Drenadoras: la vida va de `de` (el sembrado) a `a` (quien sembró)
 
 export interface OpcionesMundo {
   mapa: MapaAventura; partida: Partida; desde: MapaId | 'inicio';
@@ -217,6 +225,7 @@ export class Mundo {
   conMando = false;                       // los avisos nombran los botones del mando en vez de las teclas
   private k(tecla: string): string { return rotulo(tecla, this.conMando); }
   ahora = 0;
+  rayos: { x: number; y: number; cae: number }[] = [];   // rayos avisados que aún no han caído (la escena pinta el círculo)
   cambiando = false;                   // te vas del mapa (salida, debilitado o piedra de hogar)
   // Clima del mapa (Danza Lluvia, Día Soleado…): hasta cuándo dura; daña por turnos a quien no aguanta la arena o el granizo.
   // `base`: es el de la zona (MapaAventura.clima), que no daña; un movimiento de clima lo tapa mientras dura.
@@ -237,6 +246,7 @@ export class Mundo {
   private climaTic = 0;
   private claveAparicion = '';        // hora y clima con los que se tiró a los salvajes (pasoAparicion)
   private climaSorteo = 0;             // cuándo se vuelve a sortear el clima de la zona
+  private rayoSig = 0;                 // cuándo se avisa del siguiente rayo (pasoRayos)
   private sucesos: Suceso[] = [];
   private relojes: { t: number; fn: () => void }[] = [];
   private pendientes = new Map<number, { l: Luchador; id: string; t: Luchador; r: Golpe; ef: Efecto[]; hasta: number }>();
@@ -267,7 +277,7 @@ export class Mundo {
     this.jugador.dir = lleg.dir;
     // El mapa trae las especies de siempre: se tira según la hora que es (el clima llega en el primer paso).
     const cuando = this.cuando();
-    for (const r of this.mapa.salvajes) if (!r.fija) r.linea = tirarEspecie(this.mapa.id, this.rnd, cuando)?.linea ?? r.linea;
+    for (const r of this.mapa.salvajes) if (!r.fija) r.linea = this.tirarRonda(r, cuando);
     this.claveAparicion = `${cuando.momento}|`;
     for (const r of this.mapa.salvajes) this.salvajes.push(this.crearSalvaje(r));
     if (this.mapa.id === 'pueblo') this.crearVecinos();
@@ -425,8 +435,9 @@ export class Mundo {
     l.tabla = tablaDe(l.natu, this.rnd);
     if (r.munieco) this.hacerMunieco(l);
     // Uno de los rarísimos de la tabla de la zona (data/aparicion.ts): se avisa, que es todo un acontecimiento.
-    const rz = r.fija ? -1 : rarezaDe(this.mapa.id, r.linea, this.cuando().momento);
-    if (rz >= RAREZA_AVISO) this.aviso(rz === RAREZA_AVISO ? `Un ${l.nombre} muy raro ronda por aquí` : `¡Un ${l.nombre} rarísimo ronda por aquí!`);
+    const rz = r.fija ? -1 : r.secreto === r.linea ? RAREZA_ULTRA : rarezaDe(this.mapa.id, r.linea, this.cuando().momento);
+    if (rz >= RAREZA_AVISO) this.aviso(rz === RAREZA_AVISO ? `Un ${l.nombre} muy raro ronda por aquí`
+      : rz === RAREZA_ULTRA ? `¡¡Un ${l.nombre} ultra raro ronda por aquí!!` : `¡Un ${l.nombre} rarísimo ronda por aquí!`);
     return l;
   }
   // El muñeco de prácticas (pueblo): el de madera de un MMO (pixel art, DEX_MUNECO; su `linea` solo pone los stats
@@ -1052,9 +1063,13 @@ export class Mundo {
   // En su sitio vuelve a salir otro de la tabla de la zona (la rareza del rincón secreto, siempre la misma).
   private reaparecer(r?: Ronda): void {
     if (r) this.despues(RESPAWN, () => {
-      if (!r.fija) r.linea = tirarEspecie(this.mapa.id, this.rnd, this.cuando())?.linea ?? r.linea;
+      if (!r.fija) r.linea = this.tirarRonda(r, this.cuando());
       this.salvajes.push(this.crearSalvaje(r));
     });
+  }
+  // Quién sale en el sitio de un salvaje: de la tabla de la zona o, en el rincón secreto, su rareza (a veces).
+  private tirarRonda(r: Ronda, c: Cuando): string {
+    return r.secreto ? tirarSecreto(this.mapa.id, r.secreto, this.rnd, c.momento) : tirarEspecie(this.mapa.id, this.rnd, c)?.linea ?? r.linea;
   }
   // La hora del día y el clima que hace (data/aparicion.ts): de qué tabla salen los salvajes.
   private cuando(): Cuando { return { momento: momentoDe(this.partida.estado.minuto), clima: this.clima?.tipo ?? null }; }
@@ -1071,7 +1086,7 @@ export class Mundo {
     const nada = this.ahora < 1.5;   // recién entrado en el mapa: aún no se ha visto a nadie
     for (const l of this.salvajes) {
       const r = l.ronda;
-      if (!r || r.fija || l.alfa) continue;
+      if (!r || r.fija || r.secreto || l.alfa) continue;
       const aClima = empiezaClima && !!lineasClima(this.mapa.id, c.clima).length && this.rnd() < PROB_CLIMA;
       if (!aClima && puedeSalir(this.mapa.id, r.linea, c)) continue;
       if (nada) this.cambiarSalvaje(l, aClima);
@@ -1108,8 +1123,9 @@ export class Mundo {
       const { ball, cura } = MEJOR[tierDe(t.nivel)];
       const eq = sortearEquipable(this.rnd, true);   // y un objeto equipable, a menudo raro o épico (inventario, I)
       const piedra = this.rnd() < PROB_PIEDRA_ALFA ? sortearPiedra(this.rnd) : null;   // y a veces una piedra evolutiva
-      this.partida.dar(ball, 2); this.partida.dar(cura, 2); this.partida.dar(eq); if (piedra) this.partida.dar(piedra);
-      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2, ${ITEMS[cura].nombre} ×2${piedra ? `, ${ITEMS[piedra].nombre}` : ''} y ${ITEMS[eq].nombre} (equípalo con I)`);
+      const monedas = MONEDAS_ALFA + (this.rnd() < PROB_MONEDA_EXTRA ? 1 : 0);   // y Monedas Meowth, para el gachapón de la ciudad (combate/gacha.ts)
+      this.partida.dar(ball, 2); this.partida.dar(cura, 2); this.partida.dar(eq); if (piedra) this.partida.dar(piedra); this.partida.dar(MONEDA_GACHA, monedas);
+      this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2, ${ITEMS[cura].nombre} ×2${piedra ? `, ${ITEMS[piedra].nombre}` : ''}, ${ITEMS[MONEDA_GACHA].nombre} ×${monedas} y ${ITEMS[eq].nombre} (equípalo con I)`);
     } else if (r < 0.02) {   // muy de vez en cuando, un equipable
       const eq = sortearEquipable(this.rnd);
       this.partida.dar(eq); this.aviso(`${t.nombre} ha soltado: ${ITEMS[eq].nombre} (equípalo con I)`);
@@ -1118,6 +1134,7 @@ export class Mundo {
       this.partida.dar(suelta); this.aviso(`${t.nombre} ha soltado: ${ITEMS[suelta].nombre}`);
     }
     this.contarMision(t.alfa ? 'alfa' : 'derrotar', t.linea);
+    this.incubar();
     const tir = this.partida.derrotado(t.linea);   // racha de shiny de su línea
     if (tir) this.aviso(`¡Racha! ${this.partida.estado.derrotas![t.linea]} ${LINEAS[t.linea]?.formas[0].nombre ?? t.nombre} derrotados: probabilidad de shiny ×${tir}`);
     this.guardar();
@@ -1136,17 +1153,17 @@ export class Mundo {
     this.guardar();
   }
   entregarMision(m: Mision): void {
+    const antes = this.partida.tablon(this.mapa.id).n;
     if (!this.partida.entregar(m)) return;
     this.rotulo(this.jugador, `+${m.premio.exp} exp`, 'strong', 200);
     this.aviso(`Recompensa: ${[`${m.premio.exp} exp`, ...(m.premio.oro ? [`${m.premio.oro} Pokécoins`] : []), ...m.premio.items.map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`)].join(', ')}`);
     this.procesar(this.partida.ganarExp(this.partida.activo, m.premio.exp));
+    if (this.partida.tablon(this.mapa.id).n > antes) this.aviso('¡Nuevas misiones en el tablón!');   // la cadena avanza (de 3 en 3)
     this.guardar();
-    const antes = this.partida.tablon(this.mapa.id).n;
   }
   private procesar(av: Aviso[]): void {
     // Si evoluciona, lo que aprende se cuenta en la cinemática (src/scenes/Evolucion.ts), no en avisos.
     const p = this.jugador, antes = formaDe(p.linea, p.nivel), evoluciona = av.some(a => a.tipo === 'evoluciona');
-    if (this.partida.tablon(this.mapa.id).n > antes) this.aviso('¡Nuevas misiones en el tablón!');   // la cadena avanza (de 3 en 3)
     for (const a of av) {
       if (a.tipo === 'nivel') {
         this.rotulo(p, `¡Nivel ${a.nivel}!`, 'strong', 600);
@@ -1292,6 +1309,7 @@ export class Mundo {
     if (l.gcd > this.ahora || l.lanza) return;
     if (def.tipo === 'pokeball') { this.lanzarBall(id); return; }
     if (def.tipo === 'evolutivo') { this.evolucionarCon(id); return; }
+    if (id === 'rarecandy') { this.caramelo(); return; }
     if (def.tipo === 'baya' || def.tipo === 'medicina') {
       // Bayas: una parte de la vida; pociones: PS fijos (Poción 20, Superpoción 60, Hiperpoción 120).
       const cura = def.cura ?? Math.ceil(l.stats.hp * (id === 'sitrus' ? 0.5 : id === 'oran' ? 0.3 : 0.15));
@@ -1359,6 +1377,44 @@ export class Mundo {
     t.sinCuraHasta = this.ahora + SIN_CURA_BALL;
     t.ultimoCombate = de.ultimoCombate = this.ahora;
     this.provocar(t, de);
+  }
+  // Caramelo Raro en el que manejas: un nivel (con lo que aprenda y su evolución). No en combate, como las piedras.
+  private caramelo(): void {
+    const l = this.jugador, m = this.partida.activo;
+    if (m.nivel >= 100) { this.aviso(`${l.nombre} ya está a nivel 100`); return; }
+    if (this.ahora - l.ultimoCombate < 6) { this.aviso('No se puede usar en combate'); return; }
+    this.partida.gastar('rarecandy');
+    this.procesar(this.partida.ganarExp(m, expDeNivel(m.linea, m.nivel + 1) - m.exp));
+    this.guardar();
+  }
+  // Un huevo en la mochila cuenta las derrotas; a las HUEVO_DERROTAS se abre y el bebé se va al pueblo.
+  private incubar(): void {
+    const e = this.partida.estado;
+    if (this.partida.tiene('huevo') <= 0) { delete e.incubando; return; }
+    e.incubando = (e.incubando ?? 0) + 1;
+    if (e.incubando < HUEVO_DERROTAS) return;
+    delete e.incubando;
+    this.partida.gastar('huevo');
+    const linea = abrirHuevo(this.rnd), m = this.partida.crear(linea, 1, this.rnd() < PROB_SHINY);
+    this.aviso(`¡El huevo se ha abierto! Ha salido ${m.shiny ? 'un ' : ''}${formaDe(linea, 1).nombre}${m.shiny ? ' shiny' : ''}. Te espera en el pueblo.`);
+    this.rotulo(this.jugador, '★', 'strong');
+  }
+  // Gachapón de Meowth (F junto a él en la ciudad; combate/gacha.ts): gasta una moneda y da el premio. Devuelve lo que
+  // ha salido para que el HUD abra la cápsula, o nada si no te quedan monedas.
+  tirarGacha(): { premio: Premio; clase: Clase; nombre: string; shiny?: boolean } | null {
+    if (!this.partida.gastar(MONEDA_GACHA)) { this.aviso('No te quedan Monedas Meowth: las sueltan los alfas'); return null; }
+    const { premio, clase } = tirarCapsula(this.rnd);
+    let nombre: string, shiny: boolean | undefined;
+    if (premio.tipo === 'item') {
+      this.partida.dar(premio.id, premio.n);
+      nombre = `${ITEMS[premio.id]?.nombre ?? premio.id}${premio.n > 1 ? ` ×${premio.n}` : ''}`;
+    } else {
+      const m = this.partida.crear(premio.linea, premio.nivel, this.rnd() < PROB_SHINY);
+      shiny = m.shiny; nombre = `${formaDe(premio.linea, premio.nivel).nombre} (Nv ${premio.nivel})${shiny ? ' shiny' : ''}`;
+      this.aviso(`¡Del gachapón sale ${nombre}! Te espera en el pueblo.`);
+    }
+    this.guardar();
+    return { premio, clase, nombre, shiny };
   }
   private capturado(t: Luchador, ball: string): void {
     t.muerto = true;
@@ -1555,6 +1611,30 @@ export class Mundo {
     }
   }
 
+  // Rayos de la tormenta (RAYO_*): solo en las zonas con `rayos` y mientras llueve (de la zona o de Danza Lluvia).
+  private pasoRayos(): void {
+    if (this.espejo || !this.mapa.rayos) return;
+    const caen = this.rayos.filter(r => this.ahora >= r.cae);
+    if (caen.length) { this.rayos = this.rayos.filter(r => this.ahora < r.cae); for (const r of caen) this.caeRayo(r); }
+    if (this.clima?.tipo !== 'lluvia' || this.cambiando) { this.rayoSig = Math.max(this.rayoSig, this.ahora + RAYO_CADA[0]); return; }
+    if (this.ahora < this.rayoSig) return;
+    this.rayoSig = this.ahora + RAYO_CADA[0] + this.rnd() * (RAYO_CADA[1] - RAYO_CADA[0]);
+    const p = this.jugador, cerca = this.salvajes.filter(s => !s.muerto && !s.enBall && Math.hypot(s.x - p.x, s.y - p.y) < 220);
+    const o = p.muerto || (cerca.length && this.rnd() < 0.4) ? cerca[Math.floor(this.rnd() * cerca.length)] : p;
+    if (!o) return;
+    const a = this.rnd() * Math.PI * 2, d = this.rnd() * 36;
+    this.rayos.push({ x: Math.round(o.x + Math.cos(a) * d), y: Math.round(o.y + Math.sin(a) * d * 0.65), cae: this.ahora + RAYO_AVISO });
+  }
+  private caeRayo(r: { x: number; y: number }): void {
+    this.emitir({ tipo: 'rayo', x: r.x, y: r.y });
+    this.emitir({ tipo: 'temblor' });
+    for (const l of [this.jugador, ...this.salvajes]) {
+      if (l.muerto || l.enBall || Math.hypot(l.x - r.x, (l.y - r.y) / 0.65) > RAYO_RADIO) continue;
+      if (l.tipos.includes('Electric') || l.tipos.includes('Ground')) { this.rotulo(l, 'No le afecta', 'neutral'); continue; }
+      this.danar(l, Math.max(1, Math.floor(l.stats.hp * RAYO_DANO)), null);
+    }
+  }
+
   // ---- Piedra de hogar (H) ----
   // Lo que le falta para poder usarse (s reales); 0 = lista.
   hogarFalta(): number { return Math.max(0, ((this.partida.estado.hogar ?? 0) - Date.now()) / 1000); }
@@ -1629,6 +1709,7 @@ export class Mundo {
     for (const [n, q] of this.pendientes) if (this.ahora >= q.hasta) this.impacto(n);
     if (this.partida.tick(dt)) this.aviso(`Amanece. Día ${this.partida.estado.dia}`);
     this.pasoClima();
+    this.pasoRayos();
     this.pasoAparicion();
 
     // Tú.
