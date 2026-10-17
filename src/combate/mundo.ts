@@ -16,12 +16,13 @@ import { HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, Partida, movsHasta, tirarSexo, type 
 import type { Mision } from './misiones';
 import { Rejilla } from './navegacion';
 import { MEJOR, PROB_PIEDRA_ALFA, PROB_PIEDRA_SUELO, nivelZona, sortear, sortearPiedra, tierDe } from './botin';
-import { EQUIPABLES, POTENCIA_TIPO, RECARGA_BANDA, sortearEquipable } from './objetos';
+import { EQUIPABLES, POTENCIA_TIPO, RECARGA_BANDA, baseDe, escalaDe, escalar, sortearEquipable } from './objetos';
 import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
-  CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, NOMBRE_STAT,
-  TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
+  CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, RITMO, NOMBRE_ESTADO, NOMBRE_STAT,
+  ALCANCE_DISTANCIA, ALREDEDOR_RADIO, AREA_VARIOS, CONO_ANGULO, CONO_LARGO, ZONA_RADIO, formaArea, type FormaArea,
+  ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
   velAndar, type Clima, type Golpe, type Perfil, type Stats,
 } from './reglas';
 import type { AnimId } from './sprites';
@@ -77,11 +78,11 @@ export interface Anatomia {
   alto(dex: string): number;
   anim(dex: string, a: AnimId): { dura: number; golpe: number } | null;
 }
-export interface Entrada { vx: number; vy: number }   // hacia dónde andas (-1…1 por eje)
+export interface Entrada { vx: number; vy: number; apunta?: Punto }   // hacia dónde andas (-1…1 por eje) y dónde está el ratón (mundo)
 
 // Un movimiento que se está lanzando (barra de lanzamiento) o canalizando (golpes por tics), docs/GDD-combate.md §3.2.
-export interface Lanza { id: string; obj: Luchador | null; t0: number; t1: number; canal: boolean; tics: number; hechos: number }
-const INTERRUMPIDO = 4;            // s que el movimiento cortado tarda en volver
+export interface Lanza { id: string; obj: Luchador | null; t0: number; t1: number; canal: boolean; tics: number; hechos: number; punto?: Punto }   // punto: centro o dirección de un área
+const INTERRUMPIDO = 4 * RITMO;    // s que el movimiento cortado tarda en volver
 const RETO = 30;                   // s que espera un reto a duelo antes de caducar
 const CUENTA = 3;                  // s de cuenta atrás al aceptar un duelo
 const DUELO_RADIO = 300;           // px desde donde empezó el duelo: más lejos, lo abandonas
@@ -114,6 +115,8 @@ export interface Luchador {
   remoto?: { x: number; y: number; t: number; animN: number };   // a dónde va (lo último que ha llegado de la red) y cuándo llegó
   golpeadores?: Set<string>;           // uids de los jugadores (tú o remotos) que le han hecho daño: se reparten la experiencia
   ticObjeto?: number; bandaHasta?: number;   // Restos: próximo turno; Banda Focus: hasta cuándo se recarga
+  escudo?: { id: string; hasta: number; bloqueo: boolean };   // Protección y familia (§3.5): ventana y si ya bloqueó algo
+  leyo?: Lanza;                        // salvaje: el lanzamiento de su rival al que ya decidió si responder con Protección
 }
 
 // Lo que manda cada jugador por la red (scenes/Aventura.ts) para que los demás lo vean.
@@ -126,6 +129,9 @@ export interface EstadoRemoto {
   vida?: number;                                               // fracción de PS
   enMapa?: number;                                             // s que lleva en este mapa (el que más lleva es su dueño)
 }
+
+// Los demás que toca un área (el primero va en el propio suceso `mov`).
+export interface MasArea { n: number; a: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[] }
 
 // El uid de red de otro jugador a partir del de su remoto.
 const redDe = (uid: string) => uid.slice('remoto-'.length);
@@ -161,7 +167,8 @@ export type Suceso =
   | { tipo: 'rotulo'; uid: string; txt: string; tono: LabelTone; retraso?: number; azar?: boolean }
   | { tipo: 'destello'; uid: string; ms: number }
   | { tipo: 'temblor' }
-  | { tipo: 'mov'; n: number; de: string; a: string; mov: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[] }
+  | { tipo: 'mov'; n: number; de: string; a: string; mov: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[]; mas?: MasArea[] }
+  | { tipo: 'area'; de: string; mov: string; forma: FormaArea; x: number; y: number; ang: number }   // dónde pega un área (el destello en el suelo)
   | { tipo: 'ball'; n: number; item: string; a: string; x0: number; y0: number; x1: number; y1: number }
   | { tipo: 'ballFin'; n: number; ok: boolean | null }
   | { tipo: 'debilitado'; uid: string }
@@ -189,6 +196,7 @@ export class Mundo {
   // Los demás jugadores que están en este mapa: solo se dibujan (sin IA, no se les ataca ni chocan); `todos()` no los incluye.
   remotos: Luchador[] = [];
   objetivo: Luchador | null = null;
+  apunta: Punto | null = null;            // dónde está el ratón (para las áreas en zona y en cono)
   ahora = 0;
   cambiando = false;                   // te vas del mapa (salida, debilitado o piedra de hogar)
   // Clima del mapa (Danza Lluvia, Día Soleado…): hasta cuándo dura; daña por turnos a quien no aguanta la arena o el granizo.
@@ -539,7 +547,7 @@ export class Mundo {
     if ('i' in a) return g;
     const m = getMove(a.m);
     if (!m) return 0;
-    return Math.max(g, Math.max(0, (l.cd[a.m] ?? 0) - this.ahora) / (l.cdDura[a.m] ?? enfriamiento(m)));
+    return Math.max(perfil(m).sinGlobal ? 0 : g, Math.max(0, (l.cd[a.m] ?? 0) - this.ahora) / (l.cdDura[a.m] ?? enfriamiento(m)));
   }
   // Celeridad de un luchador: su Velocidad base y su etapa de Velocidad (reglas.ts).
   cel(l: Luchador): number { return celeridad(this.formaL(l).base[5], l.boosts.spe ?? 0); }
@@ -552,12 +560,36 @@ export class Mundo {
   }
 
   // ---- Usar un movimiento ----
-  usarMov(l: Luchador, id: string, obj: Luchador | null): boolean {
+  usarMov(l: Luchador, id: string, obj: Luchador | null, punto?: Punto | null): boolean {
     const m = getMove(id), yo = l.rol === 'jugador';
     if (!m || l.muerto || l.enBall || this.cambiando) return false;
     if (l.estado === 'slp' || l.estado === 'frz') { if (yo) this.aviso(`${l.nombre} está ${NOMBRE_ESTADO[l.estado].toLowerCase()}`); return false; }
-    if (l.lanza || l.gcd > this.ahora || (l.cd[id] ?? 0) > this.ahora) return false;
-    const objetivo = necesitaObjetivo(m);
+    const pf0 = perfil(m);
+    if ((!pf0.sinGlobal && (l.lanza || l.gcd > this.ahora)) || (l.cd[id] ?? 0) > this.ahora) return false;
+    // Protección y familia: sin global y al momento (corta lo que estés lanzando); dura una ventana corta.
+    if (pf0.escudo) {
+      if (l.lanza) this.cortarLanza(l);
+      l.cd[id] = this.ahora + (l.cdDura[id] = pf0.cd / this.cel(l));
+      l.escudo = { id, hasta: this.ahora + pf0.escudo, bloqueo: false };
+      this.reproducir(l, 'Charge', pf0.escudo);
+      this.rotulo(l, m.nombre, 'good');
+      return true;
+    }
+    // Áreas: no hace falta objetivo. La zona va donde apuntas (el ratón; si no, el objetivo), hasta ALCANCE_DISTANCIA;
+    // el cono, hacia ahí; alrededor, en torno a ti.
+    const fa = m ? formaArea(m) : null;
+    if (fa) {
+      let p = punto ?? (yo ? this.apunta : null) ?? (obj && !obj.muerto ? { x: obj.x, y: obj.y } : null);
+      if (fa !== 'alrededor') {
+        if (!p) { if (yo) this.aviso(`${m.nombre}: apunta con el ratón o el stick derecho`); return false; }
+        const d = Math.hypot(p.x - l.x, p.y - l.y), k = d > ALCANCE_DISTANCIA ? ALCANCE_DISTANCIA / d : 1;
+        if (fa === 'zona' && k < 1) p = { x: l.x + (p.x - l.x) * k, y: l.y + (p.y - l.y) * k };
+        this.mirarA(l, p);
+      }
+      punto = fa === 'alrededor' ? null : p;
+      obj = null;
+    }
+    const objetivo = !fa && necesitaObjetivo(m);
     if (objetivo) {
       if (!obj && yo) obj = this.objetivo = this.salvajes.filter(s => !s.muerto && !s.enBall).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] ?? null;
       if (!obj || obj.muerto || obj.enBall) { if (yo) this.aviso('Elige a quién (clic en un Pokémon o Tab)'); return false; }
@@ -575,7 +607,7 @@ export class Mundo {
     if (pf.lanza !== 'instant') {
       // Lanzado o canalizado: se queda quieto (moverse lo corta) y sale al acabar o, canalizado, por tics.
       const t = pf.t / k;
-      l.lanza = { id, obj: objetivo ? blanco : null, t0: this.ahora, t1: this.ahora + t, canal: pf.lanza === 'canal', tics: pf.tics, hechos: 0 };
+      l.lanza = { id, obj: objetivo ? blanco : null, t0: this.ahora, t1: this.ahora + t, canal: pf.lanza === 'canal', tics: pf.tics, hechos: 0, punto: punto ?? undefined };
       l.meta = null;
       if (l.lanza.canal) {
         l.cd[id] = this.ahora + (l.cdDura[id] = pf.cd / k);
@@ -584,11 +616,11 @@ export class Mundo {
       this.reproducir(l, 'Charge', t);
       return true;
     }
-    this.soltar(l, id, blanco, pf);
+    this.soltar(l, id, blanco, pf, punto);
     return true;
   }
   // Sale el movimiento (instantáneo, o al acabar de lanzarlo): enfriamiento, animación y el golpe en su fotograma.
-  private soltar(l: Luchador, id: string, blanco: Luchador, pf: Perfil): void {
+  private soltar(l: Luchador, id: string, blanco: Luchador, pf: Perfil, punto?: Punto | null): void {
     const m = getMove(id)!, k = this.cel(l);
     l.cd[id] = this.ahora + (l.cdDura[id] = pf.cd / k);
     const anim: AnimId = m.category === 'Status' ? 'Charge' : m.flags.includes('contact') ? 'Attack' : 'Shoot';
@@ -598,7 +630,7 @@ export class Mundo {
     if (pf.agotado) { l.gcd = Math.max(l.gcd, this.ahora + pf.agotado); l.gcdDura = Math.max(l.gcdDura, pf.agotado); this.despues(0.5, () => this.rotulo(l, 'Agotado', 'weak')); }
     if (l.estado === 'par' && this.rnd() < 0.25) { this.rotulo(l, '¡Paralizado!', 'bad'); return; }
     // El efecto sale en el fotograma del golpe de la animación (HitFrame), no antes.
-    this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => this.lanzarMov(l, id, blanco));
+    this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => formaArea(m) ? this.lanzarArea(l, id, punto ?? null) : this.lanzarMov(l, id, blanco));
   }
   // Cada paso: la barra de lanzamiento avanza; al llenarse sale el movimiento. Los canalizados pegan por tics.
   private pasoLanza(l: Luchador): void {
@@ -617,7 +649,7 @@ export class Mundo {
         const parte: MoveData = { ...m, multihit: null, basePower: m.multihit ? m.basePower : m.basePower / c.tics, secondary: c.hechos ? null : m.secondary };
         c.hechos++;
         this.reproducir(l, 'Shoot', Math.min(0.35, paso));
-        this.lanzarMov(l, c.id, o ?? l, parte);
+        if (formaArea(m)) this.lanzarArea(l, c.id, c.punto ?? null, parte); else this.lanzarMov(l, c.id, o ?? l, parte);
       }
       if (c.hechos >= c.tics && l.lanza === c) l.lanza = null;
       else if (l.anim !== 'Charge' && l.anim !== 'Shoot') this.reproducir(l, 'Charge', c.t1 - this.ahora);
@@ -627,7 +659,7 @@ export class Mundo {
     if (this.ahora < c.t1) return;
     l.lanza = null;
     if (lejos) { if (l.rol === 'jugador') this.aviso(`${m.nombre}: fuera de alcance`); return; }
-    this.soltar(l, c.id, o ?? l, perfil(m));
+    this.soltar(l, c.id, o ?? l, perfil(m), c.punto);
   }
   // Corta lo que esté lanzando (al moverse, al dormirse, al interrumpirle…).
   cortarLanza(l: Luchador, txt?: string): void {
@@ -642,21 +674,58 @@ export class Mundo {
     const m = parte ?? getMove(id)!;
     if (l.muerto || this.cambiando) return;
     const obs = this.objetos(l);
-    const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(obs.includes('scopelens') ? { ...m, critRatio: m.critRatio + 1 } : m, l, t, this.clima?.tipo ?? null, this.rnd);
+    const lente = this.lleva(l, 'scopelens');
+    const r: Golpe = t === l ? { dano: 0, eficacia: 1, critico: false, falla: false } : golpe(lente ? { ...m, critRatio: m.critRatio + (escalaDe(lente) >= 2 ? 2 : 1) } : m, l, t, this.clima?.tipo ?? null, this.rnd);
     if (r.dano > 0 && obs.length && !m.fixedDamage) r.dano = Math.max(1, Math.floor(r.dano * obs.reduce((k, ob) => k * this.potencia(ob, m, r), 1)));
     const ef = this.efectos(m, l, t, r), n = ++this.n;
     this.pendientes.set(n, { l, id, t, r, ef, hasta: this.ahora + IMPACTO_MAX });
     this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
   }
-  // Objetos equipados (combate/objetos.ts, hasta HUECOS_OBJ): solo los de tu equipo llevan.
+  // Un área: a quién toca (los enemigos de quien la lanza dentro de la forma), un golpe para cada uno (×AREA_VARIOS
+  // si son varios) y un solo suceso para animarlos juntos. Si no toca a nadie, solo el destello en el suelo.
+  private lanzarArea(l: Luchador, id: string, punto: Punto | null, parte?: MoveData): void {
+    const m = parte ?? getMove(id)!, fa = formaArea(m)!;
+    if (l.muerto || this.cambiando) return;
+    const c = fa === 'zona' && punto ? punto : { x: l.x, y: l.y };
+    const ang = punto ? Math.atan2(punto.y - l.y, punto.x - l.x) : 0;
+    const dentro = (t: Luchador) => {
+      const cuerpo = Math.max(6, t.alto * 0.3), dx = t.x - c.x, dy = t.y - c.y, d = Math.hypot(dx, dy);
+      if (fa === 'zona') return d <= ZONA_RADIO + cuerpo;
+      if (fa === 'alrededor') return d <= ALREDEDOR_RADIO + cuerpo;
+      const da = Math.abs(((Math.atan2(dy, dx) - ang) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+      return d <= CONO_LARGO + cuerpo && (da <= CONO_ANGULO || d < cuerpo);
+    };
+    const tocados = this.enemigosDe(l).filter(dentro);
+    this.emitir({ tipo: 'area', de: l.uid, mov: id, forma: fa, x: c.x, y: c.y, ang });
+    if (!tocados.length) return;
+    const obs = this.objetos(l), lente = this.lleva(l, 'scopelens'), varios = tocados.length > 1 ? AREA_VARIOS : 1;
+    const golpes = tocados.map(t => {
+      const r: Golpe = golpe(lente ? { ...m, critRatio: m.critRatio + (escalaDe(lente) >= 2 ? 2 : 1) } : m, l, t, this.clima?.tipo ?? null, this.rnd);
+      if (r.dano > 0 && !m.fixedDamage) r.dano = Math.max(1, Math.floor(r.dano * varios * obs.reduce((k, ob) => k * this.potencia(ob, m, r), 1)));
+      const ef = this.efectos(m, l, t, r), n = ++this.n;
+      this.pendientes.set(n, { l, id, t, r, ef, hasta: this.ahora + IMPACTO_MAX });
+      return { n, a: t.uid, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })) };
+    });
+    const [g0, ...mas] = golpes;
+    this.emitir({ tipo: 'mov', n: g0.n, de: l.uid, a: g0.a, mov: id, golpe: g0.golpe, efectos: g0.efectos, mas });
+  }
+  // A quién puede dar un área: tú das a los salvajes (y a tu rival de duelo); un salvaje, a los jugadores.
+  private enemigosDe(l: Luchador): Luchador[] {
+    const vivos = (ls: Luchador[]) => ls.filter(t => t !== l && !t.muerto && !t.enBall);
+    if (l.rol === 'salvaje') return vivos([this.jugador, ...this.remotos]);
+    return vivos([...this.salvajes, ...this.remotos.filter(o => this.luchandoCon(o))]);
+  }
+  // Objetos equipados (combate/objetos.ts, uno por ranura): solo los de tu equipo llevan.
   objetos(l: Luchador): string[] { return (l.miembro?.objetos ?? []).filter((o): o is string => !!o); }
-  lleva(l: Luchador, id: string): boolean { return !!l.miembro?.objetos?.includes(id); }
+  // El objeto que lleva de esa familia (común, raro o épico), con su id de verdad; null si no lo lleva. `base`: id común.
+  lleva(l: Luchador, base: string): string | null { return this.objetos(l).find(o => baseDe(o) === base) ?? null; }
   private potencia(ob: string, m: MoveData, r: Golpe): number {
-    if (ob === 'lifeorb') return 1.3;
-    if (ob === 'muscleband') return m.category === 'Physical' ? 1.1 : 1;
-    if (ob === 'wiseglasses') return m.category === 'Special' ? 1.1 : 1;
-    if (ob === 'expertbelt') return r.eficacia > 1 ? 1.2 : 1;
-    return EQUIPABLES[ob]?.tipo === m.type ? POTENCIA_TIPO : 1;
+    const b = baseDe(ob);
+    if (b === 'lifeorb') return escalar(1.3, ob);
+    if (b === 'muscleband') return m.category === 'Physical' ? escalar(1.1, ob) : 1;
+    if (b === 'wiseglasses') return m.category === 'Special' ? escalar(1.1, ob) : 1;
+    if (b === 'expertbelt') return r.eficacia > 1 ? escalar(1.2, ob) : 1;
+    return EQUIPABLES[ob]?.tipo === m.type ? escalar(POTENCIA_TIPO, ob) : 1;
   }
   impacto(n: number): void {
     const p = this.pendientes.get(n);
@@ -696,6 +765,7 @@ export class Mundo {
     if (t.muerto || t.enBall) return;
     // Se entra en combate cuando el golpe llega (aunque falle), no al empezar a lanzarlo: si no, el que huye corta el lanzamiento.
     if (t !== l) { l.ultimoCombate = t.ultimoCombate = this.ahora; this.provocar(t, l); }
+    if (t !== l && !this.ajeno(t) && this.bloquea(t, l, m)) return;
     // Lo que le pasa a quien no llevas tú (un remoto, o un salvaje en espejo) se lo aplica quien lo lleva.
     const ajeno = this.ajeno(t);
     if (ajeno) this.salir({ tipo: 'golpe', de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.filter(e => e.quien === t).map(e => ({ boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
@@ -710,9 +780,10 @@ export class Mundo {
       if (!ajeno) this.danar(t, r.dano, l);
       // Objetos: la Vidasfera cuesta 1/10, la Campana Concha devuelve 1/8 del daño, el Casco Dentado pincha al que toca.
       if (!this.ajeno(l) && !l.muerto) {
-        if (this.lleva(l, 'shellbell')) this.curar(l, Math.max(1, Math.floor(r.dano / 8)));
+        const campana = this.lleva(l, 'shellbell'), casco = this.lleva(t, 'rockyhelmet');
+        if (campana) this.curar(l, Math.max(1, Math.floor(r.dano * escalaDe(campana) / 8)));
         if (this.lleva(l, 'lifeorb')) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 10)), null);
-        if (!ajeno && !l.muerto && this.lleva(t, 'rockyhelmet') && m.flags.includes('contact')) this.danar(l, Math.max(1, Math.floor(l.stats.hp / 6)), null);
+        if (!ajeno && !l.muerto && casco && m.flags.includes('contact')) this.danar(l, Math.max(1, Math.floor(l.stats.hp * escalaDe(casco) / 6)), null);
       }
       if (m.drain) this.curar(l, Math.max(1, Math.floor(r.dano * m.drain[0] / m.drain[1])));
       if (m.recoil) this.danar(l, Math.max(1, Math.floor(r.dano * m.recoil[0] / m.recoil[1])), null);
@@ -731,16 +802,48 @@ export class Mundo {
       if (e.semilla) this.sembrar(e.quien, l);
     }
   }
+  // Protección y familia (§3.5): dentro de la ventana, el golpe no hace nada. La primera vez que bloquea, su CD baja a
+  // la mitad; las variantes castigan al que la toca (contacto): Barrera Espinosa (1/8 de su vida), Búnker (veneno),
+  // Escudo Real, Obstrucción y Telatrampa (le bajan un stat), Baluarte Ardiente (quemadura). Aguante va en `danar`.
+  private bloquea(t: Luchador, l: Luchador | null, m: MoveData | undefined): boolean {
+    const e = t.escudo;
+    if (!e || e.hasta < this.ahora || e.id === 'endure') return false;
+    this.rotulo(t, '¡Protegido!', 'good');
+    this.premioEscudo(t);
+    if (l && !l.muerto && !this.ajeno(l) && m?.flags.includes('contact')) {
+      if (e.id === 'spikyshield') this.danar(l, Math.max(1, Math.floor(l.stats.hp / 8)), t);
+      else if (e.id === 'banefulbunker' && this.puedeEstado(l, 'psn')) this.ponerEstado(l, 'psn');
+      else if (e.id === 'burningbulwark' && this.puedeEstado(l, 'brn')) this.ponerEstado(l, 'brn');
+      else if (e.id === 'kingsshield') this.cambiarStats(l, { atk: -1 });
+      else if (e.id === 'obstruct') this.cambiarStats(l, { def: -2 });
+      else if (e.id === 'silktrap') this.cambiarStats(l, { spe: -1 });
+    }
+    return true;
+  }
+  private premioEscudo(t: Luchador): void {
+    const e = t.escudo!;
+    if (e.bloqueo) return;
+    e.bloqueo = true;
+    const resta = (t.cd[e.id] ?? 0) - this.ahora;
+    if (resta > 0) t.cd[e.id] = this.ahora + resta / 2;
+  }
   private danar(t: Luchador, n: number, de: Luchador | null): void {
     // En un duelo nadie se debilita: el que llega a 1 PS pierde.
     // Banda Focus (con la vida entera, cada RECARGA_BANDA s) y Cinta Focus (1 de cada 10): aguanta con 1 PS un golpe.
+    const banda = this.lleva(t, 'focussash'), cinta = this.lleva(t, 'focusband');
     const ob = !de || n < t.ps || t.ps < 1 ? null
-      : this.lleva(t, 'focussash') && t.ps >= t.stats.hp && this.ahora > (t.bandaHasta ?? -99) ? 'focussash'
-      : this.lleva(t, 'focusband') && this.rnd() < 0.1 ? 'focusband' : null;
+      : banda && t.ps >= t.stats.hp && this.ahora > (t.bandaHasta ?? -99) ? banda
+      : cinta && this.rnd() < 0.1 * escalaDe(cinta) ? cinta : null;
     if (ob) {
       n = Math.floor(t.ps - 1);
-      if (ob === 'focussash') t.bandaHasta = this.ahora + RECARGA_BANDA;
+      if (ob === banda) t.bandaHasta = this.ahora + RECARGA_BANDA / escalaDe(ob);
       this.rotulo(t, `¡Aguanta con ${EQUIPABLES[ob].nombre}!`, 'strong', 200);
+    }
+    // Aguante: en su ventana, un golpe que te debilitaría te deja con 1 PS.
+    if (de && n >= t.ps && t.ps > 1 && t.escudo?.id === 'endure' && t.escudo.hasta >= this.ahora) {
+      n = Math.floor(t.ps - 1);
+      this.rotulo(t, '¡Aguanta!', 'good', 200);
+      this.premioEscudo(t);
     }
     const pierde = t.rol === 'jugador' && !!de && this.luchandoCon(de) && t.ps - n < 1;
     if (pierde) n = Math.max(0, Math.floor(t.ps - 1));
@@ -888,7 +991,7 @@ export class Mundo {
     const r = this.rnd();
     if (t.alfa) {   // el alfa suelta siempre lo mejor de su nivel: dos Balls y dos curas (combate/botin.ts)
       const { ball, cura } = MEJOR[tierDe(t.nivel)];
-      const eq = sortearEquipable(this.rnd);   // y un objeto equipable (inventario, I)
+      const eq = sortearEquipable(this.rnd, true);   // y un objeto equipable, a menudo raro o épico (inventario, I)
       const piedra = this.rnd() < PROB_PIEDRA_ALFA ? sortearPiedra(this.rnd) : null;   // y a veces una piedra evolutiva
       this.partida.dar(ball, 2); this.partida.dar(cura, 2); this.partida.dar(eq); if (piedra) this.partida.dar(piedra);
       this.aviso(`${t.nombre} ha soltado: ${ITEMS[ball].nombre} ×2, ${ITEMS[cura].nombre} ×2${piedra ? `, ${ITEMS[piedra].nombre}` : ''} y ${ITEMS[eq].nombre} (equípalo con I)`);
@@ -1168,8 +1271,14 @@ export class Mundo {
       const r = l.rival;
       if (!r || r.muerto || (r.rol === 'remoto' && !this.remotos.includes(r)) || Math.hypot(l.x - l.casa.x, l.y - l.casa.y) > CORREA) { l.modo = 'volver'; l.rival = null; return; }
       if (l.alfa && this.golpeAlfa(l, r)) return;
+      // Si su rival le está lanzando algo y está a punto de llegar, a veces se protege (una vez por lanzamiento).
+      const c = r.lanza, escudo = l.movs.find(id => ESCUDO[id] && (l.cd[id] ?? 0) <= this.ahora);
+      if (c && escudo && c !== l.leyo && c.t1 - this.ahora < 0.15 && (c.obj === l || (c.punto && Math.hypot(c.punto.x - l.x, c.punto.y - l.y) < 60))) {
+        l.leyo = c;
+        if (this.rnd() < 0.5) { this.usarMov(l, escudo, null); return; }
+      }
       // El movimiento listo más fuerte (a veces uno de estado), si llega; si no, acercarse.
-      const listos = l.movs.map(id => getMove(id)!).filter(m => m && (l.cd[m.id] ?? 0) <= this.ahora);
+      const listos = l.movs.map(id => getMove(id)!).filter(m => m && !ESCUDO[m.id] && (l.cd[m.id] ?? 0) <= this.ahora);
       const dano = listos.filter(m => m.basePower > 0).sort((a, b) => b.basePower - a.basePower);
       const elige = (this.rnd() < 0.2 ? listos.find(m => m.category === 'Status') : undefined) ?? dano[0];
       const d = Math.hypot(r.x - l.x, r.y - l.y);
@@ -1247,8 +1356,9 @@ export class Mundo {
       if (l.muerto) return;
     }
     // Restos: en combate, 1/16 de su vida cada turno.
-    if (enCombate && this.lleva(l, 'leftovers') && l.ps < l.stats.hp && this.ahora > (l.ticObjeto ?? -99)) {
-      if (l.ticObjeto !== undefined && this.ahora - l.ticObjeto < TURNO) this.curar(l, Math.max(1, Math.floor(l.stats.hp / 16)));
+    const restos = this.lleva(l, 'leftovers');
+    if (enCombate && restos && l.ps < l.stats.hp && this.ahora > (l.ticObjeto ?? -99)) {
+      if (l.ticObjeto !== undefined && this.ahora - l.ticObjeto < TURNO) this.curar(l, Math.max(1, Math.floor(l.stats.hp * escalaDe(restos) / 16)));
       l.ticObjeto = this.ahora + TURNO;
     }
     for (const [s, h] of Object.entries(l.boostHasta) as [Stat6, number][]) if (this.ahora > h) { delete l.boosts[s]; delete l.boostHasta[s]; }
@@ -1266,7 +1376,8 @@ export class Mundo {
     const drena = [...this.todos(), ...this.remotos].filter(o => o.semilla?.de === l.uid && !o.muerto);
     if (drena.length) out.push({ txt: drena.length > 1 ? `DRE×${drena.length}` : 'DRE', nombre: drena.length > 1 ? `Drenando a ${drena.length}` : `Drenando a ${drena[0].nombre}`,
       color: 0x4fae4a, frac: Math.max(0, Math.min(1, (Math.max(...drena.map(o => o.semilla!.hasta)) - this.ahora) / DURA_SEMILLA)) });
-    if (this.lleva(l, 'focussash') && (l.bandaHasta ?? 0) > this.ahora) out.push({ txt: 'BAN', nombre: 'Banda Focus gastada', color: 0x8a7a6a, frac: Math.max(0, Math.min(1, (l.bandaHasta! - this.ahora) / RECARGA_BANDA)) });
+    const banda = this.lleva(l, 'focussash');
+    if (banda && (l.bandaHasta ?? 0) > this.ahora) out.push({ txt: 'BAN', nombre: 'Banda Focus gastada', color: 0x8a7a6a, frac: Math.max(0, Math.min(1, (l.bandaHasta! - this.ahora) / (RECARGA_BANDA / escalaDe(banda)))) });
     for (const [s, n] of Object.entries(l.boosts) as [Stat6, number][]) {
       if (!n) continue;
       out.push({ txt: `${CORTO_STAT[s]}${n > 0 ? '+' : ''}${n}`, nombre: `${NOMBRE_STAT[s]} ${n > 0 ? '+' : ''}${n}`, color: n > 0 ? 0x4fae4a : 0xc0453a,
@@ -1357,6 +1468,7 @@ export class Mundo {
   // ---- Un paso de simulación ----
   paso(dt: number, e: Entrada): void {
     this.ahora += dt;
+    this.apunta = e.apunta ?? null;
     if (this.relojes.length) {
       const toca = this.relojes.filter(r => r.t <= this.ahora);
       if (toca.length) { this.relojes = this.relojes.filter(r => r.t > this.ahora); for (const r of toca) r.fn(); }
@@ -1510,11 +1622,12 @@ export class Mundo {
 
   // ---- Lo que llega de los demás ----
   // Un golpe a uno de los tuyos (tu Pokémon o, si eres el dueño, un salvaje): uids ya traducidos.
-  recibirGolpe(deUid: string, aUid: string, r: Golpe, efectos: { boosts?: Boosts; estado?: string; semilla?: boolean }[]): void {
+  recibirGolpe(deUid: string, aUid: string, r: Golpe, efectos: { boosts?: Boosts; estado?: string; semilla?: boolean }[], mov?: string): void {
     const l = this.luchador(deUid) ?? null, t = this.luchador(aUid);
     if (!t || t.muerto || t.enBall || this.ajeno(t)) return;
     if (l?.rol === 'remoto' && t.rol === 'jugador' && !this.luchandoCon(l)) return;   // otro jugador solo te pega en un duelo
     if (l) { l.ultimoCombate = t.ultimoCombate = this.ahora; this.provocar(t, l); }
+    if (this.bloquea(t, l, mov ? getMove(mov) : undefined)) return;
     if (r.falla) return;
     if (r.dano > 0) this.danar(t, r.dano, l);
     if (r.eficacia === 0 || t.muerto) return;

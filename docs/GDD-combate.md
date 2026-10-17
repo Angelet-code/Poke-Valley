@@ -39,16 +39,20 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   - Cada Pokémon tiene su propia barra.
   - Al aprender un movimiento, este va a la primera casilla libre.
 - **Inventario (I)** (`combate/objetos.ts`): como la pantalla del personaje del WoW, vertical y a la izquierda: tu
-  Pokémon animado en el centro y sus dos objetos equipables a los lados (`Miembro.objetos`). Arriba, nombre, sexo,
+  Pokémon animado en el centro y sus **cinco ranuras** a los lados (`Miembro.objetos`, índice = ranura, `SLOTS`):
+  Cabeza (Gafas Especiales, Periscopio), Cuerpo (Banda y Cinta Focus, Casco Dentado), Arma (Cinta Fuerte, Vidasfera,
+  Cinta Experto), Amuleto (los 18 de tipo) y Accesorio (Restos, Campana Concha). Arriba, nombre, sexo,
   nivel y tipos; bajo el Pokémon, sus stats (en verde o rojo si ahora las tiene subidas o bajadas); debajo, los de la mochila.
-  Clic en uno para ponérselo en un hueco libre (con los dos llenos, luego clic en el hueco que cambias); clic en uno
-  de los suyos para quitárselo. No puede llevar dos iguales ni cambiarlos en combate.
-  No se gastan. Solo se encuentran jugando: los alfas sueltan uno al azar (y, muy rara vez, un salvaje).
+  Clic en uno de la mochila para ponérselo en su ranura (el que había vuelve a la mochila); clic en uno
+  de los suyos para quitárselo. No se cambian en combate.
+  **Rareza**: cada objeto es común, raro (`<id>_r`, borde azul, efecto ×1,5 sobre el bonus) o épico (`<id>_e`, borde
+  morado, ×2); mismo icono. P. ej. Vidasfera épica = ×1,6; Banda Focus épica se recarga en 30 s; Periscopio épico, +2 críticos.
+  No se gastan. Solo se encuentran jugando: los alfas sueltan uno (45 % raro, 15 % épico) y, muy rara vez, un salvaje (22 % / 3 %).
   - Restos (1/16 cada 3 s en combate), Banda Focus (con la vida entera aguanta con 1 PS; se recarga en 60 s),
     Cinta Focus (10 %), Vidasfera (×1,3 y 1/10 por golpe), Cinta Fuerte y Gafas Especiales (×1,1), Cinta Experto
     (×1,2 supereficaz), Periscopio (+1 crítico), Campana Concha (1/8 del daño), Casco Dentado (1/6 al que toca) y
     uno por tipo (Carbón, Agua Mística…: ×1,2). Iconos de Pokémon Colleja (`assets/game/pixel/items/equipables/`).
-- **Enfriamientos y lanzamientos**: global de 1,1 s; cada movimiento es instantáneo, lanzado o canalizado y tiene
+- **Enfriamientos y lanzamientos**: global de 1,5 s (§3.4); cada movimiento es instantáneo, lanzado o canalizado y tiene
   su enfriamiento según el modelo de §3.2 (`perfil()` en `reglas.ts`). Todo se acorta con la celeridad (Velocidad).
   La casilla se oscurece mientras se recarga.
 - **Alcance**: 30 px para los de contacto y 150 px para el resto. El número de la casilla se pone rojo si el
@@ -214,10 +218,83 @@ a un objetivo, y el enfriamiento solo crece con la potencia. Rotación de 1 bot�
    - Los salvajes lanzan igual (se quedan quietos) y se ven en las fotos del multijugador (`ln`).
    - HUD: tu barra encima de la de atajos (naranja si se llena, verde si canalizas; la piedra de hogar, azul), la del
      objetivo bajo su marco y una línea fina bajo la vida de cada salvaje que lanza.
-3. Áreas: retícula con el ratón, alrededor, cono, trampas; IA de los salvajes.
+3. ✔ Áreas (2026-10-17; `formaArea` en `reglas.ts`, `lanzarArea` en `mundo.ts`, `pintarAreas` en `Aventura.ts`):
+   - **Zona** (`allAdjacentFoes`): círculo de 40 px donde está el ratón al pulsar (hasta 150 px de ti; si no hay
+     ratón, sobre el objetivo). Ventisca es zona aunque sea de viento (la del WoW).
+   - **Cono** (los de viento): 90 px delante de ti, hacia el ratón, ±34°.
+   - **Alrededor** (`allAdjacent` y los de sonido): 50 px en torno a ti; siempre instantáneos.
+   - No hace falta objetivo. Toca a los enemigos de quien lo lanza (tú: salvajes y tu rival de duelo; un salvaje:
+     los jugadores); con varios, cada golpe ×0,75. Una sola animación para todos (`mas` en el suceso `mov`).
+   - En el suelo: mientras se lanza, la forma del área (del color del tipo; roja si es de un salvaje, para salir a
+     tiempo) y un destello al pegar. Los salvajes las usan con su IA de siempre, apuntando a su rival.
+   - Falta: trampas (`foeSide`: Púas, Trampa Rocas).
 4. Utilidad: carga, salto atrás, escudo, salto, velocidad.
 5. Hace falta exportar más datos en `tools/datos_combate.mjs` (`volatileStatus`, `sideCondition`, `selfdestruct`)
    para Drenadoras, Giro Fuego (atrapar) y Autodestrucción.
+
+### 3.3 Líneas de ataque y rangos (2026-10-17)
+**Problema.** Con §3.2 todo movimiento con CD rendía lo mismo en rotación (≈42,4 de potencia/s): Gigadrenado pegaba
+más que Megaagotar pero tardaba más, así que no era mejor, era el mismo ataque estirado.
+
+**Líneas** (`src/data/lineasAtaque.ts`, 35): movimientos que son evoluciones unos de otros, del más flojo al más
+fuerte, con la **misma firma** (`firmaAtaque`): tipo, categoría, precisión, cuerpo a cuerpo o distancia, forma (a uno,
+zona, alrededor) y mecánica (multigolpe, drena, se daña, prioridad, carga, agota, vuelve, interrumpe, se sube o se baja
+stats). Solo cambia la potencia (y como mucho el efecto secundario por azar, que ya cuenta en la potencia efectiva).
+Absorber → Megaagotar → Gigadrenado, Ascuas → Lanzallamas, Picotazo → Picoteo → Pico Taladro… Llamarada no sigue a
+Lanzallamas: pega más pero falla (85 %), es otra apuesta y no una mejora. Los que no encajan van sueltos (231).
+
+**Rango I-V** por potencia (la total en los multigolpe): I ≤ 45, II ≤ 65, III ≤ 85, IV ≤ 105, V más. Dentro de una
+línea, siempre uno más que el anterior como mínimo. Se ve en la ficha del movimiento ("Rango III (Drenajes 3/3)").
+
+**Regla.** Cada rango sobre el I rinde `BONO_RANGO` = 2 de potencia/s más (`reglas.ts`): se lanza más deprisa
+(`R_CAST` + bono) y paga menos enfriamiento (`R_CD` + bono). Rotación con un movimiento de CD: rango I 42,4 → V 50,4;
+lanzados: 45,5 → 53,5. El relleno (instantáneos sin CD) no cambia.
+
+**Comprobación**: `tools/lineas_ataque.ts` (comando en su cabecera) escribe [lineas-ataque.md](lineas-ataque.md) y
+avisa si en una línea alguno no tiene la firma del primero o no mejora al anterior.
+
+### 3.4 CDs al estilo WoW (2026-10-17)
+Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; los CDs eran muy cortos y parecidos
+(mediana 3,7 s, 54 entre 1,1 y 3 s), lo que solo hace aporrear teclas.
+- **Suelo de CD** (`CD_MIN` = 6 s × ritmo): un movimiento es relleno (sin CD) o tiene un CD que se note.
+- **Área con CD propio** (`CD_AREA` = 8 s × ritmo): Terremoto, Onda Ígnea, Ventisca, Ácido… a varios rinden más.
+- Coste: los cuerpo a cuerpo flojos con CD rinden menos (Mordisco 44 → 40 de potencia/s); los lanzados no cambian.
+- **Ritmo de WoW** (`GCD` = 1,5 s, `RITMO` = 1,5 / 1,1 en `reglas.ts`): todos los tiempos de los movimientos se
+  alargan en proporción (lanzamientos, CDs, agotado, el CD del cortado). Lo que rinde cada uno queda igual en
+  proporción, pero todo pega un 27 % menos por segundo: los combates duran más. Ahora: lanzados 2-4,1 s (Lanzallamas
+  2,5 s, Rayo Solar 3,4 s), canalizados ~2,4 s, CD mínimo 8,2 s, áreas 10,9 s, agotado 2,7 s.
+- Sin hacer: CDs de burst de 1-2 min. Con la potencia fija, un CD largo solo debilita el movimiento.
+
+### 3.5 Protección y burst (2026-10-17)
+- **Protección y familia** (`ESCUDO` en `reglas.ts`; `bloquea` en `mundo.ts`): al pulsarla, una ventana corta en
+  la que los golpes no te hacen nada (Protección 0,9 s, Detección 1,4 s). **No gasta global** y corta lo que
+  estuvieras lanzando: se usa para reaccionar, al ver acabar la barra de un salvaje o su área roja en el suelo.
+  - CD de sus PP: 15 s × ritmo con 10 PP (Protección 20,5 s), × √(10/PP) con menos (Detección 29 s). Si bloquea algo,
+    el CD que le queda baja a la mitad: acertar el momento compensa; pulsarla a ciegas, no.
+  - Variantes, al que te toca con contacto: Barrera Espinosa (1/8 de su vida), Búnker (veneno), Baluarte Ardiente
+    (quemadura), Escudo Real (−1 Ataque), Obstrucción (−2 Defensa), Telatrampa (−1 Velocidad).
+  - Aguante: no bloquea; durante 2 s, un golpe que te debilitaría te deja con 1 PS.
+  - Burbuja azul (naranja, Aguante) alrededor mientras dura. Los salvajes que la tienen la usan a veces (50 %)
+    cuando tu lanzamiento contra ellos está a punto de acabar.
+- **Burst: los de 5 PP** (32: Hidrobomba, Llamarada, Ventisca, A Bocajarro, Lluevehojas, Explosión…): siempre
+  instantáneos, con CD de 30 s como mínimo. Toda su potencia en un global: para guardarlos y abrir o rematar. Los PP no
+  dan el CD de los demás porque en los juegos bajan justo cuando el ataque sube (Absorber 25, Gigadrenado 10). Es parte
+  de la firma de las líneas: Megapatada y Velocidad Extrema salieron de las suyas.
+
+### 3.6 Mando (2026-10-17)
+- `src/entrada/mando.ts` lee los mandos con la API Gamepad del navegador (disposición "standard": Xbox, Switch Pro,
+  PDP Faceoff, PlayStation; el navegador solo los enseña tras pulsar un botón). Cada botón se convierte en una tecla
+  sintética en `window`, así que todas las escenas (título, elección, aventura, mapa, evolución) responden con sus
+  atajos de teclado sin código aparte. Los sticks los lee `Aventura.update` directamente.
+- **En el juego**: stick izquierdo (o cruceta en los menús) = andar; stick derecho = apuntar áreas y conos (si está
+  quieto y se juega con mando, la zona va al objetivo; con el ratón, al ratón: manda el último que se movió).
+  A = acción (F) · B = cerrar/cancelar (Esc, pero sin salir al título) · Start (+) = Esc del todo (sin nada abierto,
+  guarda y sale) · Select (−) = mapa (M) · R2 o R3 = siguiente objetivo (Tab) · L3 = hogar (H).
+  Casillas: X Y L1 R1 = 1-4, cruceta ↑ → ↓ ← = 5-8, con L2: X Y = 9-10. L2 + cruceta: ↑ hogar (H), ← movimientos (K),
+  → inventario (I), ↓ tienda (T); L2 + R2 = retar (R).
+- **En los menús**: cruceta o stick izquierdo = moverse, A o Start = aceptar (Enter), B o Select = atrás (Esc),
+  X = F, Y = espacio.
+- Dentro de los paneles (K, I, tienda, misiones) sigue haciendo falta el ratón: pendiente navegarlos con el mando.
 
 ## 4. Captura
 - La Poké Ball se lanza al objetivo hasta 150 px. Vuela, el Pokémon entra, la Ball se mueve tres veces y se queda
@@ -414,6 +491,8 @@ se añadió después.
 - Faltan sonido y música.
 - Equilibrio: duración de las peleas, vida de los salvajes y ritmo de niveles.
 - Más mapas (cueva, lago…) y jefes.
+- Mecánicas de los fósiles (pedido del usuario, 2026-10-16): sin diseñar todavía. Falta decidir cómo se consiguen
+  (¿cuevas, excavación?), cómo se revive el Pokémon y qué especies entran.
 
 ## Sexo
 Cada Pokémon es macho, hembra o sin sexo, con la proporción oficial de su especie (Showdown, `macho` en

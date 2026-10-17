@@ -7,10 +7,11 @@ import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimient
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, nivelPorExp } from './reglas';
 import { misionesDe, type EstadoMision, type Mision } from './misiones';
+import { EQUIPABLES, SLOTS, slotIdx } from './objetos';
 
 
 export const CASILLAS = 10;
-export const HUECOS_OBJ = 2;          // objetos equipables que lleva cada Pokémon (inventario, I)
+export const HUECOS_OBJ = SLOTS.length;   // un hueco por ranura (combate/objetos.ts SLOTS): cabeza, cuerpo, arma, amuleto, accesorio
 // Probabilidad de que un salvaje salga shiny (la de los juegos desde la 6.ª generación).
 export const PROB_SHINY = 1 / 4096;
 // Racha de derrotas (como el contador de KO de Espada/Escudo): cuantos más derrotas de una misma línea, más tiradas
@@ -90,6 +91,16 @@ export class Partida {
       if (!e || e.version !== VERSION || !e.equipo?.length) return null;
       e.misiones ??= {}; e.alfas ??= {}; e.dinero ??= DINERO_INICIAL;
       for (const m of e.equipo) if (m.objeto) { m.objetos = [m.objeto, null]; delete m.objeto; }   // de un hueco a dos
+      // De dos huecos libres a uno por ranura: cada objeto va a la suya; si no cabe (o ya no existe), vuelve a la mochila.
+      for (const m of e.equipo) if (m.objetos && m.objetos.length < HUECOS_OBJ) {
+        const nuevo: (string | null)[] = Array(HUECOS_OBJ).fill(null);
+        for (const id of m.objetos) {
+          if (!id) continue;
+          const i = EQUIPABLES[id] ? slotIdx(EQUIPABLES[id].slot) : -1;
+          if (i >= 0 && !nuevo[i]) nuevo[i] = id; else e.items[id] = (e.items[id] ?? 0) + 1;
+        }
+        m.objetos = nuevo;
+      }
       if (e.regalo) {   // quitar el regalo por error: de la mochila o, si lo lleva puesto, al Pokémon
         for (const [id, n] of Object.entries(REGALO)) for (let i = 0; i < n; i++) {
           if ((e.items[id] ?? 0) > 0) e.items[id]--;
@@ -196,7 +207,7 @@ export class Partida {
   // Objetos equipados (inventario, I): HUECOS_OBJ huecos; el que había en el hueco vuelve a la mochila.
   objetos(m: Miembro): (string | null)[] { return Array.from({ length: HUECOS_OBJ }, (_, i) => m.objetos?.[i] ?? null); }
   equipar(m: Miembro, id: string, hueco: number): boolean {
-    if (hueco < 0 || hueco >= HUECOS_OBJ || !this.gastar(id)) return false;
+    if (hueco < 0 || hueco >= HUECOS_OBJ || slotIdx(EQUIPABLES[id]?.slot ?? 'cabeza') !== hueco || !EQUIPABLES[id] || !this.gastar(id)) return false;   // solo en su ranura
     this.desequipar(m, hueco);
     (m.objetos = this.objetos(m))[hueco] = id;
     return true;

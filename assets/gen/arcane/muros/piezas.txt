@@ -61,7 +61,7 @@ ruinas|puente|V|A long straight ancient carved stone bridge with low stone parap
 volcan|acantilado|H|A long section of a tall cliff wall of dark basalt columns with thin glowing orange lava cracks and a flat top
 volcan|acantilado|V|A long ridge of tall cliffs of dark basalt columns with thin glowing orange lava cracks
 volcan|escalera|H|A section of a tall dark basalt column cliff with rough dark stone stairs climbing up its middle to the top
-volcan|montana|S|A huge dark volcanic rock mountain with glowing orange lava cracks and a wisp of smoke, wide and impassable
+volcan|montana|S|A huge dark volcanic cone mountain with glowing orange lava cracks running down its sides and a glowing lava crater at the summit, completely clear of any smoke, steam, vapor or clouds, nothing rising above it, wide and impassable
 volcan|arboleda|S|A dense impassable cluster of jagged black obsidian and dark basalt rock spires packed tightly together
 volcan|muro|H|A long fortified wall of big dark volcanic stone blocks with faintly glowing orange cracks between them
 volcan|muro|V|A long fortified wall of big dark volcanic stone blocks with faintly glowing orange cracks

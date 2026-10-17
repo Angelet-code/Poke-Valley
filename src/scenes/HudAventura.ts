@@ -17,6 +17,7 @@
 //   (Pokémon que no manejas, objetos de la mochila y Pokécoins; clic = ponerlo en la oferta), lo que das (clic =
 //   quitarlo) y lo que da el otro. Mayús+clic: cinco objetos o 100 Pokécoins. Debajo, Aceptar y Cancelar; cada oferta
 //   se pone en verde cuando su dueño la acepta.
+import { LINEAS_ATAQUE, ROMANO, lineaAtaque, rangoAtaque } from '../data/lineasAtaque';
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
@@ -24,9 +25,9 @@ import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
 import { NOMBRE_BAYERO, NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
-import { EQUIPABLES } from '../combate/objetos';
+import { EQUIPABLES, RAREZAS, SLOTS, colorRareza, slotIdx } from '../combate/objetos';
 import { EVO_OBJETO, LINEAS } from '../data/pokedex';
-import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, formaDe, necesitaObjetivo, perfil } from '../combate/reglas';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, formaArea, formaDe, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
@@ -388,7 +389,7 @@ export class HudAventura extends Phaser.Scene {
       if (fr > 0) rect(g, 0x1a1008, 0.55, x, y + CH * (1 - fr), CW, CH * fr);
       if (it && !av.partida.tiene((a as { i: string }).i)) rect(g, 0x1a1008, 0.45, x, y, CW, CH);
       // Número en rojo si el objetivo está lejos para ese movimiento.
-      const lejos = !!(mv && necesitaObjetivo(mv) && av.objetivo && Math.hypot(av.objetivo.x - p.x, av.objetivo.y - p.y) > alcance(mv) + Math.max(8, av.objetivo.alto * 0.3));
+      const lejos = !!(mv && necesitaObjetivo(mv) && formaArea(mv) !== 'zona' && av.objetivo && Math.hypot(av.objetivo.x - p.x, av.objetivo.y - p.y) > alcance(mv) + Math.max(8, av.objetivo.alto * 0.3));
       c.tecla.setColor(lejos ? '#ff8a7a' : '#fff6dc');
       if (av.asignando) rect(g, C.elegido, 0.35 + 0.2 * Math.sin(this.time.now / 150), x, y, CW, CH);
       if (i === sobre) { rect(g, C.elegido, 1, x - 1, y - 1, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y + CH, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y, 1, CH); rect(g, C.elegido, 1, x + CW, y, 1, CH); }
@@ -439,7 +440,7 @@ export class HudAventura extends Phaser.Scene {
     if (av.panel !== 'misiones' && !bayas) return;
     const zonas = bayas ? ['pueblo' as const] : ZONAS_MISION.filter(z => lista.some(m => m.zona === z));
     const cols = Math.max(...zonas.map(z => lista.filter(m => m.zona === z).length));
-    const w = 12 + cols * (MW + 4) - 4, h = 18 + zonas.length * (MH + 14) + 4, x = Math.round(VW / 2 - w / 2), y = 38;
+    const w = Math.max(176, 12 + cols * (MW + 4) - 4), h = 18 + zonas.length * (MH + 14) + 4, x = Math.round(VW / 2 - w / 2), y = 38;
     this.misCaja = { x, y, w, h };
     const g = this.add.graphics().setDepth(6);
     this.misObjs.push(g);
@@ -562,12 +563,14 @@ export class HudAventura extends Phaser.Scene {
       const datos = [CATEGORIA[m.category]];
       if (m.basePower) datos.push(`Potencia ${m.basePower}`);
       datos.push(m.accuracy === true ? 'No falla' : `Precisión ${m.accuracy}`);
+      // Rango y línea de ataque (docs/GDD-combate.md §3.3): Absorber → Megaagotar → Gigadrenado.
+      if (m.category !== 'Status') { const ln = lineaAtaque(m.id); datos.push(`Rango ${ROMANO[rangoAtaque(m)]}${ln ? ` (${ln} ${LINEAS_ATAQUE[ln].indexOf(m.id) + 1}/${LINEAS_ATAQUE[ln].length})` : ''}`); }
       // Cómo se lanza y cuánto tarda, con la celeridad de tu Pokémon (docs/GDD-combate.md §3.2).
       const pf = perfil(m), k = this.av.cel(this.av.jugador), seg = (v: number) => `${(Math.round(v / k * 10) / 10).toLocaleString('es')} s`;
       const lanza = pf.lanza === 'cast' ? `Lanzamiento ${seg(pf.t)}` : pf.lanza === 'canal' ? `Canalizado ${seg(pf.t)}` : 'Instantáneo';
-      const extra = [pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
+      const extra = [pf.escudo ? `Te protege ${pf.escudo} s · no gasta global · si bloquea algo, CD a la mitad` : '', pf.burst ? 'Burst: instantáneo, guárdalo para el momento' : '', pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
       const efectos = descEfecto(m);
-      txt = `${m.nombre}\n${datos.join(' · ')}\n${m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti'} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}${efectos.length ? `\n${efectos.join('\n')}` : ''}`;
+      txt = `${m.nombre}\n${datos.join(' · ')}\n${(formaArea(m) ? { zona: 'Área donde apuntes', cono: 'Cono delante de ti', alrededor: 'Área alrededor de ti' }[formaArea(m)!] : null) ?? (m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti')} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}${efectos.length ? `\n${efectos.join('\n')}` : ''}`;
     } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : ITEMS[a.i]?.cura ? `Te cura ${ITEMS[a.i]!.cura} PS` : 'Te cura un poco'}`;
     this.ficha.setText(txt).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, cx = carta ? carta.x + carta.w / 2 : BX + 4 + i * (CW + HUECO) + CW / 2;
@@ -687,24 +690,19 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
   // Inventario (I): clic en un hueco (con un equipable elegido, ponerlo ahí; si no, quitar lo que lleva) o en un equipable
   // (al primer hueco libre; con los dos llenos, se queda elegido).
   private clicInventario(z: { id: string | null; hueco?: number }): void {
-    const av = this.av, obs = av.partida.objetos(av.partida.activo);
-    if (z.hueco !== undefined) {
-      if (this.invElegido) av.equipar(this.invElegido, z.hueco); else av.equipar(null, z.hueco);
-      this.invElegido = null;
-      return;
-    }
+    const av = this.av;
+    if (z.hueco !== undefined) { av.equipar(null, z.hueco); return; }
     if (z.id && ITEMS[z.id]?.tipo === 'evolutivo') { av.usarItem(z.id); return; }   // piedra: en el que manejas
     if (!z.id || !EQUIPABLES[z.id]) return;
-    const libre = obs.indexOf(null);
-    if (obs.includes(z.id)) av.equipar(z.id, obs.indexOf(z.id));   // ya lo lleva: lo dice el aviso
-    else if (libre >= 0) av.equipar(z.id, libre);
-    else this.invElegido = this.invElegido === z.id ? null : z.id;
+    av.equipar(z.id, slotIdx(EQUIPABLES[z.id].slot));   // a su ranura; si ya había otro, vuelve a la mochila
   }
   // Inventario (I), como la pantalla del personaje del WoW: tu Pokémon animado en el centro, sus objetos a los lados y,
   // debajo, los equipables de la mochila (las Balls y las curas siguen en el panel K).
   private pintarInventario(): void {
     const av = this.av, m = av.partida.activo, obs = av.partida.objetos(m), dex = av.jugador?.dex ?? '';
-    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && (EQUIPABLES[id] || ITEMS[id]?.tipo === 'evolutivo'));   // y las piedras evolutivas
+    const orden = (id: string) => EQUIPABLES[id] ? slotIdx(EQUIPABLES[id].slot) * 100 + RAREZAS.findIndex(r => r.id === EQUIPABLES[id].rareza) : 999;
+    const eq = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && (EQUIPABLES[id] || ITEMS[id]?.tipo === 'evolutivo'))   // y las piedras evolutivas
+      .sort((a, b) => orden(a[0]) - orden(b[0]));   // por ranura y, dentro, de común a épico
     if (av.panel !== 'inv') this.invElegido = null;
     const k = av.panel === 'inv' ? `${av.partida.dinero}|${m.uid}|${dex}|${m.nivel}|${JSON.stringify(av.jugador?.boosts)}|${obs.join()}|${JSON.stringify(eq)}|${this.invElegido}|${listo(this, dex)}` : '';
     if (k === this.invClave) return;
@@ -728,7 +726,8 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       this.invObjs.push(im);
     };
     const casilla = (cx: number, cy: number, lado: number, id: string | null, zona: { id: string | null; hueco?: number }, elegida: boolean, n = 0) => {
-      rect(g, elegida ? C.elegido : C.huecoSombra, 1, cx - 1, cy - 1, lado + 2, lado + 2);
+      const raro = id && EQUIPABLES[id] && EQUIPABLES[id].rareza !== 'comun' ? colorRareza(id) : null;   // borde de color: raro azul, épico morado
+      rect(g, raro ?? (elegida ? C.elegido : C.huecoSombra), 1, cx - 1, cy - 1, lado + 2, lado + 2);
       rect(g, elegida ? C.elegidoFondo : C.hueco, 1, cx, cy, lado, lado);
       if (id) icono(cx + lado / 2, cy + lado / 2, id, lado - 2);
       if (n > 1) this.invObjs.push(this.sombreado(cx + lado - 0.5, cy + lado + 0.5, String(n), 5).setOrigin(1, 1).setDepth(9));
@@ -760,9 +759,11 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       spr.setScale(Math.max(1, Math.min(3 * S, Math.floor(S * 50 / Math.max(1, ancla(dex).alto)))));
       this.invObjs.push(spr);
     }
+    // Cinco ranuras: cabeza, cuerpo y arma a la izquierda; amuleto y accesorio a la derecha.
     for (let i = 0; i < HUECOS_OBJ; i++) {
-      const hx = i === 0 ? fx + 5 : fx + fw - 5 - HUECO, hy = fy + FONDO / 2 - HUECO / 2;
-      casilla(hx, hy, HUECO, obs[i], { id: obs[i], hueco: i }, !!this.invElegido || !!obs[i]);
+      const izq = i < 3, fila = izq ? i : i - 3, hx = izq ? fx + 4 : fx + fw - 4 - HUECO, hy = fy + 4 + fila * (HUECO + 2);
+      casilla(hx, hy, HUECO, obs[i], { id: obs[i], hueco: i }, !!obs[i]);
+      if (!obs[i]) t(hx + HUECO / 2, hy + HUECO / 2, SLOTS[i].nombre.slice(0, 4).toUpperCase(), 4.5, C.tinta).setOrigin(0.5).setAlpha(0.45).setDepth(9);
     }
     // Los equipables de la mochila.
     // Stats (con su nivel), en dos columnas; en verde o rojo si ahora mismo las tiene subidas o bajadas.
@@ -782,7 +783,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     // Pokécoins (como el oro de las bolsas del WoW).
     const din = t(x + w - 7, y + h - 20, `${av.partida.dinero} Pokécoins`, 5.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
     this.invObjs.push(this.add.image((x + w - 7 - din.width / S - 9) * S, (y + h - 16.5) * S, this.pixeles('hud_moneda', MONEDA, COL_MONEDA)).setOrigin(0, 0.5).setDepth(8));
-    t(x + w / 2, y + h - 9, this.invElegido ? 'Ahora elige qué objeto cambiar' : 'Clic: ponérselo · en el suyo: quitar', 5, C.maderaClara).setOrigin(0.5, 0);
+    t(x + w / 2, y + h - 9, 'Clic: ponérselo · en el suyo: quitar', 5, C.maderaClara).setOrigin(0.5, 0);
   }
   // Ficha de un objeto del inventario (a la derecha del panel, a su altura).
   private fichaInv(z: { x: number; y: number; w: number; h: number; id: string | null; hueco?: number }): void {
@@ -791,7 +792,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.fichaTipo.setVisible(false);
     if (!id) { this.ficha.setVisible(false); return; }
     const eq = EQUIPABLES[id];
-    let desc = eq?.desc ?? '', uso = z.hueco !== undefined ? (this.invElegido ? 'Clic: cambiarlo' : 'Clic: quitárselo') : 'Clic: ponérselo';
+    let desc = eq ? `${eq.desc}\n${SLOTS.find(s => s.id === eq.slot)!.nombre} · ${RAREZAS.find(r => r.id === eq.rareza)!.nombre}` : '', uso = z.hueco !== undefined ? 'Clic: quitárselo' : 'Clic: ponérselo';
     if (ITEMS[id]?.tipo === 'evolutivo') {   // piedra: a quién hace evolucionar y si le sirve al que manejas
       const nom = (l: string) => LINEAS[l].formas[0].nombre, dest = this.av.partida.evoCon(this.av.partida.activo, id);
       desc = `Hace evolucionar a ${Object.entries(EVO_OBJETO).filter(([, o]) => o[id]).map(([l, o]) => `${nom(l)} en ${nom(o[id])}`).join(', ')}`;

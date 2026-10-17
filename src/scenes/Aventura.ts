@@ -7,6 +7,7 @@
 // Reglas en src/combate/reglas.ts; partida (equipo, mochila, hora) en src/combate/partida.ts; HUD en HudAventura.ts.
 import Phaser from 'phaser';
 import type { CargaMapa } from './carga';
+import { mando } from '../entrada/mando';
 import { REG, ROW_FROM_ANGLE, S, VH, VW } from '../config';
 import { PALETA_DIBUJO, type Colocado } from '../data/mapaDibujo';
 import { PALETAS_BIOMA, abrirMacizo, enMacizo } from '../data/biomas';
@@ -32,7 +33,7 @@ import { TYPE_FX } from '../fx/fx/palette';
 import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { MoveCue } from '../fx/tipos';
 import { CASILLAS, PROB_SHINY, Partida } from '../combate/partida';
-import { NOMBRE_ESTADO, NOMBRE_STAT, formaDe, statsDe, type Clima } from '../combate/reglas';
+import { ALCANCE_DISTANCIA, ALREDEDOR_RADIO, CONO_ANGULO, CONO_LARGO, NOMBRE_ESTADO, NOMBRE_STAT, ZONA_RADIO, formaArea, formaDe, statsDe, type Clima, type FormaArea, type Golpe } from '../combate/reglas';
 import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
@@ -114,6 +115,8 @@ function texturaPixel(scene: Phaser.Scene, clave: string, filas: string[]): void
   filas.forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') { g.fillStyle = COL_VUELO[ch]; g.fillRect(i, j, 1, 1); } }));
   c.refresh();
 }
+// Cráter de los volcanes grandes: [x, y] en fracciones del dibujo y tamaño del humo (humearFumarola).
+const CRATER: Record<string, [number, number, number]> = { montana_volcan: [0.49, 0.17, 0.8] };
 type DatosMapa = { nueva?: boolean; inicial?: string; usuario?: string; mapa?: MapaId; desde?: MapaId | 'inicio'; pos?: { x: number; y: number }; vuelo?: { x: number; y: number } };
 
 // Mapa (M): la zona entera desde arriba, con una segunda cámara encajada en este hueco (px de pantalla). La escena
@@ -158,6 +161,7 @@ export class Aventura extends Phaser.Scene {
   private terrain!: Terrain;
   private piezas: Pieza[] = [];
   private luces: Luz[] = [];
+  private puntosLava: [number, number][] = [];   // dónde hay lava (el agua del volcán y los charcos): de aquí salen las brasas y las burbujas
   private luzJugador: Phaser.GameObjects.Light | null = null;
   private luzAhora: [number, number, number] | null = null;   // luz ambiente pintada (va hacia la que toca)
   private tLuz = 0;
@@ -166,10 +170,13 @@ export class Aventura extends Phaser.Scene {
   private suelo = new Map<number, Phaser.GameObjects.Image>();   // objetos tirados (Mundo.hallazgos): una Poké Ball, como en los juegos
   private siguiendo: Phaser.GameObjects.Sprite | null = null;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  private tRaton = 0;                 // última vez que se movió el ratón (ms del reloj del juego); ver `mando.tUso`
   private anillo!: Phaser.GameObjects.Ellipse;
   private barras!: Phaser.GameObjects.Graphics;
   private montaje = 0;
   private marcaG!: Phaser.GameObjects.Graphics;
+  private areaG!: Phaser.GameObjects.Graphics;          // áreas en el suelo (pintarAreas)
+  private escudoG!: Phaser.GameObjects.Graphics;        // burbujas de Protección (pintarAreas), por encima de los Pokémon
   private senal: Phaser.GameObjects.Text | null = null;   // "!" o "?" sobre el tablón
   private hogarLuz: Phaser.GameObjects.Ellipse | null = null;
   // Multijugador (?mp=…): la conexión de la página, los sprites que se están cargando y el nombre sobre cada remoto.
@@ -274,7 +281,9 @@ export class Aventura extends Phaser.Scene {
     this.pavimentar();
     this.pintar();
     ponerTinteSombra(this.mapa.pavimentos || this.mapa.pintado ? 0xffb7ff : 0xffffff);
+    this.puntosLava = [];
     const bloques = this.crearEscenario(porId);
+    this.chispearLava();
     this.abrirMacizoVacio();
     this.mundo = new Mundo({
       mapa: this.mapa, partida: this.partida, desde: data.desde ?? 'inicio', bloques, agua: (x, y) => !enRect(tiras.pasos, x, y) && (this.terrain.esAgua(x, y) || enMacizo(this.mapa, x, y) || muroPintado(this.mapa, x, y)),   // el macizo de las zonas de bioma y los muros de un mapa pintado bloquean como el agua
@@ -315,6 +324,8 @@ export class Aventura extends Phaser.Scene {
         .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setVisible(false);
     }
     this.marcaG = this.add.graphics().setDepth(-6000);
+    this.areaG = this.add.graphics().setDepth(-5990);
+    this.escudoG = this.add.graphics().setDepth(1e4);
 
     this.anillo = this.add.ellipse(0, 0, 22, 8, 0xffd65a, 0.5).setVisible(false);
     this.barras = this.add.graphics().setDepth(1e5);
@@ -375,6 +386,83 @@ export class Aventura extends Phaser.Scene {
     else if (p.huella) { const h = p.huella; bloques.push({ x: (h.x0 + h.x1) / 2, y: h.y1, w: h.x1 - h.x0, h: h.y1 - h.y0, rombo: el.tipo === 'estanque' }); }
     const l = puntoLuz(p);
     if (l) this.encender(l[0], l[1], TIPOS_LUZ[c.luz ?? (el.id === 'hoguera' ? 'hoguera' : 'farol')], p.base + 1);
+    if (el.id === 'charco_lava') {   // el charco es un óvalo plano: puntos repartidos dentro
+      const rx = el.w * p.k * 0.4, ry = el.h * p.k * 0.3, cy = c.y - (el.ancla[1] - el.h * 0.5) * p.k;
+      for (let i = 0; i < 40; i++) { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()); this.puntosLava.push([c.x + Math.cos(a) * r * rx, cy + Math.sin(a) * r * ry]); }
+    }
+    const cr = CRATER[el.id];   // un volcán: el humo sale del cráter (su sitio en el dibujo, en fracciones de ancho y alto)
+    if (cr) { this.halo(); this.humearFumarola(c.x + (c.flip ? -1 : 1) * (cr[0] * el.w - el.ancla[0]) * p.k, c.y + (cr[1] * el.h - el.ancla[1]) * p.k, c.y, cr[2], true); }
+    if (el.id === 'fumarola') { this.halo(); this.humearFumarola(c.x, c.y - (el.ancla[1] - el.h * 0.5) * p.k, c.y); }
+  }
+  // La lava del volcán, con partículas: brasas que se desprenden y suben, y burbujas que se hinchan y revientan.
+  // Los puntos salen del terreno (el agua del volcán es lava) más los charcos; un emisor para todo el mapa.
+  private chispearLava(): void {
+    const m = this.mapa;
+    if (m.suelo !== 'volcan') return;
+    const pts = this.puntosLava;
+    for (let y = 4; y < m.H; y += 6) for (let x = 4; x < m.W; x += 6)
+      if (this.terrain.esAgua(x, y) && !enMacizo(m, x, y)) pts.push([x + Math.random() * 6, y + Math.random() * 6]);
+    if (pts.length < 8) return;
+    this.halo();
+    const zona = { getRandomPoint: (v: { x: number; y: number }) => { const q = pts[Math.floor(Math.random() * pts.length)]; v.x = q[0]; v.y = q[1]; } };
+    const emitZone = { type: 'random', source: zona } as Phaser.Types.GameObjects.Particles.EmitZoneData;
+    const n = Math.min(1, pts.length / 800);   // poca lava, pocas brasas
+    if (!this.textures.exists('copo_ceniza')) {   // copo de ceniza: polígono irregular
+      const cv = this.textures.createCanvas('copo_ceniza', 16, 16)!, g = cv.getContext();
+      g.fillStyle = '#fff'; g.beginPath();
+      [[2, 8], [5, 2], [11, 3], [14, 9], [9, 14], [4, 12]].forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+      g.closePath(); g.fill(); cv.refresh();
+    }
+    // Todo se mueve con remolinos: el vaivén lateral depende de la altura que lleva la partícula.
+    const remolino = (amp: number, k: number) => ({ onUpdate: (p: Phaser.GameObjects.Particles.Particle, _k: string, _t: number, v: number) => v + Math.sin(p.y * k + p.x * 0.07) * amp });
+    const ceniza = this.add.particles(0, 0, 'copo_ceniza', {
+      emitZone, frequency: 26 / (0.4 + n), lifespan: { min: 2600, max: 5000 }, quantity: 1,
+      speedY: { min: -26, max: -9 }, speedX: { min: -12, max: 12 }, accelerationX: { min: -3, max: 6 }, x: remolino(0.9, 0.18),
+      rotate: { start: 0, end: 540 }, scale: { start: 0.3, end: 0.08 }, alpha: { start: 0.85, end: 0 }, tint: [0x2c2326, 0x4a3e3c, 0x6e605c, 0x8a7a72],
+    }).setDepth(1100);
+    const brasas = this.add.particles(0, 0, 'halo', {
+      emitZone, frequency: 70 / (0.4 + n), lifespan: { min: 1500, max: 3000 }, quantity: 1,
+      speedY: { min: -38, max: -14 }, speedX: { min: -10, max: 10 }, accelerationX: { min: -3, max: 6 }, x: remolino(1.2, 0.22),
+      scale: { start: 0.04, end: 0.008 }, alpha: { start: 1, end: 0 }, tint: [0xfff2b8, 0xffe08a, 0xffc060, 0xff9a3a], blendMode: 'ADD',
+    }).setDepth(1100);
+    const burbujas = this.add.particles(0, 0, 'halo', {
+      emitZone, frequency: 64 / (0.4 + n), lifespan: { min: 600, max: 1100 }, quantity: 1,
+      scale: { start: 0.015, end: 0.1, ease: 'Quad.easeOut' }, alpha: { start: 0.9, end: 0 }, tint: [0xffe08a, 0xffb040], blendMode: 'ADD',
+    }).setDepth(-9500);
+    for (const e of [ceniza, brasas, burbujas]) { e.resetPipeline(); e.fastForward(3000); }
+  }
+  // El humo de la fumarola, con partículas (el dibujo ya no lleva humo): bocanadas grises que suben, se ensanchan y se
+  // desvanecen con un poco de viento, y brasas que saltan del agujero. (x, y) = el centro de la boca; `suelo` ordena.
+  private humearFumarola(x: number, y: number, suelo: number, g = 1, grande = false): void {   // grande: un volcán del macizo (hay decenas): solo humo, más ralo
+    if (!this.textures.exists('humo_suave')) {
+      const n = 64, cv = this.textures.createCanvas('humo_suave', n, n)!, g = cv.getContext();
+      for (const [dx, dy, r] of [[0, 3, 24], [-9, -3, 16], [10, -4, 17], [1, -11, 14]] as const) {
+        const gr = g.createRadialGradient(n / 2 + dx, n / 2 + dy, 0, n / 2 + dx, n / 2 + dy, r);
+        gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = gr; g.fillRect(0, 0, n, n);
+      }
+      cv.refresh(); cv.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    }
+    const fase = Math.random() * 3000;   // g: tamaño del humo (1 = fumarola; los volcanes grandes, más)
+    const humo = this.add.particles(x, y, 'humo_suave', {
+      emitZone: { type: 'random' as const, source: new Phaser.Geom.Ellipse(0, 0, 14 * g, 6 * g) } as Phaser.Types.GameObjects.Particles.EmitZoneData,
+      frequency: grande ? 420 : 120, lifespan: { min: 3500, max: 5500 }, quantity: 1,
+      speedY: { min: -26 * g, max: -16 * g }, speedX: { min: -4, max: 6 }, x: { onUpdate: (p: Phaser.GameObjects.Particles.Particle, _k: string, _t: number, v: number) => v + Math.sin(p.y * 0.12) * 0.35 },
+      accelerationX: { min: 0.5, max: 3 }, scale: { start: 0.2 * g, end: 0.95 * g },
+      alpha: { start: grande ? 0.5 : 0.75, end: 0 }, rotate: { min: 0, max: 360 }, angle: { min: 0, max: 360 },
+      tint: [0xe6e8ec, 0xcfd3da, 0xb9bec8],
+    }).setDepth(suelo + 3);
+    humo.resetPipeline();
+    humo.fastForward(fase + 5500);   // ya con humo al entrar, no una columna que crece desde el suelo
+    if (grande) return;
+    const brasas = this.add.particles(x, y + 2, 'halo', {
+      emitZone: { type: 'random' as const, source: new Phaser.Geom.Ellipse(0, 0, 12 * g, 5 * g) } as Phaser.Types.GameObjects.Particles.EmitZoneData,
+      frequency: 420, lifespan: { min: 900, max: 1700 }, quantity: 1,
+      speedY: { min: -26 * g, max: -12 * g }, speedX: { min: -7, max: 7 }, gravityY: 4,
+      scale: { start: 0.05, end: 0.01 }, alpha: { start: 0.9, end: 0 }, tint: [0xffd27a, 0xff9a3a, 0xff6a24], blendMode: 'ADD',
+    }).setDepth(suelo + 3);
+    brasas.resetPipeline();
+    brasas.fastForward(fase);
   }
   // El punto de vuelo: el volador y un farol a su lado en el rellano de vuelo de la zona (`vuelo`); si la zona no
   // tiene, en el primer hueco libre y con espacio alrededor cerca de la entrada, lejos de las salidas. Sus huellas se
@@ -704,7 +792,7 @@ export class Aventura extends Phaser.Scene {
     this.keys.T.on('down', () => this.comerciar());
     this.keys.K.on('down', () => { this.panel = this.panel === 'movs' ? null : 'movs'; this.asignando = null; });
     this.keys.I.on('down', () => { this.panel = this.panel === 'inv' ? null : 'inv'; this.asignando = null; });
-    this.keys.ESC.on('down', () => {
+    this.keys.ESC.on('down', (_k: Phaser.Input.Keyboard.Key, e: KeyboardEvent | undefined) => {
       if (this.verMapa) { this.mostrarMapa(false); return; }
       if (this.mundo?.rechazarReto()) return;
       if (this.tradeo?.cancelar()) return;
@@ -712,8 +800,15 @@ export class Aventura extends Phaser.Scene {
       if (this.asignando) { this.asignando = null; return; }
       if (this.panel) { this.panel = null; return; }
       if (this.objetivo) { this.objetivo = null; return; }
+      if (e && !e.isTrusted && e.key !== 'Salir') return;   // B del mando: cierra, pero solo Start sale al título
       this.guardar(); this.scene.stop('hud'); this.scene.start('title');
     });
+    // Mando (src/entrada/mando.ts): los botones llegan como teclas; aquí solo se recuerda cuándo se usó el ratón por
+    // última vez, para saber si apuntar con él o con el stick derecho.
+    this.input.on('pointermove', () => { this.tRaton = this.game.loop.now; });
+    const conectado = (id: string) => this.aviso(`Mando conectado: ${id.replace(/\s*\(.*$/, '').slice(0, 40)}`);
+    this.game.events.on('mando', conectado);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.events.off('mando', conectado));
     this.input.mouse!.disableContextMenu();
     // Clic en un Pokémon: objetivo (el HUD se queda con los clics que caen en él).
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
@@ -769,7 +864,7 @@ export class Aventura extends Phaser.Scene {
     if (v && !this.camMapa) {
       const e = encajeMapa(this.mapa.W, this.mapa.H);
       this.camMapa = this.cameras.add(e.x, e.y, e.w, e.h).setZoom(e.zoom).centerOn(this.mapa.W / 2, this.mapa.H / 2).setBackgroundColor(0x1b120a);
-      this.camMapa.ignore([this.barras, this.anillo, this.marcaG]);
+      this.camMapa.ignore([this.barras, this.anillo, this.marcaG, this.areaG, this.escudoG]);
       // El suelo reducido tanto sin suavizar se llena de puntitos (su grano): para el mapa, una copia ya reducida.
       const suelo = this.children.list.find(o => o instanceof Phaser.GameObjects.Image && o.texture.key === (this.mapa.pintado?.tex ?? 'ground')) as Phaser.GameObjects.Image | undefined;
       const fuente = suelo?.texture.getSourceImage() as HTMLCanvasElement | undefined;
@@ -863,6 +958,7 @@ export class Aventura extends Phaser.Scene {
         break;
       }
       case 'mov': void this.animarMov(mundo, s); break;
+      case 'area': this.destelloArea(s); break;
       case 'ball': this.lanzarBall(s); break;
       case 'ballFin': this.finBall(s); break;
       case 'debilitado': { const v = this.vistas.get(s.uid); if (v) this.tweens.add({ targets: v.fx, alpha: 0, delay: 700, duration: 600 }); break; }
@@ -873,26 +969,72 @@ export class Aventura extends Phaser.Scene {
   }
   // La animación de un movimiento (la de Colleja); al llegar al impacto, el mundo aplica lo que ya tiró.
   private async animarMov(mundo: Mundo, s: Extract<Suceso, { tipo: 'mov' }>): Promise<void> {
-    const l = mundo.luchador(s.de), t = mundo.luchador(s.a), r = s.golpe, id = s.mov, m = getMove(id);
-    const commit = () => mundo.impacto(s.n);
-    if (!l || !t) { commit(); return; }
-    const efect = r.eficacia === 0 ? 'immune' : r.eficacia > 1 ? 'super' : r.eficacia < 1 ? 'resisted' : 'normal';
+    const l = mundo.luchador(s.de), id = s.mov, m = getMove(id);
+    // Un área trae a los demás que toca en `mas`: se animan juntos (spread) y cada uno se aplica en el impacto.
+    const golpes = [{ n: s.n, a: s.a, golpe: s.golpe }, ...(s.mas ?? [])].map(g => ({ ...g, t: mundo.luchador(g.a) }));
+    const commit = () => { for (const g of golpes) mundo.impacto(g.n); };
+    const vivos = golpes.filter((g): g is typeof g & { t: Luchador } => !!g.t);
+    if (!l || !vivos.length) { commit(); return; }
+    const t = vivos[0].t, propio = t === l;
+    const efect = (r: Golpe) => r.eficacia === 0 ? 'immune' : r.eficacia > 1 ? 'super' : r.eficacia < 1 ? 'resisted' : 'normal';
+    const efectos = [...s.efectos, ...(s.mas ?? []).flatMap(x => x.efectos)];
     const cue: MoveCue = {
-      kind: 'move', user: l.uid, move: id, targets: t === l ? [] : [t.uid], spread: false,
-      hits: r.falla || t === l ? [] : [{ slot: t.uid, effectiveness: efect, crit: r.critico, damaged: r.dano > 0 }],
-      missed: r.falla ? [t.uid] : [], blocked: [], failed: false, hitCount: 1, drained: !!m?.drain && r.dano > 0, recoil: !!m?.recoil && r.dano > 0,
+      kind: 'move', user: l.uid, move: id, targets: propio ? [] : vivos.map(g => g.t.uid), spread: vivos.length > 1,
+      hits: propio ? [] : vivos.filter(g => !g.golpe.falla).map(g => ({ slot: g.t.uid, effectiveness: efect(g.golpe), crit: g.golpe.critico, damaged: g.golpe.dano > 0 })),
+      missed: vivos.filter(g => g.golpe.falla).map(g => g.t.uid), blocked: [], failed: false, hitCount: 1,
+      drained: !!m?.drain && vivos.some(g => g.golpe.dano > 0), recoil: !!m?.recoil && vivos.some(g => g.golpe.dano > 0),
       // Las flechas de stats y el efecto de cada estado los pinta la animación al final (como en Colleja).
-      boosts: s.efectos.filter(e => e.boosts).map(e => ({ slot: e.uid, changes: (Object.entries(e.boosts!) as [Stat6, number][]).map(([stat, amount]) => ({ stat, amount })) })),
-      statuses: s.efectos.filter(e => e.estado).map(e => ({ slot: e.uid, status: e.estado! })),
+      boosts: efectos.filter(e => e.boosts).map(e => ({ slot: e.uid, changes: (Object.entries(e.boosts!) as [Stat6, number][]).map(([stat, amount]) => ({ stat, amount })) })),
+      statuses: efectos.filter(e => e.estado).map(e => ({ slot: e.uid, status: e.estado! })),
     };
     const texts: MoveTexts = { boost: (st, n) => `${n > 0 ? '+' : ''}${n} ${NOMBRE_STAT[st as Stat6] ?? st}`, status: st => NOMBRE_ESTADO[st] ?? st };
     const anim = animationFor(id);
-    const targets = t === l || anim.template === 'aura' || anim.template === 'shield' ? [] : [this.geo(t)];
+    const targets = propio || anim.template === 'aura' || anim.template === 'shield' ? [] : vivos.map(g => this.geo(g.t));
     try {
       await animarMovimiento({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user: this.geo(l), targets,
-        losses: new Map([[t.uid, Math.min(1, r.dano / t.stats.hp)]]), commit, text: texts });
+        losses: new Map(vivos.map(g => [g.t.uid, Math.min(1, g.golpe.dano / g.t.stats.hp)])), commit, text: texts });
     } catch (e) { console.warn('animación', id, e); }
     commit();
+  }
+  // Áreas en el suelo: mientras alguien lanza una (la zona donde caerá: a tiempo de salir) y el destello al pegar.
+  private destellos: { s: Extract<Suceso, { tipo: 'area' }>; t0: number }[] = [];
+  private destelloArea(s: Extract<Suceso, { tipo: 'area' }>): void { this.destellos.push({ s, t0: performance.now() }); }
+  private pintarAreas(): void {
+    const g = this.areaG, mundo = this.mundo!, ahora = performance.now();
+    g.clear();
+    const forma = (fa: FormaArea, x: number, y: number, ang: number, color: number, relleno: number, borde: number) => {
+      g.fillStyle(color, relleno).lineStyle(1.2, color, borde);
+      if (fa === 'cono') {
+        // El cono, aplastado como el suelo (×0,65 en vertical).
+        const pts: Phaser.Types.Math.Vector2Like[] = [{ x, y }];
+        for (let i = 0; i <= 12; i++) { const a = ang - CONO_ANGULO + (2 * CONO_ANGULO * i) / 12; pts.push({ x: x + Math.cos(a) * CONO_LARGO, y: y + Math.sin(a) * CONO_LARGO * 0.65 }); }
+        g.fillPoints(pts, true).strokePoints(pts, true);
+      } else {
+        const r = fa === 'zona' ? ZONA_RADIO : ALREDEDOR_RADIO;
+        g.fillEllipse(x, y, r * 2, r * 1.3).strokeEllipse(x, y, r * 2, r * 1.3);
+      }
+    };
+    for (const l of [...mundo.todos(), ...mundo.remotos]) {
+      const c = l.lanza, m = c && getMove(c.id), fa = m && formaArea(m);
+      if (!c || !fa) continue;
+      const p = c.punto, color = l.rol === 'salvaje' ? 0xff4a2a : COLOR_TIPO[m.type], f = mundo.lanzaFrac(l);
+      const x = fa === 'zona' && p ? p.x : l.x, y = fa === 'zona' && p ? p.y : l.y, ang = p ? Math.atan2(p.y - l.y, p.x - l.x) : 0;
+      forma(fa, x, y, ang, color, 0.1 + 0.15 * (c.canal ? 1 : f), 0.5 + 0.4 * Math.abs(Math.sin(mundo.ahora * 8)));
+    }
+    // Protección y familia: una burbuja alrededor mientras dura la ventana (naranja, Aguante).
+    const eg = this.escudoG.clear();
+    for (const l of mundo.todos()) {
+      const e = l.escudo, resta = e ? e.hasta - mundo.ahora : 0;
+      if (!e || resta <= 0) continue;
+      const color = e.id === 'endure' ? 0xffa040 : 0x8fd8ff, w = Math.max(20, l.alto * 0.9) * l.escala, k = Math.min(1, resta * 4);
+      eg.fillStyle(color, 0.16 * k).fillEllipse(l.x, l.y - l.alto * l.escala * 0.45, w, l.alto * l.escala * 1.05);
+      eg.lineStyle(1.2, color, 0.8 * k).strokeEllipse(l.x, l.y - l.alto * l.escala * 0.45, w, l.alto * l.escala * 1.05);
+    }
+    this.destellos = this.destellos.filter(d => ahora - d.t0 < 450);
+    for (const d of this.destellos) {
+      const m = getMove(d.s.mov), k = 1 - (ahora - d.t0) / 450, de = mundo.luchador(d.s.de);
+      forma(d.s.forma, d.s.x, d.s.y, d.s.ang, de?.rol === 'salvaje' ? 0xff4a2a : COLOR_TIPO[m?.type ?? 'Normal'], 0.3 * k, 0.8 * k);
+    }
   }
   // Objetos del suelo: se ven como una Poké Ball (no se sabe qué es hasta cogerlo); al cogerlo desaparece.
   private pintarSuelo(): void {
@@ -1156,7 +1298,7 @@ export class Aventura extends Phaser.Scene {
     red.on('acc', m => {
       if (!deAqui(m)) return;
       const mundo = this.mundo!, s = m.s as Salida, tr = (u: string) => mundo.traducir(u, m.uid);
-      if (s.tipo === 'golpe') mundo.recibirGolpe(tr(s.de), tr(s.a), s.golpe, s.efectos);
+      if (s.tipo === 'golpe') mundo.recibirGolpe(tr(s.de), tr(s.a), s.golpe, s.efectos, s.mov);
       else if (s.tipo === 'ball') mundo.recibirBall(s.a, s.dentro, s.ok, `remoto-${m.uid}`);
       else if (s.tipo === 'muere') mundo.recibirMuerte(s);
       else if (s.tipo === 'clima') mundo.recibirClima(s.clima);
@@ -1179,7 +1321,9 @@ export class Aventura extends Phaser.Scene {
     const n = (k: number) => { const c = `${desde}:${k}`; let v = this.ajenos.get(c); if (v === undefined) this.ajenos.set(c, v = -(this.ajenos.size + 1)); return v; };
     switch (s.tipo) {
       case 'rotulo': case 'destello': case 'debilitado': return { ...s, uid: tr(s.uid) };
-      case 'mov': return { ...s, n: n(s.n), de: tr(s.de), a: tr(s.a), efectos: s.efectos.map(e => ({ ...e, uid: tr(e.uid) })) };
+      case 'mov': return { ...s, n: n(s.n), de: tr(s.de), a: tr(s.a), efectos: s.efectos.map(e => ({ ...e, uid: tr(e.uid) })),
+        mas: s.mas?.map(x => ({ ...x, n: n(x.n), a: tr(x.a), efectos: x.efectos.map(e => ({ ...e, uid: tr(e.uid) })) })) };
+      case 'area': return { ...s, de: tr(s.de) };
       case 'ball': return { ...s, n: n(s.n), a: tr(s.a) };
       case 'ballFin': return { ...s, n: n(s.n) };
       default: return s;
@@ -1234,14 +1378,21 @@ ${l.nombre} Nv.${l.nivel}`;
   update(t: number, dtMs: number): void {
     const mundo = this.mundo;
     if (!this.listo || !mundo) return;
-    const dt = Math.min(0.05, dtMs / 1000), k = this.keys;
-    const vx = this.verMapa ? 0 : +(k.D.isDown || k.RIGHT.isDown) - +(k.A.isDown || k.LEFT.isDown), vy = this.verMapa ? 0 : +(k.S.isDown || k.DOWN.isDown) - +(k.W.isDown || k.UP.isDown);
+    const dt = Math.min(0.05, dtMs / 1000), k = this.keys, stick = mando?.ejeIzq() ?? { x: 0, y: 0 };
+    const vx = this.verMapa ? 0 : (+(k.D.isDown || k.RIGHT.isDown) - +(k.A.isDown || k.LEFT.isDown)) || stick.x;
+    const vy = this.verMapa ? 0 : (+(k.S.isDown || k.DOWN.isDown) - +(k.W.isDown || k.UP.isDown)) || stick.y;
     if (this.red) this.pasoRed();
-    mundo.paso(dt, { vx, vy });
+    // Apuntar (áreas y conos): el stick derecho si se mueve; con el mando en uso y el stick quieto, nada (la
+    // simulación tira del objetivo); si no, el ratón.
+    const der = mando?.ejeDer() ?? { x: 0, y: 0 }, j = mundo.jugador;
+    let apunta: { x: number; y: number } | undefined;
+    if (der.x || der.y) apunta = { x: j.x + der.x * ALCANCE_DISTANCIA, y: j.y + der.y * ALCANCE_DISTANCIA };
+    else if (!mando || mando.tUso <= this.tRaton) { const ptr = this.input.activePointer, a = this.cameras.main.getWorldPoint(ptr.x, ptr.y); apunta = { x: a.x, y: a.y }; }
+    mundo.paso(dt, { vx, vy, apunta });
     this.sincronizar();
     for (const s of mundo.sacar()) {
       this.suceso(s);
-      if (this.red && (s.tipo === 'rotulo' || s.tipo === 'destello' || s.tipo === 'mov' || s.tipo === 'ball' || s.tipo === 'ballFin' || s.tipo === 'debilitado')) this.compartir.push(s);
+      if (this.red && (s.tipo === 'rotulo' || s.tipo === 'destello' || s.tipo === 'mov' || s.tipo === 'area' || s.tipo === 'ball' || s.tipo === 'ballFin' || s.tipo === 'debilitado')) this.compartir.push(s);
     }
     if (this.red) this.enviarRed(dtMs);
     this.pasoTrato(dt);
@@ -1252,6 +1403,7 @@ ${l.nombre} Nv.${l.nivel}`;
     this.pintarBocadillos();
     this.pintarSuelo();
     this.pintarMarca();
+    this.pintarAreas();
     this.pasoTablon();
     this.pasoVuelo();
     this.pasoTendero();

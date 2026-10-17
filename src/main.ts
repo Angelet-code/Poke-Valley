@@ -12,6 +12,7 @@ import { Evolucion } from './scenes/Evolucion';
 import { Eleccion } from './scenes/Eleccion';
 import { CargaMapa } from './scenes/carga';
 import { MapaZona } from './scenes/MapaZona';
+import { instalarMando } from './entrada/mando';
 
 const game = new Phaser.Game({
   type: Phaser.WEBGL,
@@ -24,6 +25,9 @@ const game = new Phaser.Game({
   render: { maxLights: 16 },   // Light2D del mapa dibujo: farolas y hoguera a la vista a la vez
   scene: [Boot, Preload, Title, WorldScene, UIScene, Aventura, HudAventura, Galeria, Evolucion, MapaZona, Eleccion, CargaMapa],
 });
+
+// Mando: botones → teclas sintéticas (todas las escenas), sticks → la aventura (src/entrada/mando.ts).
+instalarMando(game);
 
 // Prototipo: no pausar el juego cuando la pestaña queda oculta (Phaser lo hace por defecto).
 game.events.once(Phaser.Core.Events.READY, () => game.events.removeAllListeners(Phaser.Core.Events.HIDDEN));

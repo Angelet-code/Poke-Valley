@@ -37,7 +37,7 @@ ruinas|flores_hada|detalle|22|A small cluster of pastel pink and white fairy flo
 volcan|roca_basalto|roca|44|A group of dark hexagonal basalt column rocks
 volcan|arbol_quemado|arbol|62|A single charred dead tree, black and burnt, with a few glowing embers
 volcan|charco_lava|estanque|64|A small pool of glowing orange molten lava with a dark crust edge, flat on the ground
-volcan|fumarola|detalle|30|A cracked volcanic vent in the ground releasing a plume of white steam
+volcan|fumarola|detalle|30|A round cracked volcanic vent hole in the ground, a stone-rimmed crater with a glowing orange magma glow deep inside, completely clear of any smoke, steam, vapor or clouds, nothing rising above it
 volcan|obsidiana|roca|32|A cluster of sharp glossy black obsidian shards
 volcan|roca_magma|roca|46|A dark boulder with glowing orange magma cracks
 volcan|fosil_dragon|roca|90|A huge ancient dragon skull fossil half buried in the ground

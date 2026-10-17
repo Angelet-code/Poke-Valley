@@ -34,7 +34,9 @@ const CLARO = { x0: 430, x1: 1030, y0: 240, y1: 690 };   // px del fondo (1440×
 const FLECHA = [0, 0, 6, 0, 6, 4, 10, 4, 10, 8, 14, 8, 14, 14, 10, 14, 10, 18, 6, 18, 6, 22, 0, 22];
 // Modo aventura (el de por defecto, docs/GDD-combate.md).
 const CONTROLES_AVENTURA = 'WASD: mover · clic o Tab: elegir objetivo · 1-0: tu barra (movimientos y objetos)\n'
-  + 'K: colocar movimientos en la barra · F: convertirte en otro de tus Pokémon (en el pueblo) · Esc: título';
+  + 'K: colocar movimientos en la barra · F: convertirte en otro de tus Pokémon (en el pueblo) · Esc: título\n\n'
+  + 'Mando: stick izq. mover · stick der. apuntar · A: acción · B: cerrar · R2: objetivo · −: mapa · +: salir\n'
+  + 'X Y L1 R1: casillas 1-4 · cruceta: 5-8 · L2+X/Y: 9-10 · L2+cruceta: hogar, movimientos, inventario, tienda';
 const CONTROLES = 'WASD: mover\nF, espacio o clic: acción (recoger, Látigo Cepa, sembrar, almacén, dormir)\n'
   + 'clic en un aldeano y luego en su sitio de trabajo\nB: construir · rueda o Q/E: elegir · M: mapa · Esc: título';
 

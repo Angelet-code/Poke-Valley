@@ -1,2 +1,2 @@
 assets\gen\arcane\biomas\volcan\fumarola_s3_0.png
-12.2s
+163.6s

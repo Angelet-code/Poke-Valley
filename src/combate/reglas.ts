@@ -3,8 +3,12 @@
 // segundos y cambios de stats que se pasan solos. Puras: no saben nada de Phaser.
 import { LINEAS, expNivel, forma, type Base6, type Linea } from '../data/pokedex';
 import { eficacia, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
+import { rangoAtaque } from '../data/lineasAtaque';
 
-export const GCD = 1.1;                  // s: enfriamiento global tras cualquier movimiento (como en un MMO)
+export const GCD = 1.5;                  // s: enfriamiento global tras cualquier movimiento (como en el WoW)
+// Ritmo del combate (§3.4): todos los tiempos de los movimientos (lanzamientos, CDs, agotado) se diseñaron con un
+// global de 1,1 s y se alargan en proporción con él.
+export const RITMO = GCD / 1.1;
 export const ALCANCE_CUERPO = 30;        // px: movimientos de contacto
 export const ALCANCE_DISTANCIA = 150;    // px: el resto
 export const IV = 15;                    // valor individual medio (0-31) para todos: sin crianza
@@ -29,10 +33,28 @@ export const etapa = (n: number, precision = false) => {
 // ---- Balance de los movimientos (docs/GDD-combate.md §3.2) ----
 // Cada movimiento paga su potencia efectiva con tiempo: un instantáneo da gratis R_INST de potencia/s (el relleno:
 // Placaje, Ascuas); lanzar quieto, un 25 % más; lo que sobra se paga con enfriamiento, R_CD de potencia por segundo.
-// Así cualquier rotación queda entre 36 y 50 de potencia/s y cada movimiento tiene su papel. El estudio movimiento a
+// Así cualquier rotación queda entre 27 y 39 de potencia/s (con el global de 1,5 s) y cada movimiento tiene su papel. El estudio movimiento a
 // movimiento lo hace tools/balance_movimientos.mjs (lleva una copia de este modelo: si cambia aquí, cámbialo allí).
-const R_INST = 40 / GCD, R_CAST = R_INST * 1.25, R_CD = 6, CAST_MIN = 1.5, CAST_MAX = 3;
-export const AGOTADO = 2;                // s sin poder actuar tras Hiperrayo y los de `recharge`
+// Rango (§3.3, data/lineasAtaque.ts): cada rango por encima del I rinde BONO_RANGO de potencia/s más, lanzando y
+// pagando enfriamiento, para que el siguiente de una línea (Megaagotar → Gigadrenado) sea mejor de verdad.
+const R_INST = 40 / GCD, R_CAST = R_INST * 1.25, R_CD = 6 / RITMO, CAST_MIN = 1.5 * RITMO, CAST_MAX = 3 * RITMO, CARGA_MIN = 2.5 * RITMO;
+export const BONO_RANGO = 2 / RITMO;
+// Como en el WoW (§3.4): un movimiento es relleno (sin CD) o tiene un CD que se note, nunca de 2-3 s; y lo que pega en
+// área tiene su CD propio (Ventisca, Terremoto), porque a varios rinde más.
+export const CD_MIN = Math.round(6 * RITMO * 10) / 10, CD_AREA = Math.round(8 * RITMO * 10) / 10;
+const AREA = ['allAdjacentFoes', 'allAdjacent'];
+// Áreas (§3.2 "Forma"): zona donde apuntas con el ratón (Ventisca), alrededor de ti (Terremoto, los de sonido) o cono
+// delante (los de viento). Si tocan a más de uno, cada golpe ×AREA_VARIOS (la regla oficial de los dobles).
+export type FormaArea = 'zona' | 'cono' | 'alrededor';
+export const ZONA_RADIO = 40, ALREDEDOR_RADIO = 50, CONO_LARGO = 90, CONO_ANGULO = 0.6, AREA_VARIOS = 0.75;   // px, rad (medio cono)
+export function formaArea(m: MoveData): FormaArea | null {
+  if (m.category === 'Status') return null;
+  if (m.target === 'allAdjacent') return 'alrededor';
+  if (m.target !== 'allAdjacentFoes') return null;
+  if (m.id === 'blizzard') return 'zona';   // la Ventisca del WoW: cae donde apuntas, aunque sea de viento
+  return m.flags.includes('wind') ? 'cono' : m.flags.includes('sound') ? 'alrededor' : 'zona';
+}
+export const AGOTADO = Math.round(2 * RITMO * 10) / 10; // s sin poder actuar tras Hiperrayo y los de `recharge`
 export type Lanzamiento = 'instant' | 'cast' | 'canal';
 export interface Perfil {
   lanza: Lanzamiento; t: number;         // tiempo de lanzamiento o de canalizado (s; 0 = instantáneo)
@@ -40,6 +62,9 @@ export interface Perfil {
   tics: number;                          // canalizados: golpes en los que se reparte
   interrumpe: boolean;                   // corta el lanzamiento del objetivo (los que hacen retroceder)
   agotado: number;                       // s sin poder actuar después
+  escudo?: number;                       // Protección y familia: s que dura la ventana (§3.5)
+  sinGlobal?: boolean;                   // no gasta ni espera el global (para poder reaccionar)
+  burst?: boolean;                       // 5 PP: instantáneo con CD largo, para guardarlo (§3.5)
 }
 const r1 = (x: number) => Math.round(x * 10) / 10;
 const golpesMedios = (m: MoveData) => Array.isArray(m.multihit) ? (m.multihit[0] + m.multihit[1]) / 2 : m.multihit ?? 1;
@@ -56,8 +81,15 @@ export function potenciaEfectiva(m: MoveData): number {
   if (m.critRatio > 1) p *= 1.06;
   return p;
 }
-const ESCUDO = new Set(['protect', 'detect', 'endure', 'kingsshield', 'spikyshield', 'banefulbunker', 'obstruct', 'silktrap', 'burningbulwark']);
-const AREA_PROPIA = ['allAdjacent'];
+// Protección y familia (§3.5): una ventana corta en la que los golpes no te hacen nada (Aguante: no te debilitan);
+// no gastan global, para poder pulsarla justo cuando va a llegar un golpe. El CD sale de sus PP (Detección, 5, es más
+// rara que Protección, 10) y baja a la mitad si bloquea algo.
+export const ESCUDO: Record<string, number> = {
+  protect: 0.9, detect: 1.4, endure: 2, kingsshield: 0.9, spikyshield: 0.9, banefulbunker: 0.9, obstruct: 0.9, silktrap: 0.9, burningbulwark: 0.9,
+};
+const CD_ESCUDO = 15 * RITMO;            // con 10 PP; con menos, más (× √(10 / PP))
+// Burst (§3.5): los de 5 PP (Hidrobomba, Llamarada, A Bocajarro…) salen al instante y vuelven cada CD_BURST s.
+export const CD_BURST = 30;
 const perfiles = new Map<string, Perfil>();
 export function perfil(m: MoveData): Perfil {
   let p = perfiles.get(m.id);
@@ -67,7 +99,7 @@ export function perfil(m: MoveData): Perfil {
 function calcularPerfil(m: MoveData): Perfil {
   const base: Perfil = { lanza: 'instant', t: 0, cd: GCD, tics: 1, interrumpe: false, agotado: 0 };
   if (m.category === 'Status') {
-    if (ESCUDO.has(m.id)) return { ...base, cd: 15 };
+    if (ESCUDO[m.id]) return { ...base, cd: r1(CD_ESCUDO * Math.sqrt(10 / m.pp)), escudo: ESCUDO[m.id], sinGlobal: true };
     if (m.id === 'teleport') return { ...base, cd: 12 };
     if ((m.boosts?.spe ?? 0) > 0 || (m.selfBoosts?.spe ?? 0) > 0) return { ...base, cd: 20 };
     if (m.status === 'slp') return { ...base, lanza: 'cast', t: 1.5, cd: 20 };
@@ -77,15 +109,21 @@ function calcularPerfil(m: MoveData): Perfil {
     return { ...base, cd: m.target === 'self' ? 20 : 10 };
   }
   const pe = potenciaEfectiva(m), contacto = m.flags.includes('contact'), recarga = m.flags.includes('recharge');
+  const bono = BONO_RANGO * (rangoAtaque(m) - 1), rCast = R_CAST + bono, rCd = R_CD + bono;
   let lanza: Lanzamiento = 'instant', t = 0;
-  if (m.flags.includes('charge')) { lanza = 'cast'; t = Math.min(CAST_MAX, Math.max(2.5, r1(pe / R_CAST))); }
-  else if (contacto || recarga || m.priority > 0 || retrocede(m) || AREA_PROPIA.includes(m.target) || pe <= R_INST * GCD * 1.15) { /* instantáneo */ }
-  else { lanza = m.multihit || m.drain ? 'canal' : 'cast'; t = Math.min(CAST_MAX, Math.max(CAST_MIN, r1(pe / R_CAST))); }
-  const T = Math.max(GCD, t) + (recarga ? AGOTADO : 0), gratis = (t > 0 ? R_CAST : R_INST) * T;
-  let cd = Math.max(GCD, r1((pe - gratis) / R_CD));
-  if (m.priority > 0) cd = Math.max(cd, 6);
+  const burst = m.pp <= 5 && !recarga && !m.fixedDamage && m.basePower > 0;
+  if (burst) { /* instantáneo */ }
+  else if (m.flags.includes('charge')) { lanza = 'cast'; t = r1(Math.min(CAST_MAX, Math.max(CARGA_MIN, pe / rCast))); }
+  else if (contacto || recarga || m.priority > 0 || retrocede(m) || formaArea(m) === 'alrededor' || pe <= R_INST * GCD * 1.15) { /* instantáneo */ }
+  else { lanza = m.multihit || m.drain ? 'canal' : 'cast'; t = r1(Math.min(CAST_MAX, Math.max(CAST_MIN, pe / rCast))); }
+  const T = Math.max(GCD, t) + (recarga ? AGOTADO : 0), gratis = (t > 0 ? rCast : R_INST) * T;
+  let cd = Math.max(GCD, r1((pe - gratis) / rCd));
+  if (cd > GCD) cd = Math.max(cd, CD_MIN);
+  if (m.priority > 0) cd = Math.max(cd, CD_MIN);
+  if (AREA.includes(m.target)) cd = Math.max(cd, CD_AREA);
+  if (burst) cd = Math.max(cd, CD_BURST);
   const tics = lanza === 'canal' ? (m.multihit ? Math.round(golpesMedios(m)) : 3) : 1;
-  return { lanza, t, cd, tics, interrumpe: retrocede(m), agotado: recarga ? AGOTADO : 0 };
+  return { lanza, t, cd, tics, interrumpe: retrocede(m), agotado: recarga ? AGOTADO : 0, burst };
 }
 export const enfriamiento = (m: MoveData) => perfil(m).cd;
 
@@ -95,7 +133,10 @@ const etapaVel = (n: number) => Math.min(1.5, Math.max(0.5, etapa(n)));
 export const celeridad = (velBase: number, etapaSpe = 0) => (0.8 + 0.4 * Math.min(velBase, 150) / 150) * etapaVel(etapaSpe);
 // Velocidad al andar (px/s): la de base de cada uno (`vel`) por la Velocidad base y su etapa.
 export const velAndar = (vel: number, velBase: number, etapaSpe = 0) => vel * (0.9 + 0.2 * Math.min(velBase, 150) / 150) * etapaVel(etapaSpe);
-export const alcance = (m: MoveData) => m.flags.includes('contact') ? ALCANCE_CUERPO : ALCANCE_DISTANCIA;
+export const alcance = (m: MoveData) => {
+  const fa = formaArea(m);
+  return fa === 'alrededor' ? ALREDEDOR_RADIO : fa === 'cono' ? CONO_LARGO : m.flags.includes('contact') ? ALCANCE_CUERPO : ALCANCE_DISTANCIA;
+};
 // ¿Se lanza sobre otro? (los de estado sobre uno mismo, como Desarrollo, no necesitan objetivo).
 export const necesitaObjetivo = (m: MoveData) => !['self', 'allySide', 'allies', 'adjacentAllyOrSelf', 'all'].includes(m.target);
 

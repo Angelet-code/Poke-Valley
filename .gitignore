@@ -349,3 +349,6 @@ assets/sprites/pokemon/*
 !assets/sprites/pokemon/0975/
 
 __pycache__/
+
+# Salida empaquetada de tools/lineas_ataque.ts (se regenera)
+proc/

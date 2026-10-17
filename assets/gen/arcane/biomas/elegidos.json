@@ -3,6 +3,6 @@
  "aguja_roca": 2, "andamio": 2, "arbusto_seco": 2, "cristal_acero": 2, "entrada_cueva": 2, "grava": 2, "pino_seco": 1, "roca_mineral": 2, "vagoneta": 2,
  "arbol_muerto": 2, "cerca_rota": 1, "charco_toxico": 1, "farol_fuego_fatuo": 1, "juncos_secos": 1, "lapida": 1, "roca_musgo": 1, "seta_toxica": 2, "tronco_podrido": 1,
  "altar": 3, "arbol_flores": 2, "arco_ruinas": 1, "columna_rota": 1, "cristal_psiquico": 2, "estatua": 1, "flores_hada": 3, "losas_ruina": 1, "muro_roto": 2,
- "arbol_quemado": 2, "ceniza": 2, "charco_lava": 1, "cristal_fuego": 2, "fosil_dragon": 1, "fumarola": 2, "obsidiana": 2, "roca_basalto": 2, "roca_magma": 2,
+ "arbol_quemado": 2, "ceniza": 2, "charco_lava": 1, "cristal_fuego": 2, "fosil_dragon": 1, "fumarola": 1, "obsidiana": 2, "roca_basalto": 2, "roca_magma": 2,
  "arbusto_nevado": 1, "carambanos": 2, "cristal_hielo": 2, "estanque_helado": 1, "monton_nieve": 1, "pino_nevado": 1, "roca_nevada": 1, "tronco_nevado": 1
 }
