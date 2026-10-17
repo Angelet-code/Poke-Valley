@@ -96,9 +96,7 @@ const EDIFICIOS: Colocado[] = [
 const PLAZA_COSAS: Colocado[] = [
   { id: 'hoguera', x: PLAZA[0], y: PLAZA[1] + 6 },
   { id: 'pozo', x: 574, y: 452 },
-  // Farolas alrededor de la plaza y a la entrada de cada calle.
-  { id: 'farola', x: 436, y: 404 }, { id: 'farola', x: 574, y: 404, flip: true },
-  { id: 'farola', x: 432, y: 530 }, { id: 'farola', x: 580, y: 530, flip: true },
+  // Farolas a la entrada de cada calle (la plaza ya la alumbra la hoguera).
   { id: 'farola_madera', x: 640, y: 352 }, { id: 'farola_madera', x: 284, y: 352, flip: true },
   { id: 'farola_madera', x: 760, y: 610 }, { id: 'farola_madera', x: 300, y: 560, flip: true },
   { id: 'farola', x: 514, y: 176 }, { id: 'farola', x: 606, y: 176, flip: true },   // boca del pueblo
