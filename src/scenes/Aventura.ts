@@ -754,7 +754,7 @@ export class Aventura extends Phaser.Scene {
     // De noche, una luz suave alrededor de ti (en el bosque no hay farolas) y las partículas se suman como luz.
     const oscuro = 1 - (r + g + b) / 765;
     if (!this.luzJugador) this.luzJugador = this.lights.addLight(0, 0, 150, 0xfff0d0, 0);
-    this.luzJugador.setPosition(mundo.jugador.x, mundo.jugador.y - 14).setIntensity(Math.max(0, oscuro - 0.25) * 1.6);
+    this.luzJugador.setPosition(mundo.jugador.x, mundo.jugador.y - 14).setIntensity(Math.max(0, oscuro - 0.25) * 0.8);
     this.stage.fx.blend = oscuro > 0.45 ? 'lighter' : 'source-over';
     this.stage.luces.oscuro = oscuro;
   }
