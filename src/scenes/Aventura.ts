@@ -209,6 +209,8 @@ export class Aventura extends Phaser.Scene {
 
   // Lo que lee el HUD.
   get jugador(): Luchador { return this.mundo?.jugador as Luchador; }
+  /** Se juega con mando: fue lo último que se tocó (mover el ratón devuelve los rótulos del teclado). */
+  get conMando(): boolean { return !!mando && mando.tUso > this.tRaton; }
   get objetivo(): Luchador | null { return this.mundo?.objetivo ?? null; }
   set objetivo(o: Luchador | null) { if (this.mundo) this.mundo.objetivo = o; }
   get clima() { return this.mundo?.clima ?? null; }
@@ -1388,7 +1390,7 @@ ${l.nombre} Nv.${l.nivel}`;
     let apunta: { x: number; y: number } | undefined;
     if (der.x || der.y) apunta = { x: j.x + der.x * ALCANCE_DISTANCIA, y: j.y + der.y * ALCANCE_DISTANCIA };
     else if (!mando || mando.tUso <= this.tRaton) { const ptr = this.input.activePointer, a = this.cameras.main.getWorldPoint(ptr.x, ptr.y); apunta = { x: a.x, y: a.y }; }
-    mundo.paso(dt, { vx, vy, apunta });
+    mundo.paso(dt, { vx, vy, apunta, mando: this.conMando });
     this.sincronizar();
     for (const s of mundo.sacar()) {
       this.suceso(s);

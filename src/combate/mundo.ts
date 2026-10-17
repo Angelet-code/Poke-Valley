@@ -4,6 +4,7 @@
 // le llega como sucesos (`sacar()`). Está aparte para que, en multijugador, la pueda llevar el anfitrión.
 // El tiempo es el suyo (`ahora`, s): solo corre en `paso`, así que con la escena en pausa no pasa nada.
 import { ROW_FROM_ANGLE } from '../config';
+import { rotulo } from '../entrada/rotulos';
 import type { Alfa, MapaAventura, MapaId, Punto, Ronda } from '../data/bosque';
 import { FORMAS, LINEAS } from '../data/pokedex';
 import { PROB_CLIMA, RAREZA_AVISO, lineasClima, momentoDe, puedeSalir, rarezaDe, tirarEspecie, type Cuando } from '../data/aparicion';
@@ -78,7 +79,7 @@ export interface Anatomia {
   alto(dex: string): number;
   anim(dex: string, a: AnimId): { dura: number; golpe: number } | null;
 }
-export interface Entrada { vx: number; vy: number; apunta?: Punto }   // hacia dónde andas (-1…1 por eje) y dónde está el ratón (mundo)
+export interface Entrada { vx: number; vy: number; apunta?: Punto; mando?: boolean }   // hacia dónde andas (-1…1 por eje), dónde está el ratón (mundo) y si se juega con mando (para los avisos)
 
 // Un movimiento que se está lanzando (barra de lanzamiento) o canalizando (golpes por tics), docs/GDD-combate.md §3.2.
 export interface Lanza { id: string; obj: Luchador | null; t0: number; t1: number; canal: boolean; tics: number; hechos: number; punto?: Punto }   // punto: centro o dirección de un área
@@ -197,6 +198,8 @@ export class Mundo {
   remotos: Luchador[] = [];
   objetivo: Luchador | null = null;
   apunta: Punto | null = null;            // dónde está el ratón (para las áreas en zona y en cono)
+  conMando = false;                       // los avisos nombran los botones del mando en vez de las teclas
+  private k(tecla: string): string { return rotulo(tecla, this.conMando); }
   ahora = 0;
   cambiando = false;                   // te vas del mapa (salida, debilitado o piedra de hogar)
   // Clima del mapa (Danza Lluvia, Día Soleado…): hasta cuándo dura; daña por turnos a quien no aguanta la arena o el granizo.
@@ -517,7 +520,7 @@ export class Mundo {
     if (this.jugador.muerto) return;
     const p = this.jugador, v = this.vecinos.find(l => Math.hypot(l.x - p.x, l.y - p.y) < 32);
     if (v) { this.convertirse(v); return; }
-    if (this.mapa.id === 'pueblo' && this.partida.estado.equipo.length > 1) this.aviso('Acércate a uno de tus Pokémon y pulsa F para convertirte en él');
+    if (this.mapa.id === 'pueblo' && this.partida.estado.equipo.length > 1) this.aviso(`Acércate a uno de tus Pokémon y pulsa ${this.k('F')} para convertirte en él`);
   }
   private convertirse(v: Luchador): void {
     const p = this.jugador, yo = p.miembro!, otro = v.miembro!;
@@ -581,7 +584,7 @@ export class Mundo {
     if (fa) {
       let p = punto ?? (yo ? this.apunta : null) ?? (obj && !obj.muerto ? { x: obj.x, y: obj.y } : null);
       if (fa !== 'alrededor') {
-        if (!p) { if (yo) this.aviso(`${m.nombre}: apunta con el ratón o el stick derecho`); return false; }
+        if (!p) { if (yo) this.aviso(`${m.nombre}: apunta con ${this.conMando ? 'el stick derecho' : 'el ratón'}`); return false; }
         const d = Math.hypot(p.x - l.x, p.y - l.y), k = d > ALCANCE_DISTANCIA ? ALCANCE_DISTANCIA / d : 1;
         if (fa === 'zona' && k < 1) p = { x: l.x + (p.x - l.x) * k, y: l.y + (p.y - l.y) * k };
         this.mirarA(l, p);
@@ -592,7 +595,7 @@ export class Mundo {
     const objetivo = !fa && necesitaObjetivo(m);
     if (objetivo) {
       if (!obj && yo) obj = this.objetivo = this.salvajes.filter(s => !s.muerto && !s.enBall).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] ?? null;
-      if (!obj || obj.muerto || obj.enBall) { if (yo) this.aviso('Elige a quién (clic en un Pokémon o Tab)'); return false; }
+      if (!obj || obj.muerto || obj.enBall) { if (yo) this.aviso(this.conMando ? 'Elige a quién (R2)' : 'Elige a quién (clic en un Pokémon o Tab)'); return false; }
       if (obj.rol === 'vecino') { if (yo) this.aviso(`${obj.nombre} es de los tuyos`); return false; }
       if (obj.rol === 'remoto' && !this.luchandoCon(obj)) {
         if (yo) this.aviso(this.duelo?.con === obj.uid && this.duelo.fase === 'cuenta' ? 'El duelo aún no ha empezado' : `${obj.nombre} es otro jugador: R para retarle a un duelo`);
@@ -1075,7 +1078,7 @@ export class Mundo {
     if (this.retoDe) { this.aceptarReto(); return; }
     const o = this.objetivo, p = this.jugador;
     if (this.duelo) { this.aviso(this.duelo.fase === 'reto' ? 'Ya has retado a alguien: espera su respuesta' : 'Ya estás en un duelo'); return; }
-    if (!o || o.rol !== 'remoto') { this.aviso('Elige a otro jugador (Tab o clic) y pulsa R para retarle a un duelo'); return; }
+    if (!o || o.rol !== 'remoto') { this.aviso(this.conMando ? 'Elige a otro jugador (R2) y pulsa L2+R2 para retarle a un duelo' : 'Elige a otro jugador (Tab o clic) y pulsa R para retarle a un duelo'); return; }
     if (p.muerto || o.muerto || this.cambiando) return;
     if (Math.hypot(o.x - p.x, o.y - p.y) > DUELO_RADIO) { this.aviso('Acércate más para retarle'); return; }
     this.duelo = { con: o.uid, fase: 'reto', hasta: this.ahora + RETO, c: { x: p.x, y: p.y } };
@@ -1141,7 +1144,7 @@ export class Mundo {
       if (d?.con === de && d.fase === 'reto' && o) { this.salir({ tipo: 'duelo', para: redDe(de), fase: 'acepta' }); this.empezarDuelo(o); return; }
       if (d || this.cambiando) { this.salir({ tipo: 'duelo', para: redDe(de), fase: 'rechaza' }); return; }   // ocupado
       this.retoDe = { de, hasta: this.ahora + RETO };
-      this.aviso(`${nombre} te reta a un duelo: R para aceptar, Esc para rechazar`);
+      this.aviso(`${nombre} te reta a un duelo: ${this.k('R')} para aceptar, ${this.k('Esc')} para rechazar`);
     } else if (fase === 'acepta') {
       if (d?.con === de && d.fase === 'reto' && o) this.empezarDuelo(o);
     } else if (fase === 'rechaza') {
@@ -1469,6 +1472,7 @@ export class Mundo {
   paso(dt: number, e: Entrada): void {
     this.ahora += dt;
     this.apunta = e.apunta ?? null;
+    this.conMando = !!e.mando;
     if (this.relojes.length) {
       const toca = this.relojes.filter(r => r.t <= this.ahora);
       if (toca.length) { this.relojes = this.relojes.filter(r => r.t > this.ahora); for (const r of toca) r.fn(); }

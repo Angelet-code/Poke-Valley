@@ -20,6 +20,7 @@
 import { LINEAS_ATAQUE, ROMANO, lineaAtaque, rangoAtaque } from '../data/lineasAtaque';
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
+import { rotulo } from '../entrada/rotulos';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
 import { NOMBRE_BAYERO, NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';
@@ -90,6 +91,8 @@ const DESC_ESTADO: Record<string, string> = {
 
 export class HudAventura extends Phaser.Scene {
   private av!: Aventura;
+  private ayuda: { k: string; t: string; txt: Phaser.GameObjects.Text }[] = [];   // teclas de ayuda (abajo a la derecha)
+  private rotMando = false;           // los rótulos están puestos para el mando
   private yo!: Marco;
   private obj!: Marco;
   private reloj!: Phaser.GameObjects.Text;
@@ -193,8 +196,8 @@ export class HudAventura extends Phaser.Scene {
     this.ficha = this.texto(0, 0, '', 6, C.tinta, { wordWrap: { width: 120 * S }, lineSpacing: 1 * S }).setDepth(10).setVisible(false);
     this.fichaTipo = this.texto(0, 0, '', 5, 0xffffff, { stroke: '#3a2a1a', strokeThickness: 1 * S }).setDepth(10).setVisible(false);
     // Teclas de ayuda.
-    const ayuda = ['Tab objetivo', 'K movimientos', 'I inventario', 'F cambiar', 'H piedra de hogar', 'M mapa', ...(redDeLaPagina() ? ['R retar a duelo', 'T comerciar'] : [])];
-    ayuda.forEach((t, i) => this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, t, 5).setOrigin(1, 1).setAlpha(0.85));
+    const ayuda = [['Tab', 'objetivo'], ['K', 'movimientos'], ['I', 'inventario'], ['F', 'cambiar'], ['H', 'piedra de hogar'], ['M', 'mapa'], ...(redDeLaPagina() ? [['R', 'retar a duelo'], ['T', 'comerciar']] : [])];
+    this.ayuda = ayuda.map(([k, t], i) => ({ k, t, txt: this.sombreado(VW - 5, VH - 5 - (ayuda.length - 1 - i) * 8, `${k} ${t}`, 5).setOrigin(1, 1).setAlpha(0.85) }));
 
     // Avisos.
     this.avisoG = this.add.graphics();
@@ -338,6 +341,12 @@ export class HudAventura extends Phaser.Scene {
   }
 
   update(): void {
+    // Rótulos de teclado o de mando, según lo último que se tocó.
+    if (this.av.conMando !== this.rotMando) {
+      this.rotMando = this.av.conMando;
+      this.casillas.forEach((c, i) => c.tecla.setText(rotulo(String((i + 1) % 10), this.rotMando)));
+      for (const a of this.ayuda) a.txt.setText(`${rotulo(a.k, this.rotMando)} ${a.t}`);
+    }
     const av = this.av;
     // Mientras se prepara un mapa no se enseña nada.
     this.cameras.main.setAlpha(av.listo && av.jugador ? 1 : 0);
@@ -819,7 +828,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.trObjs.push(fondo, g);
     const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.trObjs.push(q); return q; };
     if (!t0) {   // petición pendiente
-      const q = t(VW / 2, 60, `${tr!.pideDe!.nombre} quiere comerciar contigo\nT aceptar · Esc rechazar`, 6, C.tinta, { align: 'center', fontStyle: 'bold' }).setOrigin(0.5, 0);
+      const q = t(VW / 2, 60, `${tr!.pideDe!.nombre} quiere comerciar contigo\n${rotulo('T', this.av.conMando)} aceptar · ${rotulo('Esc', this.av.conMando)} rechazar`, 6, C.tinta, { align: 'center', fontStyle: 'bold' }).setOrigin(0.5, 0);
       const w = q.width / S + 14, h = q.height / S + 8;
       marco(fondo, VW / 2 - w / 2, 56, w, h, PANEL);
       return;
@@ -908,7 +917,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     };
     boton(mid - BWb - 4, t0.cerrando ? 'Cerrando…' : yoOk ? 'Quitar' : 'Aceptar', () => tr!.pulsarListo(), !t0.cerrando);
     boton(mid + 4, 'Cancelar', () => tr!.cancelar(), !t0.cerrando);
-    t(mid, by + BH + 3, 'Cualquier cambio quita los dos aceptados · Esc cancela', 4.5, C.maderaClara).setOrigin(0.5, 0);
+    t(mid, by + BH + 3, `Cualquier cambio quita los dos aceptados · ${rotulo('Esc', this.av.conMando)} cancela`, 4.5, C.maderaClara).setOrigin(0.5, 0);
     t(mid, y + 5, `COMERCIO CON ${t0.nombre.toUpperCase()}`, 6, C.tinta, { fontFamily: FUENTE_TIT }).setOrigin(0.5, 0);
     const h = by + BH + 13 - y;
     this.trCaja = { x, y, w, h };

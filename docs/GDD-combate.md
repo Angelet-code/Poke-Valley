@@ -295,6 +295,9 @@ Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; 
 - **En los menús**: cruceta o stick izquierdo = moverse, A o Start = aceptar (Enter), B o Select = atrás (Esc),
   X = F, Y = espacio.
 - Dentro de los paneles (K, I, tienda, misiones) sigue haciendo falta el ratón: pendiente navegarlos con el mando.
+- **Rótulos**: cuando lo último que se tocó fue el mando (`Aventura.conMando`, `mando.tUso` contra el último movimiento
+  del ratón), la barra, la columna de ayuda, el pie del mapa y los avisos nombran los botones (`src/entrada/rotulos.ts`);
+  al mover el ratón vuelven las teclas.
 
 ## 4. Captura
 - La Poké Ball se lanza al objetivo hasta 150 px. Vuela, el Pokémon entra, la Ball se mueve tres veces y se queda

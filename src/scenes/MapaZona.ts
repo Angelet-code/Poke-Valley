@@ -8,6 +8,7 @@
 // - Vuelo (F junto al volador, `Aventura.modoVuelo`): solo el mundo. Las zonas con punto de vuelo descubierto llevan
 //   el icono del volador donde está; clic en una (que no sea la tuya) y te lleva a su punto de vuelo.
 // En las dos vistas del mundo, el icono marca los puntos de vuelo descubiertos.
+import { rotulo } from '../entrada/rotulos';
 import Phaser from 'phaser';
 import { S, VH, VW } from '../config';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, type G } from './UIScene';
@@ -107,8 +108,8 @@ export class MapaZona extends Phaser.Scene {
     }
     this.titulo.setText(this.vuelo ? '¿A dónde vuelas?' : m === 'mundo' ? 'El mundo' : this.av.mapa.nombre);
     this.pie.setColor(HEX(0xfff6dc)).setText(this.vuelo
-      ? `${NOMBRE_VUELO} te lleva a los puntos de vuelo que hayas descubierto · Esc: cerrar`
-      : 'Rueda o clic derecho: zona / mundo · M o Esc: cerrar');
+      ? `${NOMBRE_VUELO} te lleva a los puntos de vuelo que hayas descubierto · ${rotulo('Esc', this.av.conMando)}: cerrar`
+      : this.av.conMando ? '− o B: cerrar' : 'Rueda o clic derecho: zona / mundo · M o Esc: cerrar');
     if (this.vuelo && this.nuevo) this.pie.setText(`¡Nuevo punto de vuelo descubierto: ${this.av.mapa.nombre}!`).setColor(HEX(0x9be38a));
   }
 
