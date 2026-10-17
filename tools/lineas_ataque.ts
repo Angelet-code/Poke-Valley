@@ -47,4 +47,51 @@ const solos = [...usados].map(id => getMove(id)!).filter(m => m && m.category !=
 md += `## Sueltos (sin línea: rango por potencia)\n\n| Rango | Movimiento | Potencia | Lanzamiento | CD | Rendimiento |\n|---|---|---|---|---|---|\n${solos.map(fila).join('\n')}\n`;
 if (fallos.length) md += `\n## Fallos\n\n${fallos.map(f => `- ${f}`).join('\n')}\n`;
 writeFileSync('docs/lineas-ataque.md', md);
+
+// ---- Tipos de ataque: la firma sin el tipo (docs/tipos-ataque.md) ----
+// Ascuas, Pistola Agua e Impactrueno son el mismo tipo de ataque ("especial a distancia a uno") en tipos distintos; las
+// líneas van dentro de un tipo de ataque (Ascuas → Lanzallamas sube de potencia sin cambiar nada más). Dos tipos de
+// ataque que solo se diferencian en una cosa (Rayo / Chispazo: a uno o alrededor) son variantes.
+const CAT: Record<string, string> = { Physical: 'Físico', Special: 'Especial' };
+const FORMA: Record<string, string> = { objetivo: 'a uno', allAdjacentFoes: 'en área', allAdjacent: 'alrededor' };
+const partes = (m: MoveData) => firmaAtaque(m).split(' · ').slice(1).map(x => CAT[x] ?? FORMA[x] ?? (x === 'cuerpo' ? 'cuerpo a cuerpo' : x === 'distancia' ? 'a distancia' : x === '100 %' ? '' : x === 'no falla' ? 'no falla' : /%$/.test(x) ? `precisión ${x}` : x)).filter(Boolean);
+const arq = new Map<string, MoveData[]>();
+for (const id of usados) {
+  const m = getMove(id);
+  if (!m || m.category === 'Status' || !m.basePower || m.fixedDamage) continue;
+  const k = partes(m).join(' · ');
+  arq.set(k, [...arq.get(k) ?? [], m]);
+}
+const claves = [...arq.keys()].sort((a, b) => arq.get(b)!.length - arq.get(a)!.length || a.localeCompare(b));
+const varios = claves.filter(k => arq.get(k)!.length > 1), unicos = claves.filter(k => arq.get(k)!.length === 1);
+const ancla = (k: string) => '#' + k.toLowerCase().replace(/[^a-z0-9áéíóúñü ]/g, '').trim().replace(/ +/g, '-');
+// Variantes: misma firma salvo una cosa (una parte distinta, o una de más o de menos).
+const difiere = (a: string, b: string) => {
+  const x = a.split(' · '), y = b.split(' · '), sx = new Set(x), sy = new Set(y);
+  const solo = [...x.filter(v => !sy.has(v)), ...y.filter(v => !sx.has(v))];
+  return solo.length && solo.length <= 2 && Math.abs(x.length - y.length) + (x.length === y.length ? solo.length / 2 : 0) === 1 ? solo : null;
+};
+let ta = `# Tipos de ataque (generado)\n\n> \`tools/lineas_ataque.ts\`. Reglas en docs/GDD-combate.md §3.3 y §3.6.\n\n`;
+ta += `Un **tipo de ataque** es todo lo que define un movimiento salvo su tipo elemental y su potencia: categoría, alcance, forma, `;
+ta += `precisión y mecánica. Ascuas, Pistola Agua e Impactrueno son el mismo tipo de ataque. Las **líneas** van dentro de un tipo de `;
+ta += `ataque y suben la potencia (Ascuas 40 → Lanzallamas 90). Las **variantes** son tipos de ataque que solo cambian en una cosa `;
+ta += `(Rayo → Chispazo: alrededor de ti en vez de a uno).\n\n`;
+ta += `${claves.length} tipos de ataque: ${varios.length} con varios movimientos y ${unicos.length} de un solo movimiento.\n\n`;
+ta += `| Tipo de ataque | Movimientos | Tipos | Potencias | Líneas |\n|---|---|---|---|---|\n`;
+for (const k of varios) {
+  const ms = arq.get(k)!, ls = new Set(ms.map(m => lineaAtaque(m.id)).filter(Boolean));
+  ta += `| [${k}](${ancla(k)}) | ${ms.length} | ${new Set(ms.map(m => m.type)).size} | ${[...new Set(ms.map(m => m.basePower))].sort((a, b) => a - b).join(', ')} | ${ls.size || ''} |\n`;
+}
+for (const k of varios) {
+  const ms = arq.get(k)!, tipos = [...new Set(ms.map(m => m.type))].sort(), pots = [...new Set(ms.map(m => m.basePower))].sort((a, b) => a - b);
+  ta += `\n## ${k}\n\n| Potencia | ${tipos.map(t => TIPO_ES[t]).join(' | ')} |\n|---|${tipos.map(() => '---').join('|')}|\n`;
+  for (const p of pots) ta += `| ${p} | ${tipos.map(t => ms.filter(m => m.type === t && m.basePower === p).map(m => lineaAtaque(m.id) ? `**${m.nombre}**` : m.nombre).join(', ')).join(' | ')} |\n`;
+  const ls = [...new Set(ms.map(m => lineaAtaque(m.id)).filter((x): x is string => !!x))];
+  if (ls.length) ta += `\nLíneas (en negrita): ${ls.map(l => `${l} (${LINEAS_ATAQUE[l].map(id => `${getMove(id)!.nombre} ${getMove(id)!.basePower}`).join(' → ')})`).join('; ')}.\n`;
+  const vs = claves.filter(o => o !== k).map(o => ({ o, d: difiere(k, o) })).filter(v => v.d);
+  if (vs.length) ta += `\nVariantes: ${vs.map(v => `[${v.o}](${ancla(v.o)}) (${arq.get(v.o)!.map(m => m.nombre).slice(0, 3).join(', ')}${arq.get(v.o)!.length > 3 ? '…' : ''})`).join('; ')}.\n`;
+}
+ta += `\n## Únicos (un solo movimiento)\n\n| Tipo de ataque | Movimiento |\n|---|---|\n${unicos.map(k => `| ${k} | ${arq.get(k)![0].nombre} (${TIPO_ES[arq.get(k)![0].type]}, ${arq.get(k)![0].basePower}) |`).join('\n')}\n`;
+writeFileSync('docs/tipos-ataque.md', ta);
+console.log(`${claves.length} tipos de ataque (${varios.length} con varios movimientos).`);
 console.log(`${Object.keys(LINEAS_ATAQUE).length} líneas, ${solos.length} sueltos. ${fallos.length ? 'FALLOS:\n' + fallos.join('\n') : 'Todas suben.'}`);

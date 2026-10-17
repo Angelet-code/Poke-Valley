@@ -403,11 +403,14 @@ Se perderá para siempre.`, 18, suave, { align: 'center', lineSpacing: D(4) }).s
   private verControles(): void {
     const W = VW * S, H = VH * S, c = this.add.container(0, 0);
     const velo = this.add.rectangle(0, 0, W, H, 0x101808, 0.55).setOrigin(0).setInteractive();
-    const pw = 900, ph = 260, px = (W / k - pw) / 2, py = (H / k - ph) / 2, g = this.add.graphics();
+    // El panel se ajusta al texto: las líneas se parten para no pasar del ancho de la pantalla.
+    const ancho = Math.min(1000, W / k - 120);
+    const txt = this.texto(0, 0, GRANJA ? CONTROLES : CONTROLES_AVENTURA, 20, '#3a2412', { align: 'center', lineSpacing: D(6), wordWrap: { width: D(ancho) } }).setOrigin(0.5);
+    const pw = Math.max(640, txt.width / k + 80), ph = txt.height / k + 150, px = (W / k - pw) / 2, py = (H / k - ph) / 2, g = this.add.graphics();
     g.fillStyle(0x3a2412).fillRoundedRect(D(px), D(py), D(pw), D(ph), D(10));
     g.fillStyle(0xf6e7c1).fillRoundedRect(D(px + 8), D(py + 8), D(pw - 16), D(ph - 16), D(6));
     const tit = this.texto(W / k / 2, py + 44, 'Controles', 30, '#3a2412', { fontStyle: 'bold' }).setOrigin(0.5);
-    const txt = this.texto(W / k / 2, py + 140, GRANJA ? CONTROLES : CONTROLES_AVENTURA, 20, '#3a2412', { align: 'center', lineSpacing: D(6) }).setOrigin(0.5);
+    txt.setPosition(D(W / k / 2), D(py + 78 + txt.height / k / 2));
     const nota = this.texto(W / k / 2, py + ph - 28, 'cualquier tecla o clic para volver', 16, '#6b4a2a').setOrigin(0.5);
     c.add([velo, g, tit, txt, nota]);
     this.cubre = c;

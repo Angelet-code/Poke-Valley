@@ -753,6 +753,11 @@ export class Aventura extends Phaser.Scene {
   }
   // Geometría para las animaciones (px de escenario). Los puntos leen la posición del luchador cada vez: lo que la
   // animación guarda (el remolino de Gigadrenado, un rayo, un anillo) sigue al Pokémon si se mueve mientras dura.
+  // La geometría de un luchador pero en otro punto (el centro en `p`): de ahí sale la animación de un dirigido.
+  private geoEn(l: Luchador, p: { x: number; y: number }): SlotGeometry {
+    const st = this.stage, en = (dy: number) => ({ x: p.x * st.k, y: (p.y - dy) * st.k });
+    return { ...this.geo(l), center: en(0), feet: en(-l.alto * 0.45 + 2), top: en(l.alto * 0.55) };
+  }
   private geo(l: Luchador): SlotGeometry {
     const st = this.stage, vivo = (dy: () => number) => ({ get x() { return l.x * st.k; }, get y() { return (l.y - dy()) * st.k; } });
     return {
@@ -993,7 +998,9 @@ export class Aventura extends Phaser.Scene {
     const anim = animationFor(id);
     const targets = propio || anim.template === 'aura' || anim.template === 'shield' ? [] : vivos.map(g => this.geo(g.t));
     try {
-      await animarMovimiento({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user: this.geo(l), targets,
+      // Dirigido (§3.7): el proyectil ya ha volado; la animación sale de donde dio, pegada al objetivo.
+      const user = s.desde ? this.geoEn(l, s.desde) : this.geo(l);
+      await animarMovimiento({ stage: this.stage, cue, animation: anim, palette: TYPE_FX[anim.type], user, targets,
         losses: new Map(vivos.map(g => [g.t.uid, Math.min(1, g.golpe.dano / g.t.stats.hp)])), commit, text: texts });
     } catch (e) { console.warn('animación', id, e); }
     commit();
@@ -1025,6 +1032,12 @@ export class Aventura extends Phaser.Scene {
     }
     // Protección y familia: una burbuja alrededor mientras dura la ventana (naranja, Aguante).
     const eg = this.escudoG.clear();
+    // Dirigidos en vuelo: una bola del color del tipo con su estela, a la altura del pecho de quien la lanzó.
+    for (const q of mundo.proyectiles) {
+      const c = COLOR_TIPO[getMove(q.id)?.type ?? 'Normal'], x = q.x, y = q.y - q.h;
+      eg.lineStyle(3, c, 0.35).lineBetween(x - q.dx * 14, y - q.dy * 14, x, y);
+      eg.fillStyle(c, 0.3).fillCircle(x, y, 6).fillStyle(c, 0.95).fillCircle(x, y, 3.5).fillStyle(0xffffff, 0.8).fillCircle(x - 1, y - 1, 1.3);
+    }
     for (const l of mundo.todos()) {
       const e = l.escudo, resta = e ? e.hasta - mundo.ahora : 0;
       if (!e || resta <= 0) continue;

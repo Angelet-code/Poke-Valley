@@ -28,7 +28,7 @@ import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data
 import { ITEMS } from '../data/items';
 import { EQUIPABLES, RAREZAS, SLOTS, colorRareza, slotIdx } from '../combate/objetos';
 import { EVO_OBJETO, LINEAS } from '../data/pokedex';
-import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, expDeNivel, formaArea, formaDe, necesitaObjetivo, perfil } from '../combate/reglas';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
@@ -113,6 +113,8 @@ export class HudAventura extends Phaser.Scene {
   private panelObjs: Phaser.GameObjects.GameObject[] = [];
   private panelClave = '';
   private panelZonas: { x: number; y: number; w: number; h: number; a: { m: string } | { i: string } }[] = [];
+  private panelCaja: { x: number; y: number; w: number; h: number } | null = null;
+  private panelDesp = 0;   // primera línea visible del panel de movimientos (rueda del ratón) cuando no cabe entero
   // Inventario (I): se rehace cuando cambia algo.
   private invObjs: Phaser.GameObjects.GameObject[] = [];
   private invClave = '';
@@ -153,7 +155,7 @@ export class HudAventura extends Phaser.Scene {
 
   create(): void {
     this.av = this.scene.get('aventura') as Aventura;
-    this.casillas = []; this.panelObjs = []; this.panelClave = ''; this.panelZonas = [];
+    this.casillas = []; this.panelObjs = []; this.panelClave = ''; this.panelZonas = []; this.panelCaja = null; this.panelDesp = 0;
     this.invObjs = []; this.invClave = ''; this.invZonas = []; this.invCaja = null; this.invElegido = null;
     this.misObjs = []; this.misClave = ''; this.misZonas = []; this.misCaja = null; this.segObjs = []; this.segClave = '';
     this.tiObjs = []; this.tiClave = ''; this.tiZonas = []; this.tiCaja = null;
@@ -212,6 +214,8 @@ export class HudAventura extends Phaser.Scene {
 
     // Clics en la barra y en el panel.
     this.input.mouse!.disableContextMenu();
+    // Rueda: recorre el panel de movimientos cuando no cabe entero (una línea por muesca).
+    this.input.on('wheel', (_p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => { if (this.av.panel === 'movs') this.panelDesp = Math.max(0, this.panelDesp + (dy > 0 ? 1 : -1)); });
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.av.verMapa) return;
       const x = p.x / S, y = p.y / S;
@@ -243,7 +247,7 @@ export class HudAventura extends Phaser.Scene {
     const c = this.misCaja;
     const tc = this.trCaja;
     if (tc && x >= tc.x && x < tc.x + tc.w && y >= tc.y && y < tc.y + tc.h) return true;
-    return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && this.panelZonas.length > 0 && x > VW / 2 - 130 && x < VW / 2 + 130 && y > 30 && y < BY - 4)
+    return this.av.verMapa || (x >= HX && x < BX + BW && y >= BY && y < BY + CH + 8) || (this.av.panel === 'movs' && !!this.panelCaja && x >= this.panelCaja.x && x < this.panelCaja.x + this.panelCaja.w && y >= this.panelCaja.y && y < this.panelCaja.y + this.panelCaja.h)
       || ((this.av.panel === 'misiones' || this.av.panel === 'bayas') && !!c && x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h)
       || (this.av.panel === 'tienda' && !!this.tiCaja && x >= this.tiCaja.x && x < this.tiCaja.x + this.tiCaja.w && y >= this.tiCaja.y && y < this.tiCaja.y + this.tiCaja.h)
       || (this.av.panel === 'inv' && !!this.invCaja && x >= this.invCaja.x && x < this.invCaja.x + this.invCaja.w && y >= this.invCaja.y && y < this.invCaja.y + this.invCaja.h);
@@ -405,7 +409,7 @@ export class HudAventura extends Phaser.Scene {
       if (fr > 0) rect(g, 0x1a1008, 0.55, x, y + CH * (1 - fr), CW, CH * fr);
       if (it && !av.partida.tiene((a as { i: string }).i)) rect(g, 0x1a1008, 0.45, x, y, CW, CH);
       // Número en rojo si el objetivo está lejos para ese movimiento.
-      const lejos = !!(mv && necesitaObjetivo(mv) && formaArea(mv) !== 'zona' && av.objetivo && Math.hypot(av.objetivo.x - p.x, av.objetivo.y - p.y) > alcance(mv) + Math.max(8, av.objetivo.alto * 0.3));
+      const lejos = !!(mv && necesitaObjetivo(mv) && formaArea(mv) !== 'zona' && !dirigido(mv) && av.objetivo && Math.hypot(av.objetivo.x - p.x, av.objetivo.y - p.y) > alcance(mv) + Math.max(8, av.objetivo.alto * 0.3));
       c.tecla.setColor(lejos ? '#ff8a7a' : '#fff6dc');
       if (av.asignando) rect(g, C.elegido, 0.35 + 0.2 * Math.sin(this.time.now / 150), x, y, CW, CH);
       if (i === sobre) { rect(g, C.elegido, 1, x - 1, y - 1, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y + CH, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y, 1, CH); rect(g, C.elegido, 1, x + CW, y, 1, CH); }
@@ -586,7 +590,7 @@ export class HudAventura extends Phaser.Scene {
       const lanza = pf.lanza === 'cast' ? `Lanzamiento ${seg(pf.t)}` : pf.lanza === 'canal' ? `Canalizado ${seg(pf.t)}` : 'Instantáneo';
       const extra = [pf.escudo ? `Te protege ${pf.escudo} s · no gasta global · si bloquea algo, CD a la mitad` : '', pf.burst ? 'Burst: instantáneo, guárdalo para el momento' : '', pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
       const efectos = descEfecto(m);
-      txt = `${m.nombre}\n${datos.join(' · ')}\n${(formaArea(m) ? { zona: 'Área donde apuntes', cono: 'Cono delante de ti', alrededor: 'Área alrededor de ti' }[formaArea(m)!] : null) ?? (m.flags.includes('contact') ? 'Cuerpo a cuerpo' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti')} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}${efectos.length ? `\n${efectos.join('\n')}` : ''}`;
+      txt = `${m.nombre}\n${datos.join(' · ')}\n${(formaArea(m) ? { zona: 'Área donde apuntes', cono: 'Cono delante de ti', alrededor: 'Área alrededor de ti' }[formaArea(m)!] : null) ?? (m.flags.includes('contact') ? 'Cuerpo a cuerpo' : dirigido(m) ? 'Dirigido: hacia donde apuntes' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti')} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}${efectos.length ? `\n${efectos.join('\n')}` : ''}`;
     } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : ITEMS[a.i]?.cura ? `Te cura ${ITEMS[a.i]!.cura} PS` : 'Te cura un poco'}`;
     this.ficha.setText(txt).setVisible(true);
     const w = this.ficha.width / S + 8, h = this.ficha.height / S + 6, cx = carta ? carta.x + carta.w / 2 : BX + 4 + i * (CW + HUECO) + CW / 2;
@@ -665,17 +669,38 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     this.ficha.setPosition((x + 4) * S, (y + 3) * S);
   }
 
-  // Panel de movimientos (K): los que sabe tu Pokémon y los objetos de la mochila.
+  // Panel de movimientos (K): los que sabe tu Pokémon y los objetos de la mochila. Tres columnas si caben entre los bufos de
+  // arriba y la barra; si no, hasta cinco; y si ni así, se ven las líneas que quepan y la rueda del ratón recorre el resto.
   private pintarPanel(): void {
     const av = this.av, m = av.partida.activo;
-    const k = av.panel === 'movs' ? `${m.uid}|${m.movs.join()}|${JSON.stringify(av.partida.estado.items)}|${JSON.stringify(av.asignando)}` : '';
+    if (av.panel !== 'movs') this.panelDesp = 0;
+    const items = av.panel === 'movs' ? Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id] && !EQUIPABLES[id]) : [];   // los equipables, en el inventario (I)
+    const PAD = 14, ARRIBA = 32, alto = BY - 6 - ARRIBA;   // sitio entre los bufos de tu marco y la barra
+    const colsMax = Math.max(3, Math.min(5, Math.floor((VW - 9) / 81)));
+    const altura = (c: number) => 16 + Math.ceil(m.movs.length / c) * 18 + (items.length ? 13 + Math.ceil(items.length / c) * 18 : 0) + PAD;
+    let cols = 3;
+    while (cols < colsMax && altura(cols) > alto) cols++;
+    // Líneas del contenido: filas de movimientos, el rótulo de la mochila y sus filas.
+    type Linea = { h: number; tit?: string; movs?: string[]; items?: [string, number][] };
+    const lineas: Linea[] = [];
+    for (let i = 0; i < m.movs.length; i += cols) lineas.push({ h: 18, movs: m.movs.slice(i, i + cols) });
+    if (items.length) {
+      lineas.push({ h: 13, tit: 'MOCHILA' });
+      for (let i = 0; i < items.length; i += cols) lineas.push({ h: 18, items: items.slice(i, i + cols) });
+    }
+    const total = lineas.reduce((a, l) => a + l.h, 0), desplaza = 16 + total + PAD > alto;
+    const h = desplaza ? alto : 16 + total + PAD, hueco = h - 16 - PAD;   // alto del contenido visible
+    // Tope del desplazamiento: la primera línea desde la que el resto ya cabe.
+    let maxDesp = 0;
+    if (desplaza) { let acc = 0; maxDesp = lineas.length; while (maxDesp > 0 && acc + lineas[maxDesp - 1].h <= hueco) { acc += lineas[maxDesp - 1].h; maxDesp--; } }
+    this.panelDesp = Math.min(this.panelDesp, maxDesp);
+    const k = av.panel === 'movs' ? `${m.uid}|${m.movs.join()}|${JSON.stringify(av.partida.estado.items)}|${JSON.stringify(av.asignando)}|${this.panelDesp}` : '';
     if (k === this.panelClave) return;
     this.panelClave = k;
-    this.panelObjs.forEach(o => o.destroy()); this.panelObjs = []; this.panelZonas = [];
+    this.panelObjs.forEach(o => o.destroy()); this.panelObjs = []; this.panelZonas = []; this.panelCaja = null;
     if (av.panel !== 'movs') return;
-    const items = Object.entries(av.partida.estado.items).filter(([id, n]) => n > 0 && ITEMS[id] && !EQUIPABLES[id]);   // los equipables, en el inventario (I)
-    const filasM = Math.ceil(m.movs.length / 3), filasI = Math.ceil(items.length / 3);
-    const w = 250, h = 30 + filasM * 18 + (items.length ? 14 + filasI * 18 : 0) + 12, x = Math.round(VW / 2 - w / 2), y = Math.max(32, BY - h - 6);
+    const w = 9 + cols * 81, x = Math.round(VW / 2 - w / 2), y = Math.max(ARRIBA, BY - h - 6);
+    this.panelCaja = { x, y, w, h };
     const g = this.add.graphics().setDepth(6);
     marco(g, x, y, w, h, PANEL);
     const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(7); this.panelObjs.push(q); return q; };
@@ -691,14 +716,18 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
       if (enBarra) q.setAlpha(0.75);
       this.panelZonas.push({ x: cx, y: cy, w: cw, h: ch, a });
     };
-    m.movs.forEach((id, i) => {
-      const mv = getMove(id);
-      if (mv) carta(x + 6 + (i % 3) * 81, y + 16 + Math.floor(i / 3) * 18, { m: id }, mv.nombre, COLOR_TIPO[mv.type]);
-    });
-    if (items.length) {
-      const yi = y + 18 + filasM * 18;
-      t(x + 6, yi, 'MOCHILA', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
-      items.forEach(([id, n], i) => carta(x + 6 + (i % 3) * 81, yi + 11 + Math.floor(i / 3) * 18, { i: id }, `${ITEMS[id].nombre} ×${n}`, 0x8b5a33, ITEMS[id].icono));
+    // Las líneas visibles, desde la del desplazamiento, mientras quepan.
+    let cy = y + 16, fin = this.panelDesp;
+    for (; fin < lineas.length && cy + lineas[fin].h - y - 16 <= hueco; fin++) {
+      const l = lineas[fin];
+      if (l.tit) t(x + 6, cy + 2, l.tit, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+      l.movs?.forEach((id, i) => { const mv = getMove(id); if (mv) carta(x + 6 + i * 81, cy, { m: id }, mv.nombre, COLOR_TIPO[mv.type]); });
+      l.items?.forEach(([id, n], i) => carta(x + 6 + i * 81, cy, { i: id }, `${ITEMS[id].nombre} ×${n}`, 0x8b5a33, ITEMS[id].icono));
+      cy += l.h;
+    }
+    if (desplaza) {
+      const arriba = this.panelDesp > 0, abajo = fin < lineas.length;
+      t(x + w / 2, y + h - 9, `Rueda del ratón: hay más ${arriba && abajo ? 'arriba y abajo' : arriba ? 'arriba' : 'abajo'}`, 5, C.maderaClara).setOrigin(0.5, 0);
     }
     this.panelObjs.push(g);
   }

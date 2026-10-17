@@ -3,7 +3,7 @@
 // segundos y cambios de stats que se pasan solos. Puras: no saben nada de Phaser.
 import { LINEAS, expNivel, forma, type Base6, type Linea } from '../data/pokedex';
 import { eficacia, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
-import { rangoAtaque } from '../data/lineasAtaque';
+import { firmaAtaque, rangoAtaque } from '../data/lineasAtaque';
 
 export const GCD = 1.5;                  // s: enfriamiento global tras cualquier movimiento (como en el WoW)
 // Ritmo del combate (§3.4): todos los tiempos de los movimientos (lanzamientos, CDs, agotado) se diseñaron con un
@@ -47,6 +47,12 @@ const AREA = ['allAdjacentFoes', 'allAdjacent'];
 // delante (los de viento). Si tocan a más de uno, cada golpe ×AREA_VARIOS (la regla oficial de los dobles).
 export type FormaArea = 'zona' | 'cono' | 'alrededor';
 export const ZONA_RADIO = 40, ALREDEDOR_RADIO = 50, CONO_LARGO = 90, CONO_ANGULO = 0.6, AREA_VARIOS = 0.75;   // px, rad (medio cono)
+// Dirigidos (§3.7): los "especial a distancia a uno" sin nada más (Ascuas, Pistola Agua, Lanzallamas, Rayo…) no van
+// al objetivo: salen como un proyectil hacia donde apuntas (ratón, a lo LoL, o stick derecho) y dan al primer enemigo
+// que tocan; si no tocan a nadie, fallan. Al lanzarlos se puede seguir apuntando hasta que salen.
+export const VEL_PROYECTIL = 300, ALCANCE_PROYECTIL = ALCANCE_DISTANCIA + 30, RADIO_PROYECTIL = 7;   // px/s, px, px
+const FIRMA_DIRIGIDO = 'Special · 100 % · distancia · objetivo';
+export const dirigido = (m: MoveData) => m.category === 'Special' && firmaAtaque(m).split(' · ').slice(1).join(' · ') === FIRMA_DIRIGIDO;
 export function formaArea(m: MoveData): FormaArea | null {
   if (m.category === 'Status') return null;
   if (m.target === 'allAdjacent') return 'alrededor';

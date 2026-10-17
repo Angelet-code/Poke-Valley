@@ -22,7 +22,7 @@ import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, RITMO, NOMBRE_ESTADO, NOMBRE_STAT,
-  ALCANCE_DISTANCIA, ALREDEDOR_RADIO, AREA_VARIOS, CONO_ANGULO, CONO_LARGO, ZONA_RADIO, formaArea, type FormaArea,
+  ALCANCE_DISTANCIA, ALCANCE_PROYECTIL, RADIO_PROYECTIL, VEL_PROYECTIL, dirigido, ALREDEDOR_RADIO, AREA_VARIOS, CONO_ANGULO, CONO_LARGO, ZONA_RADIO, formaArea, type FormaArea,
   ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
   velAndar, type Clima, type Golpe, type Perfil, type Stats,
 } from './reglas';
@@ -133,6 +133,10 @@ export interface EstadoRemoto {
   enMapa?: number;                                             // s que lleva en este mapa (el que más lleva es su dueño)
 }
 
+// Un movimiento dirigido en vuelo (§3.7): sale de `de` hacia (dx, dy) y da al primer enemigo que toca. `h`: a qué altura
+// del suelo va (la del pecho de quien lo lanzó), solo para dibujarlo.
+export interface Proyectil { id: string; de: Luchador; x: number; y: number; dx: number; dy: number; resta: number; h: number }
+
 // Los demás que toca un área (el primero va en el propio suceso `mov`).
 export interface MasArea { n: number; a: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[] }
 
@@ -170,7 +174,7 @@ export type Suceso =
   | { tipo: 'rotulo'; uid: string; txt: string; tono: LabelTone; retraso?: number; azar?: boolean }
   | { tipo: 'destello'; uid: string; ms: number }
   | { tipo: 'temblor' }
-  | { tipo: 'mov'; n: number; de: string; a: string; mov: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[]; mas?: MasArea[] }
+  | { tipo: 'mov'; n: number; de: string; a: string; mov: string; golpe: Golpe; efectos: { uid: string; boosts?: Boosts; estado?: string; semilla?: boolean }[]; mas?: MasArea[]; desde?: Punto }   // desde: de dónde sale la animación (un proyectil, donde dio)
   | { tipo: 'area'; de: string; mov: string; forma: FormaArea; x: number; y: number; ang: number }   // dónde pega un área (el destello en el suelo)
   | { tipo: 'ball'; n: number; item: string; a: string; x0: number; y0: number; x1: number; y1: number }
   | { tipo: 'ballFin'; n: number; ok: boolean | null }
@@ -200,6 +204,7 @@ export class Mundo {
   remotos: Luchador[] = [];
   objetivo: Luchador | null = null;
   apunta: Punto | null = null;            // dónde está el ratón (para las áreas en zona y en cono)
+  proyectiles: Proyectil[] = [];          // movimientos dirigidos en vuelo (los dibuja la escena)
   conMando = false;                       // los avisos nombran los botones del mando en vez de las teclas
   private k(tecla: string): string { return rotulo(tecla, this.conMando); }
   ahora = 0;
@@ -594,7 +599,15 @@ export class Mundo {
       punto = fa === 'alrededor' ? null : p;
       obj = null;
     }
-    const objetivo = !fa && necesitaObjetivo(m);
+    // Dirigidos: hacia donde apuntas (si no, hacia el objetivo); no hace falta objetivo ni estar a su alcance.
+    const dir = !!m && dirigido(m);
+    if (dir) {
+      const p = punto ?? (yo ? this.apunta : null) ?? (obj && !obj.muerto ? { x: obj.x, y: obj.y } : null);
+      if (!p) { if (yo) this.aviso(`${m.nombre}: apunta con ${this.conMando ? 'el stick derecho' : 'el ratón'}`); return false; }
+      this.mirarA(l, p);
+      punto = p; obj = null;
+    }
+    const objetivo = !fa && !dir && necesitaObjetivo(m);
     if (objetivo) {
       if (!obj && yo) obj = this.objetivo = this.salvajes.filter(s => !s.muerto && !s.enBall).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] ?? null;
       if (!obj || obj.muerto || obj.enBall) { if (yo) this.aviso(this.conMando ? 'Elige a quién (R2)' : 'Elige a quién (clic en un Pokémon o Tab)'); return false; }
@@ -635,7 +648,10 @@ export class Mundo {
     if (pf.agotado) { l.gcd = Math.max(l.gcd, this.ahora + pf.agotado); l.gcdDura = Math.max(l.gcdDura, pf.agotado); this.despues(0.5, () => this.rotulo(l, 'Agotado', 'weak')); }
     if (l.estado === 'par' && this.rnd() < 0.25) { this.rotulo(l, '¡Paralizado!', 'bad'); return; }
     // El efecto sale en el fotograma del golpe de la animación (HitFrame), no antes.
-    this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => formaArea(m) ? this.lanzarArea(l, id, punto ?? null) : this.lanzarMov(l, id, blanco));
+    // Dirigido: apunta al salir (tú, adonde apuntes ahora; un salvaje, adonde está su rival).
+    const apuntar = () => (l.rol === 'jugador' ? this.apunta : l.rival && !l.rival.muerto ? { x: l.rival.x, y: l.rival.y } : null) ?? punto ?? null;
+    this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => formaArea(m) ? this.lanzarArea(l, id, punto ?? null)
+      : dirigido(m) ? this.disparar(l, id, apuntar()) : this.lanzarMov(l, id, blanco));
   }
   // Cada paso: la barra de lanzamiento avanza; al llenarse sale el movimiento. Los canalizados pegan por tics.
   private pasoLanza(l: Luchador): void {
@@ -675,7 +691,26 @@ export class Mundo {
   }
   // Se tira el golpe y sus efectos y se pide la animación; lo tirado se aplica cuando la animación llega al impacto
   // (`impacto`) o, si no llega, a los IMPACTO_MAX s.
-  private lanzarMov(l: Luchador, id: string, t: Luchador, parte?: MoveData): void {
+  // Sale un dirigido: un proyectil desde quien lo lanza hacia `p`.
+  private disparar(l: Luchador, id: string, p: Punto | null): void {
+    if (l.muerto || this.cambiando || !p) return;
+    const dx = p.x - l.x, dy = p.y - l.y, d = Math.hypot(dx, dy) || 1;
+    this.mirarA(l, p);
+    this.proyectiles.push({ id, de: l, x: l.x, y: l.y, dx: dx / d, dy: dy / d, resta: ALCANCE_PROYECTIL, h: l.alto * 0.45 });
+  }
+  // Los proyectiles avanzan; al tocar a un enemigo de quien lo lanzó (el primero), el golpe de siempre.
+  private pasoProyectiles(dt: number): void {
+    if (!this.proyectiles.length) return;
+    const paso = VEL_PROYECTIL * dt;
+    this.proyectiles = this.proyectiles.filter(q => {
+      if (q.de.muerto || this.cambiando) return false;
+      q.x += q.dx * paso; q.y += q.dy * paso; q.resta -= paso;
+      const t = this.enemigosDe(q.de).find(o => Math.hypot(o.x - q.x, o.y - q.y) <= RADIO_PROYECTIL + Math.max(6, o.alto * 0.3));
+      if (t) { this.lanzarMov(q.de, q.id, t, undefined, { x: q.x, y: q.y - q.h }); return false; }
+      return q.resta > 0;
+    });
+  }
+  private lanzarMov(l: Luchador, id: string, t: Luchador, parte?: MoveData, desde?: Punto): void {
     const m = parte ?? getMove(id)!;
     if (l.muerto || this.cambiando) return;
     const obs = this.objetos(l);
@@ -684,7 +719,7 @@ export class Mundo {
     if (r.dano > 0 && obs.length && !m.fixedDamage) r.dano = Math.max(1, Math.floor(r.dano * obs.reduce((k, ob) => k * this.potencia(ob, m, r), 1)));
     const ef = this.efectos(m, l, t, r), n = ++this.n;
     this.pendientes.set(n, { l, id, t, r, ef, hasta: this.ahora + IMPACTO_MAX });
-    this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })) });
+    this.emitir({ tipo: 'mov', n, de: l.uid, a: t.uid, mov: id, golpe: r, efectos: ef.map(e => ({ uid: e.quien.uid, boosts: e.boosts, estado: e.estado, semilla: e.semilla })), desde });
   }
   // Un área: a quién toca (los enemigos de quien la lanza dentro de la forma), un golpe para cada uno (×AREA_VARIOS
   // si son varios) y un solo suceso para animarlos juntos. Si no toca a nadie, solo el destello en el suelo.
@@ -1488,6 +1523,7 @@ export class Mundo {
   paso(dt: number, e: Entrada): void {
     this.ahora += dt;
     this.apunta = e.apunta ?? null;
+    this.pasoProyectiles(dt);
     this.conMando = !!e.mando;
     if (this.relojes.length) {
       const toca = this.relojes.filter(r => r.t <= this.ahora);

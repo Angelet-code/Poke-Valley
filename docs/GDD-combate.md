@@ -35,6 +35,8 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   Si no tienes ninguno, un movimiento apunta solo al más cercano. Esc quita el objetivo.
 - **Barra de atajos**: 10 casillas (teclas 1-0) con movimientos u objetos.
   - Se colocan al gusto con el panel K: clic en un movimiento u objeto y luego en una casilla, o su tecla.
+    El panel va en tres columnas si cabe entre tu marco y la barra; con muchos movimientos pasa a cuatro o cinco, y si ni
+    así cabe, la rueda del ratón lo recorre línea a línea (un rótulo abajo dice si hay más arriba o abajo).
   - Clic derecho en una casilla la vacía.
   - Cada Pokémon tiene su propia barra.
   - Al aprender un movimiento, este va a la primera casilla libre.
@@ -303,6 +305,26 @@ Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; 
 - **Rótulos**: cuando lo último que se tocó fue el mando (`Aventura.conMando`, `mando.tUso` contra el último movimiento
   del ratón), la barra, la columna de ayuda, el pie del mapa y los avisos nombran los botones (`src/entrada/rotulos.ts`);
   al mover el ratón vuelven las teclas.
+
+### 3.6 Tipos de ataque (2026-10-17)
+Un **tipo de ataque** es la firma de un movimiento sin su tipo elemental ni su potencia: Ascuas, Pistola Agua,
+Impactrueno, Tornado y Viento Feérico son el mismo ("especial a distancia a uno", 40). Las líneas (§3.3) van siempre
+dentro de un tipo de ataque y solo suben la potencia; las **variantes** son tipos de ataque que cambian en una sola
+cosa (Rayo → Chispazo: alrededor de ti). Lista, con la tabla potencia × tipo de cada uno, sus líneas y sus variantes:
+[tipos-ataque.md](tipos-ataque.md) (lo escribe `tools/lineas_ataque.ts`). Sirve para ver huecos: Agua no tiene un
+"especial a distancia a uno" de 90 (el Lanzallamas del Agua), así que Pistola Agua no puede llegar ahí por línea.
+
+### 3.7 Dirigidos (2026-10-17)
+Los del tipo de ataque **"especial a distancia a uno"** sin nada más (38: Ascuas, Pistola Agua, Impactrueno, Tornado,
+Lanzallamas, Rayo, Rayo Hielo, Bola Sombra, Psíquico…) y por tanto sus líneas enteras son **dirigidos**, como las
+habilidades con dirección del LoL (`dirigido` en `reglas.ts`; `disparar` y `pasoProyectiles` en `mundo.ts`):
+- No hace falta objetivo: salen como un proyectil hacia el ratón o hacia donde apunta el stick derecho (con el mando y
+  el stick quieto, hacia el objetivo). Los lanzados (Lanzallamas) toman la dirección **al salir**: mientras dura la
+  barra puedes seguir apuntando.
+- El proyectil va a 300 px/s, llega a 180 px y da al **primer** enemigo que toca (radio 7 px + su cuerpo); si no toca a
+  nadie, falla. La animación del movimiento sale de donde dio.
+- Se pueden esquivar: un salvaje apunta a donde estás cuando lo suelta. Un Ascuas a 140 px tarda ~0,5 s en llegar.
+- Se ve una bola del color del tipo con estela. En el multijugador, los demás ven el impacto, no el vuelo.
 
 ## 4. Captura
 - La Poké Ball se lanza al objetivo hasta 150 px. Vuela, el Pokémon entra, la Ball se mueve tres veces y se queda
