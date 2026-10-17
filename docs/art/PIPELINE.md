@@ -199,12 +199,18 @@ Diffusion son cerrados). Instalados y probados (rutas y recetas en `tools/comfy.
 | Mapas de aldea | `docs/art/mapas/aldea_a/b/c.json` | `tools/map_village.py` (40×30, semillas fijas; terreno + objetos + árboles + rocas + `inicio`) | 3 variantes para elegir |
 | Detalles del suelo | — | — | Pendiente |
 
-- **Muñeco de prácticas** (2026-10-17, `assets/game/pixel/objetos/munieco.png`, 30×56): Flux.1-dev +
-  `Top-Down_Pixel_Art_Flux_Lora_r1` 0.8, 20 pasos, **320²** (paso 4 → sprite de ~70 celdas), semilla 14 de
-  `assets/gen/munieco/` (prompt en `flux.log`: "wooden training dummy… straw-stuffed burlap… round wooden shield and a
-  bucket helmet, like a World of Warcraft target dummy"). `pixel_grid.py --largest --bg-tol 40 --colors 20 --shadow
-  120,20,80` → 30×68; se quitan 12 filas del poste (madera lisa) para dejarlo en 56 → `pixel_clean.py --islands 2
-  --jaggy all --smooth 1` (0 huérfanos, 0 dobles). Las otras semillas (dianas, caras, bolas) quedan en esa carpeta.
+- **Muñeco de prácticas** (v3, 2026-10-17, `assets/game/pixel/objetos/munieco.png`, 32×52): estilo Minecraft con diana
+  (poste con brazos en cruz, cabeza cúbica de paja, diana en el pecho, base redonda), **receta de los decorados del
+  pueblo**: Flux.2 Klein 4B + `pixel-art-lora-klein4b` 1.0 a 512² sobre magenta, de frente (la cola de prompt de
+  `decor_pueblo/gen.sh`), 6 semillas en `assets/gen/munieco/v3/mc_s<N>_0.png` (hoja `hoja_klein.png`: las 6 salen
+  limpias y de frente). `v3/hoja.py` reduce con `edificios_pueblo/reducir.py` (BOX premultiplicado, 16 colores, poda)
+  a 28/32/36 px (`hoja_reducida.png`); elegida **s1 a 32 px** (`hoja.py 1 32`). Después `pixel_clean.py --islands 0
+  --jaggy all --smooth 0` (solo quita los 7 dobles, 9 px cambiados; con `--smooth 1 --islands 2` se deforman la diana y
+  la cabeza). `PIE_MUNECO = 5` (Aventura.ts): los pies son el centro del disco de la base.
+  Descartadas por el usuario ("dobles píxeles y líneas mal hechas"): la v2 de Flux.1-dev + `Top-Down_Pixel_Art_Flux_Lora_r1`
+  a 320² (`objetos/v2_munieco/`, fuentes en `assets/gen/munieco/v2/`, 4 semillas Minecraft + 4 "WoW simplificado") y la
+  v1 de saco y escudo (`objetos/v1_munieco/`, `assets/gen/munieco/`). Para objetos pequeños, Klein+LoRA y reducción BOX
+  da líneas más limpias que la rejilla de Flux.
 
 ## 5. La maqueta por dentro (`docs/art/maqueta-tiles.html`)
 
@@ -337,7 +343,8 @@ le ponen el pipeline «Cel» (los mismos parámetros que los Pokémon). Los elem
 aparte (`_f`) con la X de la normal invertida, porque el pipeline de luz de Phaser no voltea las normales. De día no cambia
 nada (ambiente blanco, sin luces); de noche, las matas de la copa que miran a la farola se encienden en bandas:
 `assets/gen/normales/elementos/pueblo_noche_con_normales.jpg` frente a `pueblo_noche_sin_normales.jpg`.
-Pendiente: el resto del catálogo (casas, rocas, muros) con el mismo script (habrá que afinar el detector de suelo por tipo).
+**Tablón de misiones (2026-10-17, noche):** `python -I tools/normales_elementos.py tablon --quitar-suelo --piezas 0.25 --vista`. `--piezas` (nuevo) es cuánto abomba cada pieza cerrada por tinta: con el 0.9 de los árboles los papeles y las tablas salían como pirámides; a 0.25 quedan planos y el relieve lo pone la veta (`--detalle`). El `--quitar-suelo` dejó un resto de sombra verde entre las patas (no llegaba a la base), borrado aparte por tono verde (g > r+8 y g > b+8: en el tablón solo lo tiene la sombra); original en `v1_con_suelo/tablon.png`. Comparativa `assets/gen/normales/elementos/tablon.png`; en el pueblo de noche, `tablon_noche.jpg`.
+Pendiente: el resto del catálogo (casas, rocas, muros) con el mismo script (habrá que afinar el detector de suelo por tipo; para lo plano, `--piezas` bajo).
 
 ## 7. Pendiente
 

@@ -40,7 +40,7 @@ import { redDeLaPagina, type Mensaje } from '../combate/red';
 import { chatDeLaPagina } from '../ui/chat';
 import { TRATO_LEJOS, Tradeo, type MensajeTrato, type Recibido } from '../combate/tradeo';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
-const PIE_MUNECO = 2;   // px del sprite del muñeco de prácticas por debajo de sus pies (la base del poste)
+const PIE_MUNECO = 5;   // px del sprite del muñeco de prácticas por debajo de sus pies (el centro de su base redonda)
 import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
 import type { DatosEvolucion } from './Evolucion';

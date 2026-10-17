@@ -49,7 +49,7 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
   - el estanque al lado para regar.
 - **Este, el mercado:** la tienda y el almacén, unidos a la plaza por una calle.
 - **Muñeco de prácticas** (2026-10-17, `MUNECO`): estilo Minecraft: poste con brazos en cruz, cabeza cúbica de paja y
-  una diana grande en el pecho sobre una base redonda (pixel art de 39×67, `assets/game/pixel/objetos/munieco.png`, receta en PIPELINE §4), en el césped al sureste
+  una diana grande en el pecho sobre una base redonda (pixel art de 32×52, Klein, `assets/game/pixel/objetos/munieco.png`, receta en PIPELINE §4), en el césped al sureste
   de la plaza, junto al camino a la tienda. Es un salvaje fijo con `munieco` (`combate/mundo.ts hacerMunieco`; su
   `linea`, Sudowoodo, solo pone los stats base): de tu nivel, sin tipo (daño neutro), misma Defensa que Def. Esp. y 8
   veces la vida de su especie; no se mueve, no pega, no huye, no se captura y al llegar a 0 se pone entero. No tiene
