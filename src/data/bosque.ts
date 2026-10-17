@@ -9,7 +9,7 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, MUNECO, PARCELAS, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, MUNECO, PARCELAS, POSADERO, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
@@ -58,6 +58,7 @@ export interface MapaAventura {
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
   tienda?: Tienda;                // el tendero: F a su lado abre la tienda (Poké Balls y pociones; la ciudad vende más)
   bayero?: Punto;                 // Aipom, el obseso de las bayas (pueblo): F a su lado, su cadena de misiones de bayas
+  posadero?: Punto;               // Slowbro, el posadero (pueblo y ciudad): F a su lado cura al equipo y fija aquí la piedra de hogar
   vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
   parcelas?: Punto[];             // huerto del pueblo: corrales con tierra, el sitio para sembrar bayas (aún sin uso)
@@ -84,6 +85,7 @@ export function pueblo(): MapaAventura {
     tablon: TABLON,
     tienda: TENDERO,
     bayero: BAYERO,
+    posadero: POSADERO,
     rellano: { x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }, vuelo: sitioVolador({ x: RELLANO_PUEBLO[0], y: RELLANO_PUEBLO[1] }),   // junto a la boca norte
     parcelas: PARCELAS.map(([x, y]) => ({ x, y })),
   };

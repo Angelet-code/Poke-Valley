@@ -56,6 +56,7 @@ export interface Estado {
   alfas?: Record<string, number>;             // por zona: cuándo cayó su alfa (Date.now()); reaparece a los 5 min
   hallados?: Record<string, { t: number; n: number }>;   // objetos del suelo (`zona:i`): cuándo lo cogiste (Date.now()) y cuántas veces
   hogar?: number;                             // Date.now() desde el que se puede volver a usar la piedra de hogar
+  posada?: string;                            // zona de la posada donde fijaste la piedra de hogar (si no, el pueblo)
   regalo?: boolean;                           // recibió el regalo de equipables por error: se le retira al cargar
   dinero?: number;                            // Pokécoins: se ganan derrotando salvajes y se gastan en la tienda del pueblo
   derrotas?: Record<string, number>;          // por línea: cuántos has derrotado (racha de shiny, RACHA_SHINY)

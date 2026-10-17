@@ -1,4 +1,5 @@
-// Misiones sin diálogo del modo aventura (docs/GDD-mundo.md §2): el tablón del pueblo ofrece 3 por zona, que se
+// Misiones sin diálogo del modo aventura (docs/GDD-mundo.md §2): cada tablón (pueblo y ciudad) ofrece 3 por zona de
+// las suyas (TABLONES), que se
 // dicen solo con iconos (la cara del Pokémon, un número y la Ball o el objeto):
 // - derrotar N de la especie más común de la zona;
 // - capturar uno de otra especie de la zona;
@@ -30,7 +31,11 @@ export const MISIONES_AIPOM: Mision[] = [
   { id: 'aipom-3', zona: 'pueblo', tipo: 'bayas', linea: 'aipom', dex: DEX_AIPOM, n: 4, baya: 'sitrus', previa: 'aipom-2', premio: { exp: 300, oro: 450, items: [['pocion', 2]] } },
 ];
 
-export const ZONAS_MISION: MapaId[] = ['bosque', 'lago'];
+// Las zonas de cada tablón: el del pueblo, las de al lado (bosque y lago); el de la ciudad, las que salen de ella.
+export const TABLONES: Partial<Record<MapaId, MapaId[]>> = { pueblo: ['bosque', 'lago'], ciudad: ['cantera', 'pantano', 'ruinas'] };
+export const ZONAS_MISION: MapaId[] = Object.values(TABLONES).flat();
+// Las misiones del tablón del mapa `en` (ni las de Aipom ni las de otro tablón).
+export const delTablon = (lista: Mision[], en: MapaId): Mision[] => { const z = TABLONES[en] ?? []; return lista.filter(m => z.includes(m.zona)); };
 export const NOMBRE_ZONA: Record<MapaId, string> = { pueblo: 'Pueblo', bosque: 'Bosque Verde', lago: 'Lago Celeste',
   costa: 'Costa Brisa', cantera: 'Cantera Gris', pantano: 'Pantano Umbrío', ruinas: 'Ruinas Antiguas', volcan: 'Volcán Ascua', nieve: 'Cumbres Heladas', taller: 'Taller', ciudad: 'Ciudad' };
 // Por zona: cuántos derrotar y lo que da cada misión además de la experiencia.
@@ -39,6 +44,10 @@ const AJUSTE: Partial<Record<MapaId, { derrotar: number; items: Record<Exclude<T
 // (Nv 12) ya da lo del siguiente escalón.
   bosque: { derrotar: 5, items: { derrotar: [['oran', 3]], capturar: [['pokeball', 3]], alfa: [['pokeball', 5], ['pocion', 3]] } },
   lago: { derrotar: 6, items: { derrotar: [['pocion', 3]], capturar: [['pokeball', 4]], alfa: [['superball', 2], ['superpocion', 2]] } },
+  // Tablón de la ciudad (Nv 10-20): Superballs y Superpociones; el alfa de las ruinas (Nv 22), ya Ultra Balls.
+  cantera: { derrotar: 6, items: { derrotar: [['superpocion', 2]], capturar: [['superball', 3]], alfa: [['superball', 4], ['superpocion', 3]] } },
+  pantano: { derrotar: 7, items: { derrotar: [['sitrus', 3]], capturar: [['superball', 4]], alfa: [['superball', 5], ['hiperpocion', 2]] } },
+  ruinas: { derrotar: 7, items: { derrotar: [['superpocion', 3]], capturar: [['superball', 5]], alfa: [['ultraball', 3], ['hiperpocion', 3]] } },
 };
 
 function deZona(m: MapaAventura): Mision[] {

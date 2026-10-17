@@ -1582,7 +1582,23 @@ export class Mundo {
     this.cortarHogar();
     this.partida.estado.hogar = Date.now() + HOGAR_CD * 1000;
     this.emitir({ tipo: 'destello', uid: p.uid, ms: 400 });
-    this.ir('pueblo', 'inicio');
+    this.ir(this.posada(), 'inicio');
+  }
+  // La zona de la posada donde fijaste la piedra de hogar (el pueblo, si no has fijado otra).
+  posada(): MapaId { return (this.partida.estado.posada as MapaId | undefined) ?? 'pueblo'; }
+  // F junto al posadero (Slowbro): te cura a ti y al equipo, te quita los estados y fija aquí la piedra de hogar.
+  descansar(): void {
+    const p = this.jugador;
+    if (p.muerto || this.cambiando) return;
+    const igual = this.posada() === this.mapa.id;
+    if (p.estado) this.curarEstado(p);
+    p.ps = p.stats.hp; p.boosts = {}; p.boostHasta = {};
+    for (const m of this.partida.estado.equipo) m.ps = 1;
+    this.partida.estado.posada = this.mapa.id;
+    this.emitir({ tipo: 'destello', uid: p.uid, ms: 350 });
+    this.rotulo(p, 'Descansado', 'good');
+    this.aviso(igual ? 'El posadero te cura a ti y a tu equipo' : `Tu piedra de hogar ahora te trae a ${this.mapa.nombre}. Te curas tú y tu equipo`);
+    this.guardar();
   }
 
   // ---- Cambiar de mapa (lo hace la escena) ----

@@ -31,7 +31,7 @@ import { EVO_OBJETO, LINEAS } from '../data/pokedex';
 import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, movilidad, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
-import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
+import { NOMBRE_ZONA, TABLONES, delTablon, type Mision } from '../combate/misiones';
 import { redDeLaPagina } from '../combate/red';
 import { TRATO_OBJS, TRATO_POKES } from '../combate/tradeo';
 import { idSprite } from '../combate/sprites';
@@ -448,17 +448,17 @@ export class HudAventura extends Phaser.Scene {
     objs.push(im);
   }
 
-  // Tablón (F junto a él en el pueblo): una fila por zona, una carta por misión, solo con iconos.
+  // Tablón (F junto a él, en el pueblo o la ciudad: cada uno con sus zonas): una fila por zona, una carta por misión, solo con iconos.
   private pintarMisiones(): void {
     const av = this.av, pa = av.partida, bayas = av.panel === 'bayas';
     // El tablón: las de las zonas. Aipom (F a su lado): su cadena, la que toca.
-    const lista = bayas ? av.misionesBayero : pa.misiones.filter(m => m.zona !== 'pueblo');
+    const lista = bayas ? av.misionesBayero : delTablon(pa.misiones, av.mapa.id);
     const k = av.panel === 'misiones' || bayas ? `${av.panel}|` + lista.map(m => `${m.id}:${pa.estadoMision(m)}:${pa.progresoMision(m)}`).join('|') : '';
     if (k === this.misClave) return;
     this.misClave = k;
     this.misObjs.forEach(o => o.destroy()); this.misObjs = []; this.misZonas = []; this.misCaja = null;
     if (av.panel !== 'misiones' && !bayas) return;
-    const zonas = bayas ? ['pueblo' as const] : ZONAS_MISION.filter(z => lista.some(m => m.zona === z));
+    const zonas = bayas ? ['pueblo' as const] : (TABLONES[av.mapa.id] ?? []).filter(z => lista.some(m => m.zona === z));
     const cols = Math.max(...zonas.map(z => lista.filter(m => m.zona === z).length));
     const w = Math.max(176, 12 + cols * (MW + 4) - 4), h = 18 + zonas.length * (MH + 14) + 4, x = Math.round(VW / 2 - w / 2), y = 38;
     this.misCaja = { x, y, w, h };
@@ -626,7 +626,7 @@ export class HudAventura extends Phaser.Scene {
       const fg = this.fichaG;
       this.fichaTipo.setVisible(false);
       this.ficha.setText(`Piedra de hogar
-Te lleva al pueblo. Quieto ${HOGAR_CARGA} s: si te mueves o te golpean, se corta
+Te lleva ${av.mundo?.posada() === 'ciudad' ? 'a la ciudad' : 'al pueblo'} (tu posada: habla con Slowbro para cambiarla). Quieto ${HOGAR_CARGA} s: si te mueves o te golpean, se corta
 Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60)} min)` : ''}`).setVisible(true);
       fg.clear();
       const fw = this.ficha.width / S + 8, fh = this.ficha.height / S + 6, fx = Math.max(4, HX), fy = BY - fh - 3;
