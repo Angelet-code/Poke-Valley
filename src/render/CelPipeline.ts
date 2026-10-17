@@ -60,7 +60,7 @@ export class CelPipeline extends Phaser.Renderer.WebGL.Pipelines.LightPipeline {
   onRender(scene: Phaser.Scene, camera: Phaser.Cameras.Scene2D.Camera): void {
     super.onRender(scene, camera);
     if (!this.lightsActive) return;
-    const luces = scene.lights.getLights(camera) as unknown as { light: Phaser.GameObjects.Light & { cel?: TipoLuz } }[], n = (this.renderer.config as { maxLights: number }).maxLights, a = this.arr; // kMaxLights del shader
+    const luces = scene.lights.getLights(camera) as unknown as { light: Phaser.GameObjects.Light & { cel?: Pick<TipoLuz, 'bandas' | 'umbral' | 'altura' | 'suave'> } }[], n = (this.renderer.config as { maxLights: number }).maxLights, a = this.arr; // kMaxLights del shader
     if (a.bandas.length !== n) a.bandas = new Float32Array(n), a.umbral = new Float32Array(n), a.altura = new Float32Array(n), a.suave = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       const c = luces[i]?.light.cel;

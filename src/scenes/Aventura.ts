@@ -705,6 +705,7 @@ export class Aventura extends Phaser.Scene {
     if (!this.luzJugador) this.luzJugador = this.lights.addLight(0, 0, 150, 0xfff0d0, 0);
     this.luzJugador.setPosition(mundo.jugador.x, mundo.jugador.y - 14).setIntensity(Math.max(0, oscuro - 0.25) * 1.6);
     this.stage.fx.blend = oscuro > 0.45 ? 'lighter' : 'source-over';
+    this.stage.luces.oscuro = oscuro;
   }
   // Lo que te tapa (copas, tejados) se aclara mientras estás detrás.
   private aclarar(dtMs: number): void {
@@ -1023,7 +1024,11 @@ export class Aventura extends Phaser.Scene {
   }
   // Áreas en el suelo: mientras alguien lanza una (la zona donde caerá: a tiempo de salir) y el destello al pegar.
   private destellos: { s: Extract<Suceso, { tipo: 'area' }>; t0: number }[] = [];
-  private destelloArea(s: Extract<Suceso, { tipo: 'area' }>): void { this.destellos.push({ s, t0: performance.now() }); }
+  private destelloArea(s: Extract<Suceso, { tipo: 'area' }>): void {
+    this.destellos.push({ s, t0: performance.now() });
+    const m = getMove(s.mov), de = this.mundo?.luchador(s.de), tipo = m?.type ?? 'Normal';
+    this.stage.luces.destello(s.x, s.y, de?.rol === 'salvaje' ? 0xff4a2a : COLOR_TIPO[tipo], s.forma === 'cono' ? 110 : 90, 1.1, 420, tipo);
+  }
   private pintarAreas(): void {
     const g = this.areaG, mundo = this.mundo!, ahora = performance.now();
     g.clear();
@@ -1050,7 +1055,8 @@ export class Aventura extends Phaser.Scene {
     const eg = this.escudoG.clear();
     // Dirigidos en vuelo: una bola del color del tipo con su estela, a la altura del pecho de quien la lanzó.
     for (const q of mundo.proyectiles) {
-      const c = COLOR_TIPO[getMove(q.id)?.type ?? 'Normal'], x = q.x, y = q.y - q.h;
+      const tipo = getMove(q.id)?.type ?? 'Normal', c = COLOR_TIPO[tipo], x = q.x, y = q.y - q.h;
+      this.stage.luces.seguir(`proy-${q.de.uid}-${q.id}`, x, y + 6, c, 70, 0.9, tipo);   // su luz va con él (fx/luces.ts)
       eg.lineStyle(3, c, 0.35).lineBetween(x - q.dx * 14, y - q.dy * 14, x, y);
       eg.fillStyle(c, 0.3).fillCircle(x, y, 6).fillStyle(c, 0.95).fillCircle(x, y, 3.5).fillStyle(0xffffff, 0.8).fillCircle(x - 1, y - 1, 1.3);
     }

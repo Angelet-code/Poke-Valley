@@ -23,7 +23,7 @@ const game = new Phaser.Game({
   pixelArt: true,
   roundPixels: true,
   backgroundColor: '#151a12',
-  render: { maxLights: 16 },   // Light2D del mapa dibujo: farolas y hoguera a la vista a la vez
+  render: { maxLights: 24 },   // Light2D: farolas y hoguera a la vista a la vez + los focos de los ataques (fx/luces.ts, CUPO)
   scene: [Boot, Preload, Title, WorldScene, UIScene, Aventura, HudAventura, Galeria, Evolucion, MapaZona, Eleccion, CargaMapa, ConfigMando],
 });
 

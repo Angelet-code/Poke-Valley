@@ -215,6 +215,21 @@ export class FxEngine {
     for (let i = 0; i < count; i++) this.emit(factory(i));
   }
 
+  /**
+   * Pokémon Valley: the live particles as drawn this frame (position, colour, size and the alpha after the fade), for
+   * the scene lights (fx/luces.ts turns them into Light2D point lights).
+   */
+  forEachLive(fn: (x: number, y: number, color: string, size: number, alpha: number, shape: ParticleShape) => void): void {
+    for (const p of this.particles) {
+      if (p.age < 0) continue;
+      const t = p.age / p.life;
+      const fade = p.fadeIn > 0 && t < p.fadeIn ? t / p.fadeIn : 1 - easeIn((t - p.fadeIn) / (1 - p.fadeIn));
+      const alpha = Math.max(0, Math.min(1, p.alpha * fade));
+      if (alpha <= 0.01) continue;
+      fn(p.x, p.y, p.color, p.size + (p.sizeEnd - p.size) * t, alpha, p.shape);
+    }
+  }
+
   add(effect: Effect): void {
     if (this.skipping) return;
     this.effects.push({ effect, start: this.now + (effect.delay ?? 0) });

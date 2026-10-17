@@ -10,7 +10,8 @@
 import Phaser from 'phaser';
 import { FxEngine, type Vec } from './fx/engine';
 import { WeatherLayer } from './fx/weather';
-import type { SideId, SlotId } from './tipos';
+import { LuzFx } from './luces';
+import type { SideId, SlotId, TypeName } from './tipos';
 
 // Cuánto más grandes que en Colleja se ven los efectos (grosores, partículas, recorridos) respecto a su sitio.
 export const ESCALA_FX = 1.4;
@@ -83,6 +84,8 @@ export class Stage {
   readonly canvas: HTMLCanvasElement;
   // Clima (lluvia, sol, arena, nieve, granizo) mientras dura: otro canvas debajo del de los efectos, fijo en pantalla.
   readonly clima: WeatherLayer;
+  // Luz de los ataques en el mapa (Light2D a partir de las partículas y los destellos; fx/luces.ts).
+  readonly luces: LuzFx;
   private readonly canvasClima: HTMLCanvasElement;
   private anims: Anim[] = [];
   private zoom = 1;
@@ -112,6 +115,7 @@ export class Stage {
     this.fx.blend = 'source-over';
     this.fx.scale = ESCALA_FX;
     this.fx.resize(juego.width, juego.height);
+    this.luces = new LuzFx(scene);
   }
 
   // Ocultar los dos canvas (p. ej. durante la cinemática de la evolución, que va en una escena de Phaser encima).
@@ -140,6 +144,7 @@ export class Stage {
     this.fx.offset.y = this.top;
     this.fx.frame_(time);
     this.clima.engine.frame_(time);
+    this.luces.actualizar(this.fx, z, dtMs);
     const dt = dtMs * this.speed;
     for (let i = this.anims.length - 1; i >= 0; i--) {
       const a = this.anims[i];
@@ -191,6 +196,15 @@ export class Stage {
     return this.wait(duration);
   }
 
+  /**
+   * Pokémon Valley: la luz del ataque en el mapa (Light2D, da en los mapas de normales). `at` y `radio` en px de
+   * escenario, como todo en las plantillas; `tipo` elige el perfil (fx/luces.ts: cómo late y cómo le da al cel).
+   */
+  luz(at: Vec, color: string, radio: number, intensidad: number, ms: number, tipo?: TypeName): void {
+    const z = this.zoom || 1;
+    this.luces.destello(at.x / z, at.y / z, color, radio / z, intensidad, ms, tipo);
+  }
+
   hitFlash(sprite: FxSprite | null, duration = 160): Promise<void> {
     return this.animate(sprite, [{ filter: 'brightness(0) invert(1)' }, { filter: 'brightness(0) invert(1)', offset: 0.35 }, { filter: 'none' }], duration, { channel: 'filter', easing: 'linear' });
   }
@@ -228,6 +242,7 @@ export class Stage {
   // Todo a reposo (al cambiar de mapa o al desmayarse).
   settle(): void {
     for (const a of this.anims.splice(0)) { Object.assign(a.spr, { ...NEUTRO, obj: a.spr.obj }); a.fin(); }
+    this.luces.apagar();
   }
   /**
    * Al terminar un movimiento, sus sprites vuelven a reposo si ya no los mueve nada (en Colleja, `settle` al final de
@@ -240,6 +255,7 @@ export class Stage {
 
   dispose(): void {
     this.settle();
+    this.luces.dispose();
     this.fx.dispose();
     this.clima.dispose();
     this.canvas.remove();

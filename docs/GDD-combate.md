@@ -459,6 +459,18 @@ Son las de **Pokémon Colleja**, copiadas en `src/fx/`.
 - El efecto arranca en el fotograma de golpe (HitFrame) de la animación PMD (`Attack` para contacto, `Shoot` a
   distancia y `Charge` para estado).
 - De noche, las partículas se suman como luz ("lighter").
+- **La luz de los ataques en el mapa (2026-10-17, `src/fx/luces.ts`)**: los efectos van en un canvas aparte, así que por
+  sí solos no tocan la luz Light2D. `LuzFx` (en `Stage.luces`) enciende focos de verdad, que dan en los mapas de normales
+  (los Pokémon con el pipeline cel y los 18 árboles Arcane) y en el suelo:
+  - cada fotograma agrupa las partículas vivas (brillos, chispas, estrellas; el humo y las rocas no dan luz) en focos
+    con su color medio, radio según lo dispersas que están e intensidad según cuántas y qué grandes;
+  - destellos explícitos con perfil por tipo (`PERFIL_TIPO`: Fuego parpadea y se apaga despacio, Eléctrico chisporrotea
+    y es duro de 2 bandas, Fantasma y Siniestro rasantes, Psíquico y Hada de 4 bandas…) en la carga (`chargeUp`,
+    `bigCharge`), en cada impacto (`hitReaction`, mayor cuanto más potente) y en el crítico (`impact`); los pide
+    `stage.luz(at, color, radio, intensidad, ms, tipo)` desde `templates.ts`;
+  - los proyectiles dirigidos llevan su luz pegada (`seguir`) y las áreas destellan al caer (`Aventura.destelloArea`);
+  - cupo de 10 focos de ataque (`CUPO`) dentro de `maxLights: 24` (`main.ts`); si hay más, se quedan los más fuertes.
+    De día el ambiente ya es blanco y la luz extra solo tiñe (×0,45); de noche va entera.
 
 ### 7.1 Firmas: una animación propia por movimiento (2026-10-15)
 Con las plantillas, muchos movimientos se veían iguales: Ascuas y Lanzallamas compartían `stream:fire`, 72 golpes

@@ -129,6 +129,7 @@ export function recover(ctx: MoveContext, from: Vec, ms = 200): Promise<void> {
 /** Light gathering on the user before a special move. */
 export async function chargeUp(ctx: MoveContext, ms = 140): Promise<void> {
   const { stage, palette, user } = ctx;
+  stage.luz(user.center, palette.glow, user.size * 1.6, 0.7, ms + 120, ctx.animation.type);
   stage.fx.add(charge({ at: user.center, palette, radius: user.size * 0.45, duration: ms + 80 }));
   stage.fx.burst(10, () => {
     const angle = rand(0, Math.PI * 2);
@@ -212,7 +213,10 @@ async function impact(ctx: MoveContext, template: Template): Promise<void> {
     const big = crit || cue.hits.some((hit) => hit.effectiveness === 'super');
     const sacudida = shakeFor(ctx, crit, big && !crit);
     void stage.shake(sacudida.strength, sacudida.duration);
-    if (crit) stage.fx.add(flash({ color: palette.hot, alpha: 0.35, duration: 160 }));
+    if (crit) {
+      stage.fx.add(flash({ color: palette.hot, alpha: 0.35, duration: 160 }));
+      for (const target of ctx.targets) stage.luz(target.center, palette.hot, target.size * 6, 1.3, 220, ctx.animation.type);
+    }
   }
   await stage.wait(stop);
 }
@@ -230,6 +234,8 @@ export function hitReaction(
     (effectiveness === 'super' ? 1.35 : effectiveness === 'resisted' ? 0.65 : 1) *
     (animation.epic ? 1.25 : 1);
   const power = (0.6 + animation.power * 0.6) * scale;
+  // La luz del golpe en el mapa: un fogonazo del color del tipo, mayor cuanto más fuerte (fx/luces.ts).
+  stage.luz(target.center, palette.glow, target.size * (2.2 + 1.6 * power), 0.9 + 0.9 * power, 260 + 160 * power, animation.type);
   if (animation.epic) stage.fx.add(flash({ color: palette.glow, alpha: 0.18, duration: 200 }));
   stage.fx.add(
     bloom({
@@ -1854,6 +1860,7 @@ const SOLAR: FxPalette = { core: '#b8f04a', glow: '#fff3a0', hot: '#ffffff', dar
 export async function bigCharge(ctx: MoveContext): Promise<void> {
   const { stage, user, palette } = ctx;
   const ms = 300;
+  stage.luz(user.center, palette.core, user.size * 2.4, 1.3, ms + 200, ctx.animation.type);
   stage.fx.add(dim({ at: user.center, duration: ms + 160, strength: 0.4 }));
   stage.fx.add(
     ring({
