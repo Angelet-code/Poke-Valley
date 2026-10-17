@@ -2,6 +2,7 @@
 
 Uso:  python -I tools/normales_elementos.py --arboles [--vista]
       python -I tools/normales_elementos.py arbol_alto sauce [--reduccion 2] [--fuerza 1.5] [--detalle 4] [--vista]
+      python -I tools/normales_elementos.py tablon --quitar-suelo --piezas 0.25 [--vista]   (cosas planas: tablas, papeles)
 
 Para cada `lab/assets/elementos_arcane/<id>.png` escribe `<id>_normal.png` al lado, a 1/`reduccion` del tamaño del
 PNG (los PNG van a ×2 del dibujo y en pantalla se reducen mucho más; a la mitad sobra resolución y el archivo pesa
@@ -76,7 +77,7 @@ def mascara_suelo(a: np.ndarray, contorno: np.ndarray) -> np.ndarray:
     return np.isin(etiq, 1 + np.flatnonzero(np.asarray(ymax) > 0.85 * H))
 
 
-def altura(rgba: np.ndarray, detalle_k: float, umbral: float = 0.07) -> tuple[np.ndarray, np.ndarray]:
+def altura(rgba: np.ndarray, detalle_k: float, umbral: float = 0.07, piezas_k: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
     a, lum, contorno = tinta(rgba, umbral)
     # 1. silueta
     h_sil = inflar(a, 0.9)
@@ -94,7 +95,7 @@ def altura(rgba: np.ndarray, detalle_k: float, umbral: float = 0.07) -> tuple[np
     peso = ndi.gaussian_filter(a.astype(np.float32), sigma)
     suave = ndi.gaussian_filter(lum_in, sigma) / np.maximum(peso, 1e-3)
     detalle = np.where(a, lum - suave, 0)
-    h = 0.5 * h_sil + 0.9 * h_pz
+    h = 0.5 * h_sil + piezas_k * h_pz
     # 4. suelo: se aplana (si el PNG ya está limpio con --quitar-suelo, la máscara sale vacía)
     tierra = mascara_suelo(a, contorno)
     if tierra.any():
@@ -148,11 +149,11 @@ def quitar_suelo(id_: str, reduccion: int) -> bool:
     return True
 
 
-def procesar(id_: str, reduccion: int, fuerza: float, detalle_k: float, vista: bool) -> str:
+def procesar(id_: str, reduccion: int, fuerza: float, detalle_k: float, vista: bool, piezas_k: float = 0.9) -> str:
     img = Image.open(os.path.join(CARPETA, f'{id_}.png')).convert('RGBA')
     rgba = reducir(img, reduccion)
     h, w = rgba.shape[:2]
-    hh, a = altura(rgba, detalle_k)
+    hh, a = altura(rgba, detalle_k, piezas_k=piezas_k)
     nrm = normales(hh, a, fuerza)
     destino = os.path.join(CARPETA, f'{id_}_normal.png')
     Image.fromarray(nrm).save(destino, optimize=True)
@@ -178,6 +179,7 @@ def main() -> None:
     ap.add_argument('--reduccion', type=int, default=2, help='el normal sale a 1/N del PNG (2 = mitad)')
     ap.add_argument('--fuerza', type=float, default=1.5, help='multiplica la pendiente de las normales')
     ap.add_argument('--detalle', type=float, default=4.0, help='relieve de las pinceladas (0 = solo volumen)')
+    ap.add_argument('--piezas', type=float, default=0.9, help='abombado de cada pieza cerrada por tinta (0.9 = árboles; 0.25 = tablas y papeles planos)')
     ap.add_argument('--vista', action='store_true', help='guardar comparativa en assets/gen/normales/elementos/')
     ap.add_argument('--quitar-suelo', action='store_true', help='borrar antes el suelo pintado del PNG (original a v1_con_suelo/)')
     ap.add_argument('--menos', nargs='*', default=[], help='ids que se saltan (p. ej. los que se limpian a mano)')
@@ -189,7 +191,7 @@ def main() -> None:
     for i in ids:
         if args.quitar_suelo:
             print('suelo quitado' if quitar_suelo(i, args.reduccion) else 'sin suelo que quitar', i)
-        print(procesar(i, args.reduccion, args.fuerza, args.detalle, args.vista))
+        print(procesar(i, args.reduccion, args.fuerza, args.detalle, args.vista, args.piezas))
 
 
 if __name__ == '__main__':
