@@ -45,7 +45,7 @@ const PIEZAS: [string, number, number, number?, boolean?][] = [
   ['carro', 402, 428, 0.6], ['cajas_barriles', 484, 404, 0.8], ['papelera', 261, 492], ['papelera', 522, 800],
   ['buzon', 1216, 380], ['maceta', 602, 356],
 ];
-// El canal y su muro, a los dos lados del puente (706-832), que baja hasta el borde sur (aún sin salida: al sur no hay zona).
+// El canal y su muro, a los dos lados del puente (706-832), que baja hasta el borde sur y sale al lago.
 const CANAL = [rect(0, 888, 706, 1152), rect(832, 888, 1536, 1152)];
 
 export function ciudad(): MapaAventura {
@@ -53,10 +53,20 @@ export function ciudad(): MapaAventura {
   const pintado: Pintado = { tex: 'mapa_ciudad_suelo', k: W / 3072, tapas: [], muros: CANAL.map(P), luces: [] };
   const colocados: Colocado[] = PIEZAS.map(([id, x, y, s, flip]) => ({ id, x: x * K, y: y * K, ...(s ? { s } : {}), ...(flip ? { flip } : {}) }));
   return {
-    id: 'ciudad', nombre: 'Ciudad', lema: 'Calles, tiendas y la plaza de la fuente', bienvenida: 'La ciudad. La acera del oeste lleva al pueblo.',
+    id: 'ciudad', nombre: 'Ciudad', lema: 'Calles, tiendas y la plaza de la fuente',
+    bienvenida: 'La ciudad. La calle del oeste lleva a la cantera; la del este, al pantano; la del norte, a las ruinas, y el puente del sur, al lago.',
     datos: { mw: MW, mh: MH, vert, inicio: [765 * K, 660 * K] }, W, H, colocados, detalles: 0, pintado,
-    llegada: { inicio: { x: 765 * K, y: 660 * K, dir: 0 }, pueblo: { x: 34 * K, y: 474 * K, dir: 2 } },
-    salidas: [{ x0: 0, y0: 450 * K, x1: 14, y1: 498 * K, a: 'pueblo', texto: 'Al pueblo' }], salvajes: [],
+    // Las cuatro calles (2026-10-17): oeste a la cantera, este al pantano, norte a las ruinas y el puente del sur al lago.
+    llegada: {
+      inicio: { x: 765 * K, y: 660 * K, dir: 0 }, cantera: { x: 34 * K, y: 474 * K, dir: 2 }, pantano: { x: 1502 * K, y: 474 * K, dir: 6 },
+      ruinas: { x: 768 * K, y: 34 * K, dir: 0 }, lago: { x: 768 * K, y: 1118 * K, dir: 4 },
+    },
+    salidas: [
+      { x0: 0, y0: 450 * K, x1: 14, y1: 498 * K, a: 'cantera', texto: 'A la cantera' },
+      { x0: W - 14, y0: 450 * K, x1: W, y1: 498 * K, a: 'pantano', texto: 'Al pantano' },
+      { x0: 722 * K, y0: 0, x1: 814 * K, y1: 14, a: 'ruinas', texto: 'A las ruinas' },
+      { x0: 706 * K, y0: H - 14, x1: 832 * K, y1: H, a: 'lago', texto: 'Al lago' },
+    ], salvajes: [],
     vuelo: { x: 560 * K, y: 425 * K },
   };
 }

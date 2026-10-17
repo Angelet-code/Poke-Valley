@@ -9,7 +9,7 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, MUNECO, PARCELAS, RELLANO_PUEBLO, SALIDA_ESTE_Y, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, MUNECO, PARCELAS, RELLANO_PUEBLO, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
@@ -69,9 +69,10 @@ export function pueblo(): MapaAventura {
   const datos = terrenoPueblo(), [ix, iy] = datos.inicio ?? [504, 540];
   return {
     id: 'pueblo', nombre: 'Pueblo', datos, W: W_PUEBLO, H: H_PUEBLO, colocados: [...COLOCADOS_PUEBLO, { id: ARCANE ? 'tablon' : 'valla', x: TABLON.x, y: TABLON.y }], detalles: 40,
-    lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del norte lleva al bosque y la calle del este, a la ciudad.',
-    llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: 46, dir: 0 }, ciudad: { x: W_PUEBLO - 40, y: (SALIDA_ESTE_Y[0] + SALIDA_ESTE_Y[1]) / 2, dir: 6 } },
-    salidas: [{ x0: 520, y0: 0, x1: 600, y1: 14, a: 'bosque', texto: 'Al bosque' }, { x0: W_PUEBLO - 14, y0: SALIDA_ESTE_Y[0], x1: W_PUEBLO, y1: SALIDA_ESTE_Y[1], a: 'ciudad', texto: 'A la ciudad' }],
+    lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del norte lleva al bosque.',
+    llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: 46, dir: 0 } },
+    // La boca del este (SALIDA_ESTE_Y) sigue abierta pero sin salida: la ciudad se fue al centro del mundo (2026-10-17).
+    salidas: [{ x0: 520, y0: 0, x1: 600, y1: 14, a: 'bosque', texto: 'Al bosque' }],
     // El muñeco de prácticas (2026-10-17): un Sudowoodo plantado en el césped al sureste de la plaza, para fijarlo y
     // probar los movimientos viendo el daño. Sin IA, sin captura y no cae (combate/mundo.ts hacerMunieco).
     salvajes: [{ linea: 'sudowoodo', nivel: 10, x: MUNECO.x, y: MUNECO.y, fija: true, munieco: true }],
@@ -243,7 +244,10 @@ export function lago(semilla: number): MapaAventura {
   // Salida del este (a la costa), arriba a la derecha: del punto del anillo más cercano al borde.
   const salidaE = { x: W + 10, y: Math.round(H * 0.2) };
   const pE = anillo.reduce((m, p) => Math.hypot(p.x - salidaE.x, p.y - salidaE.y) < Math.hypot(m.x - salidaE.x, m.y - salidaE.y) ? p : m);
-  const tramos: Punto[][] = [anillo.concat(anillo[0]), [{ x: -10, y: entrada.y }, { x: (oeste.x) / 2, y: (entrada.y + oeste.y) / 2 + entre(-20, 20) }, oeste], [pE, salidaE]];
+  // Salida del norte (a la ciudad, 2026-10-17), arriba a la izquierda: igual, desde el punto del anillo más cercano.
+  const salidaN = { x: Math.round(W * 0.3), y: -10 };
+  const pN = anillo.reduce((m, p) => Math.hypot(p.x - salidaN.x, p.y - salidaN.y) < Math.hypot(m.x - salidaN.x, m.y - salidaN.y) ? p : m);
+  const tramos: Punto[][] = [anillo.concat(anillo[0]), [{ x: -10, y: entrada.y }, { x: (oeste.x) / 2, y: (entrada.y + oeste.y) / 2 + entre(-20, 20) }, oeste], [pE, salidaE], [pN, salidaN]];
   // Rellano de vuelo: junto a la entrada, por encima o por debajo del camino, en tierra firme (sin tirar dados).
   const rellano = [[170, -125], [170, 125], [250, -140], [250, 140]].map(([dx, dy]) => ({ x: dx, y: entrada.y + dy }))
     .find(p => p.y > 130 && p.y < H - 110 && !enAgua(p.x, p.y, RELLANO.rx + 60)) ?? null;
@@ -278,7 +282,10 @@ export function lago(semilla: number): MapaAventura {
     if (x > W / 2 && Math.abs(y - salidaE.y) < 64) continue;   // boca del este (a la costa)
     poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
   }
-  for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)]) poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
+  for (let x = 60; x < W - 50; x += 30) for (const y of [entre(16, 30), entre(52, 70), H + entre(4, 14)]) {
+    if (y < H && Math.abs(x - salidaN.x) < 64) continue;   // boca del norte (a la ciudad)
+    poner({ id: arbol(), x: Math.round(x), y: Math.round(y), flip: r() < 0.5, s: entre(0.9, 1.15) }, 16);
+  }
   // El islote: un árbol alto, inalcanzable (punto de referencia).
   poner({ id: 'arbol_alto', x: Math.round(isla.x), y: Math.round(isla.y + 10), s: 1.1 }, 20);
   // El muelle (pintado de frente): en la orilla sur, bajando en línea recta desde el centro del lago; la tablazón
@@ -336,9 +343,10 @@ export function lago(semilla: number): MapaAventura {
     id: 'lago', alfa, nombre: 'Lago Celeste', datos: { mw: LW, mh: LH, vert, inicio: [40, entrada.y] }, W, H, colocados: col, detalles: 80,
     lema: 'Nivel 5-10 · Agua y orilla', clima: { tipo: 'lluvia', prob: 0.35 },
     bienvenida: 'El lago. Un camino lo rodea; cuanto más lejos de la entrada, más fuertes son los salvajes.',
-    llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 }, costa: { x: W - 40, y: salidaE.y, dir: 6 } },
+    llegada: { bosque: { x: 40, y: entrada.y, dir: 2 }, inicio: { x: 40, y: entrada.y, dir: 2 }, costa: { x: W - 40, y: salidaE.y, dir: 6 }, ciudad: { x: salidaN.x, y: 46, dir: 4 } },
     salidas: [{ x0: 0, y0: entrada.y - 50, x1: 14, y1: entrada.y + 50, a: 'bosque', texto: 'Al bosque' },
-      { x0: W - 14, y0: salidaE.y - 50, x1: W, y1: salidaE.y + 50, a: 'costa', texto: 'A la costa' }],
+      { x0: W - 14, y0: salidaE.y - 50, x1: W, y1: salidaE.y + 50, a: 'costa', texto: 'A la costa' },
+      { x0: salidaN.x - 50, y0: 0, x1: salidaN.x + 50, y1: 14, a: 'ciudad', texto: 'A la ciudad' }],
     salvajes, ...(rellano ? { rellano, vuelo: sitioVolador(rellano) } : {}),
   };
 }

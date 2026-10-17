@@ -48,8 +48,8 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
     sembrar bayas cuando el modo aventura las tenga (`MapaAventura.parcelas`);
   - el estanque al lado para regar.
 - **Este, el mercado:** la tienda y el almacén, unidos a la plaza por una calle.
-- **Muñeco de prácticas** (2026-10-17, `MUNECO`): el muñeco de madera de un MMO (arpillera, casco y escudo sobre un
-  poste; pixel art de 30×56, `assets/game/pixel/objetos/munieco.png`, receta en PIPELINE §4), en el césped al sureste
+- **Muñeco de prácticas** (2026-10-17, `MUNECO`): estilo Minecraft: poste con brazos en cruz, cabeza cúbica de paja y
+  una diana grande en el pecho sobre una base redonda (pixel art de 39×67, `assets/game/pixel/objetos/munieco.png`, receta en PIPELINE §4), en el césped al sureste
   de la plaza, junto al camino a la tienda. Es un salvaje fijo con `munieco` (`combate/mundo.ts hacerMunieco`; su
   `linea`, Sudowoodo, solo pone los stats base): de tu nivel, sin tipo (daño neutro), misma Defensa que Def. Esp. y 8
   veces la vida de su especie; no se mueve, no pega, no huye, no se captura y al llegar a 0 se pone entero. No tiene
@@ -63,9 +63,10 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
 
 ### 1c. La ciudad (2026-10-16)
 Código: [src/data/ciudad.ts](../src/data/ciudad.ts). Suelo de una imagen de Klein en estilo Arcane y, encima, cada
-edificio, seto, la fuente y las farolas como piezas sueltas ([ARCANE.md](art/ARCANE.md), «Ciudad por piezas»). En el mundo queda **al este del pueblo**
-(`data/mundo.ts`, casilla 1,3, camino pueblo–ciudad): se entra por la acera del oeste, que pasa por detrás del puesto,
-y se vuelve por ella al pueblo. Sin salvajes. El puente del sur aún no lleva a ninguna parte (al sur no hay zona).
+edificio, seto, la fuente y las farolas como piezas sueltas ([ARCANE.md](art/ARCANE.md), «Ciudad por piezas»). En el mundo está **en el centro** (2026-10-17;
+`data/mundo.ts`, casilla 1,1, donde estaba el pantano): la calle del oeste lleva a la cantera, la del este al pantano,
+la del norte a las ruinas y el puente del sur al lago (que tiene una boca al norte). Sin salvajes. La boca este del
+pueblo sigue abierta pero ya no sale a ningún sitio.
 
 ### Formato de una zona (`MapaAventura`)
 `id`, `nombre`, `lema` (lo que dice el rótulo), `bienvenida` (aviso al entrar), `datos` (suelo: 0 césped, 1 tierra o
@@ -272,7 +273,7 @@ en `src/data/bosque.ts`) y sus colores de suelo.
 | **Volcán** | Fuego, Dragón | 18-24 | growlithe, slugma, torkoal, gible, axew, dratini, druddigon | fósil de dragón |
 | **Cumbres** | Hielo | 20-26 | vanillite, snorunt, swinub, bergmite, beldum | estanque helado |
 
-Orden propuesto en el mundo: Bosque → Lago → **Costa** (sale del lago) y **Cantera** (sale del bosque) → **Pantano** →
+Orden propuesto en el mundo: Bosque → Lago → **Costa** (sale del lago) y **Cantera** (sale del bosque) → Ciudad → **Pantano** →
 **Ruinas** → **Volcán** y **Cumbres** al final. Cada bioma, su alfa en el hito.
 
 **Suelos** (`suelos.txt`), dos por bioma:
@@ -329,13 +330,16 @@ El suelo de cada zona son sus dos texturas (`SUELO_BIOMA`) con su paleta (`PALET
 
 **El mundo:**
 ```
-                         Volcán ── Ruinas ── Cumbres
-                                     │
-            Cantera ── Pantano ──────┘
+            Volcán ── Ruinas ── Cumbres
+                        │          │
+            Cantera ── Ciudad ── Pantano
+               │          │
+            Bosque ──── Lago ──── Costa
                │
-  Pueblo ── Bosque ── Lago ── Costa
+            Pueblo
 ```
-- El bosque sale al norte a la cantera, y el lago al este a la costa.
+- El bosque sale al norte a la cantera, y el lago al este a la costa y al norte a la ciudad. La ciudad (sin salvajes)
+  es el cruce: cantera, pantano, lago y ruinas. El pantano sube a las cumbres (2026-10-17).
 - Los niveles suben por ese orden.
 - El alfa de cada zona espera en su hito: Wailord 16, Onix 18, Haunter 20, Kirlia 22, Arcanine 26 y Glalie 28.
 
