@@ -41,6 +41,7 @@ export class Preload extends Phaser.Scene {
     // Modo aventura: el logo pixel y el claro Arcane del título ya los carga Boot (para esta pantalla de carga).
     for (let i = 0; i < ROCK_N; i++) this.load.image('roca' + i, `${A}game/rocas/roca_${i}.png`);
 
+    this.load.image('munieco', `${A}game/pixel/objetos/munieco.png`);   // el muñeco de prácticas del pueblo (modo aventura)
     const objs = this.registry.get(REG.objs) as ObjCatalog;
     for (const id in objs) {
       this.load.image('obj_' + id, `${A}game/pixel/${objs[id].archivo}`);

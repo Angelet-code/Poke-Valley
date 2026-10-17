@@ -34,12 +34,13 @@ import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { MoveCue } from '../fx/tipos';
 import { CASILLAS, PROB_SHINY, Partida } from '../combate/partida';
 import { ALCANCE_DISTANCIA, ALREDEDOR_RADIO, CONO_ANGULO, CONO_LARGO, NOMBRE_ESTADO, NOMBRE_STAT, ZONA_RADIO, formaArea, formaDe, statsDe, type Clima, type FormaArea, type Golpe } from '../combate/reglas';
-import { ALFA_RADIO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
+import { ALFA_RADIO, DEX_MUNECO, Mundo, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
 import { chatDeLaPagina } from '../ui/chat';
 import { TRATO_LEJOS, Tradeo, type MensajeTrato, type Recibido } from '../combate/tradeo';
 import { ancla, cargar, clave, idSprite, info, listo, poner, type AnimId } from '../combate/sprites';
+const PIE_MUNECO = 2;   // px del sprite del muñeco de prácticas por debajo de sus pies (la base del poste)
 import { ESTADO_CADA, TINTE_ESTADO, TINTE_SEMILLA, auraEstado, auraSemilla, drenaje } from '../fx/estados';
 import type { WeatherLook } from '../fx/fx/weather';
 import type { DatosEvolucion } from './Evolucion';
@@ -198,7 +199,7 @@ export class Aventura extends Phaser.Scene {
   private cargandoTrato = new Set<string>();
   // Medidas de los sprites para la simulación (con la forma cargada; la shiny mide lo mismo que la normal).
   private readonly anatomia: Anatomia = {
-    alto: dex => ancla(this.cargado(dex)).alto,
+    alto: dex => dex === DEX_MUNECO ? this.textures.get(DEX_MUNECO).getSourceImage().height - PIE_MUNECO : ancla(this.cargado(dex)).alto,
     anim: (dex, a) => {
       const h = info(this.cargado(dex))[a];
       return h ? { dura: h.durs.reduce((t, d) => t + d, 0) / 60, golpe: h.golpe / 1000 } : null;
@@ -256,7 +257,7 @@ export class Aventura extends Phaser.Scene {
     const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
     // Los salvajes y todo lo que puede salir cuando reaparecen (la tabla de la zona, a los niveles que hay).
     const niveles = new Set(this.mapa.salvajes.map(r => r.nivel)), tabla = lineasDe(this.mapa.id);
-    for (const r of this.mapa.salvajes) formas.push(formaDe(r.linea, r.nivel).dex);
+    for (const r of this.mapa.salvajes) if (!r.munieco) formas.push(formaDe(r.linea, r.nivel).dex);   // el muñeco no es un Pokémon
     for (const nv of niveles) for (const l of tabla) formas.push(formaDe(l, nv).dex);
     formas.push(DEX_VUELO);
     if (this.mapa.tienda) formas.push(DEX_TIENDA);
@@ -724,6 +725,7 @@ export class Aventura extends Phaser.Scene {
     const v = this.vistas.get(l.uid);
     if (v && v.logico === l.dex) return v;
     if (v) this.borrarVista(v);
+    if (l.dex === DEX_MUNECO) return this.vistaMunieco(l);
     const dex = this.cargado(l.dex), k = clave(dex), idle = info(dex).Idle, an = ancla(dex);
     const spr = this.add.sprite(l.x, l.y, idle ? `${k}-${idle.hoja}` : '__DEFAULT');
     poner(spr, dex, 'Idle', 0);
@@ -738,6 +740,20 @@ export class Aventura extends Phaser.Scene {
       nv.aura.resetPipeline(); nv.auraSuelo.resetPipeline();
     }
     if (dex !== l.dex) { const dexS = l.dex; void cargar(this, [dexS]).then(() => { if (spr.active && listo(this, dexS)) nv.dex = dexS; }); }
+    this.vistas.set(l.uid, nv);
+    return nv;
+  }
+  // El muñeco de prácticas: una imagen fija de pixel art (no hay hojas PMD; `poner` no hace nada con él), con los
+  // pies PIE_MUNECO px por encima del borde de abajo. Lo que se mueve al golpearlo es el fx de la escena (sacudida y
+  // silueta blanca), como con cualquier luchador.
+  private vistaMunieco(l: Luchador): Vista {
+    const spr = this.add.sprite(l.x, l.y, DEX_MUNECO), h = spr.height;
+    spr.setOrigin(0.5, (h - PIE_MUNECO) / h);
+    this.iluminar(spr);
+    const ancho = Math.max(10, Math.min(34, spr.width * 0.7));
+    const sombra = this.add.ellipse(l.x, l.y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3);
+    sombra.resetPipeline();
+    const nv: Vista = { dex: DEX_MUNECO, logico: l.dex, spr, sombra, fx: fxSprite(spr), animN: l.animN, auraEn: 0, semillaEn: 0, visto: true };
     this.vistas.set(l.uid, nv);
     return nv;
   }

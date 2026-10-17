@@ -9,7 +9,7 @@
 //   rodea. Se entra por el oeste, desde el bosque.
 import type { MapData } from './types';
 import type { Colocado } from './mapaDibujo';
-import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, PARCELAS, RELLANO_PUEBLO, SALIDA_ESTE_Y, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
+import { BAYERO, COLOCADOS_PUEBLO, H as H_PUEBLO, MUNECO, PARCELAS, RELLANO_PUEBLO, SALIDA_ESTE_Y, TABLON, TENDERO, W as W_PUEBLO, terrenoPueblo } from './puebloAventura';
 import { rng } from '../util';
 import { tirarEspecie } from './aparicion';
 import { ARCANE } from '../config';
@@ -34,7 +34,8 @@ export interface Llegada extends Punto { dir: number }   // dir: fila del sprite
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
 // Un salvaje en su sitio. `fija`: siempre la misma especie (la rareza del rincón secreto); si no, al reaparecer se
 // vuelve a tirar de la tabla de la zona (data/aparicion.ts).
-export interface Ronda { linea: string; nivel: number; x: number; y: number; fija?: boolean }
+// `munieco`: el muñeco de prácticas del pueblo (combate/mundo.ts hacerMunieco): quieto, sin IA ni captura, no cae.
+export interface Ronda { linea: string; nivel: number; x: number; y: number; fija?: boolean; munieco?: boolean }
 // El alfa (élite) de una zona: una forma concreta (Pidgeotto a nivel 9, aunque Pidgey evolucione a los 18) en un sitio fijo.
 export interface Alfa extends Ronda { forma: string }
 // Clima de base de una zona: cada tramo de CLIMA_TRAMO s hay `prob` de que haga este clima (0,8 = el 80 % del tiempo).
@@ -71,7 +72,9 @@ export function pueblo(): MapaAventura {
     lema: 'Tu hogar · aquí esperan tus Pokémon', bienvenida: 'El pueblo. El camino del norte lleva al bosque y la calle del este, a la ciudad.',
     llegada: { inicio: { x: ix, y: iy, dir: 0 }, bosque: { x: 560, y: 46, dir: 0 }, ciudad: { x: W_PUEBLO - 40, y: (SALIDA_ESTE_Y[0] + SALIDA_ESTE_Y[1]) / 2, dir: 6 } },
     salidas: [{ x0: 520, y0: 0, x1: 600, y1: 14, a: 'bosque', texto: 'Al bosque' }, { x0: W_PUEBLO - 14, y0: SALIDA_ESTE_Y[0], x1: W_PUEBLO, y1: SALIDA_ESTE_Y[1], a: 'ciudad', texto: 'A la ciudad' }],
-    salvajes: [],
+    // El muñeco de prácticas (2026-10-17): un Sudowoodo plantado en el césped al sureste de la plaza, para fijarlo y
+    // probar los movimientos viendo el daño. Sin IA, sin captura y no cae (combate/mundo.ts hacerMunieco).
+    salvajes: [{ linea: 'sudowoodo', nivel: 10, x: MUNECO.x, y: MUNECO.y, fija: true, munieco: true }],
     // Tablón de misiones (docs/GDD-mundo.md §2), en la plaza. Su arte solo existe en estilo Arcane (?set=arcane); en
     // dibujo sigue el trozo de valla provisional. El poste, junto a la salida al bosque (también solo en Arcane).
     tablon: TABLON,

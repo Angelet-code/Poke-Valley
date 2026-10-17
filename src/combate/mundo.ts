@@ -34,6 +34,8 @@ const ANCHO_NPC = 6;               // el de los demás Pokémon (salvajes y veci
 const CUBO = 64;                   // px de lado de los cubos de colisión
 const TIRO = 150;                  // hasta dónde llega una Poké Ball
 const SIN_CURA_BALL = 30;          // s que un salvaje que se ha escapado de una Ball sigue alterado: no recupera vida
+const MUNECO_VIDA = 8;             // vida del muñeco de prácticas del pueblo, en veces la de su especie
+export const DEX_MUNECO = 'munieco';   // su "dex": la textura del muñeco de madera (assets/game/pixel/objetos/munieco.png), no una hoja PMD
 const RESPAWN = 40;                // s hasta que vuelve a salir un salvaje en su sitio
 // Al cambiar la hora o el clima (data/aparicion.ts): en cuántos s se cambian los salvajes, a qué distancia de ti como
 // poco (px).
@@ -120,6 +122,7 @@ export interface Luchador {
   ticObjeto?: number; bandaHasta?: number;   // Restos: próximo turno; Banda Focus: hasta cuándo se recarga
   escudo?: { id: string; hasta: number; bloqueo: boolean };   // Protección y familia (§3.5): ventana y si ya bloqueó algo
   leyo?: Lanza;                        // salvaje: el lanzamiento de su rival al que ya decidió si responder con Protección
+  munieco?: boolean; danoTotal?: number;   // el muñeco de prácticas del pueblo (hacerMunieco) y el daño que lleva encajado desde que estaba entero
 }
 
 // Lo que manda cada jugador por la red (scenes/Aventura.ts) para que los demás lo vean.
@@ -268,13 +271,14 @@ export class Mundo {
 
   // ---- Objetos del suelo ----
   private ponerHallazgos(): void {
-    if (!this.mapa.salvajes.length) return;
+    const rondas = this.mapa.salvajes.filter(r => !r.munieco);   // junto al muñeco del pueblo no hay nada que encontrar
+    if (!rondas.length) return;
     const semilla = this.partida.estado.semilla ^ [...this.mapa.id].reduce((h, c) => Math.imul(h, 31) + c.charCodeAt(0) | 0, 7);
     this.sueloSemilla = semilla;
     const r = rng(semilla), puntos: Punto[] = [], lleg = Object.values(this.mapa.llegada).filter(Boolean) as Punto[];
     // Cerca de donde rondan los salvajes (así se puede llegar), lejos de las entradas y unos de otros.
     for (let k = 0; k < 400 && puntos.length < HALLAZGOS; k++) {
-      const s = this.mapa.salvajes[Math.floor(r() * this.mapa.salvajes.length)], a = r() * Math.PI * 2, d = 25 + r() * 50;
+      const s = rondas[Math.floor(r() * rondas.length)], a = r() * Math.PI * 2, d = 25 + r() * 50;
       const q = { x: Math.round(s.x + Math.cos(a) * d), y: Math.round(s.y + Math.sin(a) * d * 0.8) };
       if (!this.pisable(q) || this.agua(q.x, q.y) || lleg.some(l => Math.hypot(l.x - q.x, l.y - q.y) < 90) || puntos.some(o => Math.hypot(o.x - q.x, o.y - q.y) < 140)) continue;
       puntos.push(q);
@@ -413,10 +417,23 @@ export class Mundo {
     l.ronda = r;
     l.natu = this.natuForzada ?? IDS_NATURALEZA[Math.floor(this.rnd() * IDS_NATURALEZA.length)];
     l.tabla = tablaDe(l.natu, this.rnd);
+    if (r.munieco) this.hacerMunieco(l);
     // Uno de los rarísimos de la tabla de la zona (data/aparicion.ts): se avisa, que es todo un acontecimiento.
     const rz = r.fija ? -1 : rarezaDe(this.mapa.id, r.linea, this.cuando().momento);
     if (rz >= RAREZA_AVISO) this.aviso(rz === RAREZA_AVISO ? `Un ${l.nombre} muy raro ronda por aquí` : `¡Un ${l.nombre} rarísimo ronda por aquí!`);
     return l;
+  }
+  // El muñeco de prácticas (pueblo): el de madera de un MMO (pixel art, DEX_MUNECO; su `linea` solo pone los stats
+  // base). De tu nivel, sin tipo (todo le hace daño neutro), con la misma defensa física que especial (la media de las
+  // de su especie) y mucha vida; no se mueve, no pega, no huye, no se captura y al llegar a 0 se pone entero otra vez.
+  // Lleva la cuenta del daño encajado (`danoTotal`, la placa del HUD la enseña) y la borra cuando se cura entero fuera
+  // de combate. Sin hojas de animación: al golpe solo se sacude (el fx de la escena).
+  private hacerMunieco(l: Luchador): void {
+    const nivel = this.partida.activo.nivel, f = this.formaL(l), st = statsDe(f.base, nivel), def = Math.round((st.def + st.spd) / 2);
+    l.munieco = true; l.danoTotal = 0; l.nombre = 'Muñeco de prácticas'; l.nivel = nivel; l.tipos = []; l.movs = []; l.sexo = null;
+    l.dex = DEX_MUNECO; l.escala = 1; l.alto = this.anatomia.alto(DEX_MUNECO);
+    l.stats = { ...st, def, spd: def, hp: st.hp * MUNECO_VIDA }; l.ps = l.stats.hp;
+    l.tabla = { nombre: 'Muñeco', igual: 'quieto', fuerte: 'quieto', debil: 'quieto' };
   }
   // El alfa de la zona: la forma fija, ×1,4, con aura y el triple de vida. Siempre peleón. Si cayó hace menos de
   // 5 minutos (`estado.alfas`, en tiempo real), sale cuando toque.
@@ -888,6 +905,10 @@ export class Mundo {
     const pierde = t.rol === 'jugador' && !!de && this.luchandoCon(de) && t.ps - n < 1;
     if (pierde) n = Math.max(0, Math.floor(t.ps - 1));
     t.ps = Math.max(pierde ? 1 : 0, t.ps - n);
+    if (t.munieco) {
+      t.danoTotal = (t.danoTotal ?? 0) + n;
+      if (t.ps <= 0) { t.ps = t.stats.hp; this.rotulo(t, 'Entero otra vez', 'good', 400); }
+    }
     if (de) t.ultimoCombate = de.ultimoCombate = this.ahora;
     if (de && (de.rol === 'jugador' || de.rol === 'remoto')) (t.golpeadores ??= new Set()).add(de.uid);   // el daño de estados o del clima no cuenta como combate
     if (t.rol === 'jugador' && this.hogar) this.cortarHogar('¡Te han interrumpido!');
@@ -931,7 +952,7 @@ export class Mundo {
   }
   // Un salvaje al que le pegan (o tira de una Ball) reacciona según su naturaleza; `llamado`: se lo pide otro salvaje.
   private provocar(t: Luchador, de: Luchador, llamado = false): void {
-    if (t.rol !== 'salvaje' || t.muerto || (t.modo === 'pelear' && t.rival === de)) return;
+    if (t.rol !== 'salvaje' || t.muerto || t.munieco || (t.modo === 'pelear' && t.rival === de)) return;
     const r = this.reaccionA(t, de);
     const pelear = () => {
       t.modo = 'pelear'; t.rival = de; t.meta = null;
@@ -1243,6 +1264,7 @@ export class Mundo {
     if (this.lanzando) return;
     if (!t || t.rol !== 'salvaje' || t.muerto) { this.aviso('Elige a un salvaje para lanzarle la Poké Ball'); return; }
     if (t.alfa) { this.aviso('Un alfa no se deja capturar: derrótalo'); return; }
+    if (t.munieco) { this.aviso('El muñeco de prácticas no se captura'); return; }
     if (Math.hypot(t.x - p.x, t.y - p.y) > TIRO) { this.aviso('Acércate más para lanzar la Poké Ball'); return; }
     this.partida.gastar(id);
     this.lanzando = true; p.gcd = this.ahora + (p.gcdDura = GCD);
@@ -1298,6 +1320,7 @@ export class Mundo {
   // ---- Inteligencia de los salvajes y de los vecinos ----
   private pensar(l: Luchador, dt: number): void {
     if (l.muerto || l.enBall) return;
+    if (l.munieco) { l.anda = false; return; }   // el muñeco de prácticas no se mueve ni pega
     const quieto = l.estado === 'slp' || l.estado === 'frz' || l.quietoHasta > this.ahora;
     const vel = velAndar(60 + Math.min(60, this.formaL(l).base[5] * 0.3), 75, l.boosts.spe ?? 0) * (l.estado === 'par' ? VEL_PARALIZADO : 1);
     l.anda = false;
@@ -1418,6 +1441,7 @@ export class Mundo {
     // Solo se cura fuera de combate: nadie le persigue, lleva 6 s sin pegar ni recibir, no tiene un estado que dañe y no
     // acaba de escaparse de una Ball.
     if (!enCombate && this.ahora - l.ultimoCombate > 6 && this.ahora > l.sinCuraHasta && !(l.estado && DANO_ESTADO[l.estado]) && !l.semilla && l.ps < l.stats.hp) l.ps = Math.min(l.stats.hp, l.ps + l.stats.hp * CURA_FUERA * dt);
+    if (l.munieco && l.danoTotal && l.ps >= l.stats.hp && this.ahora - l.ultimoCombate > 6) l.danoTotal = 0;   // entero y en paz: la cuenta vuelve a cero
   }
 
   // Bufos y debufos de un luchador: su estado y sus cambios de stats, con la fracción de tiempo que les queda.

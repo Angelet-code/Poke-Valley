@@ -48,6 +48,13 @@ granja sigue en `mapaDibujo.ts`. Capturas: [de día](img/pueblo_v2_dia.jpg), [de
     sembrar bayas cuando el modo aventura las tenga (`MapaAventura.parcelas`);
   - el estanque al lado para regar.
 - **Este, el mercado:** la tienda y el almacén, unidos a la plaza por una calle.
+- **Muñeco de prácticas** (2026-10-17, `MUNECO`): el muñeco de madera de un MMO (arpillera, casco y escudo sobre un
+  poste; pixel art de 30×56, `assets/game/pixel/objetos/munieco.png`, receta en PIPELINE §4), en el césped al sureste
+  de la plaza, junto al camino a la tienda. Es un salvaje fijo con `munieco` (`combate/mundo.ts hacerMunieco`; su
+  `linea`, Sudowoodo, solo pone los stats base): de tu nivel, sin tipo (daño neutro), misma Defensa que Def. Esp. y 8
+  veces la vida de su especie; no se mueve, no pega, no huye, no se captura y al llegar a 0 se pone entero. No tiene
+  hojas PMD: la escena le pone su imagen (`Aventura.vistaMunieco`) y al golpe solo se sacude con el fx. Su placa del
+  HUD lleva la cuenta del daño encajado, que se borra cuando se cura entero tras 6 s sin pegarle. Fijarlo: clic o Tab.
 - **Solares libres** (`SOLARES`): dos trozos de césped al sur, para edificios futuros.
 - **Borde:** dos filas de árboles, con la boca del norte libre. Junto al huerto y al mercado la fila interior se aparta
   para no taparlos.

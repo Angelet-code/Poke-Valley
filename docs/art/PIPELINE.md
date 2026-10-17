@@ -199,6 +199,13 @@ Diffusion son cerrados). Instalados y probados (rutas y recetas en `tools/comfy.
 | Mapas de aldea | `docs/art/mapas/aldea_a/b/c.json` | `tools/map_village.py` (40×30, semillas fijas; terreno + objetos + árboles + rocas + `inicio`) | 3 variantes para elegir |
 | Detalles del suelo | — | — | Pendiente |
 
+- **Muñeco de prácticas** (2026-10-17, `assets/game/pixel/objetos/munieco.png`, 30×56): Flux.1-dev +
+  `Top-Down_Pixel_Art_Flux_Lora_r1` 0.8, 20 pasos, **320²** (paso 4 → sprite de ~70 celdas), semilla 14 de
+  `assets/gen/munieco/` (prompt en `flux.log`: "wooden training dummy… straw-stuffed burlap… round wooden shield and a
+  bucket helmet, like a World of Warcraft target dummy"). `pixel_grid.py --largest --bg-tol 40 --colors 20 --shadow
+  120,20,80` → 30×68; se quitan 12 filas del poste (madera lisa) para dejarlo en 56 → `pixel_clean.py --islands 2
+  --jaggy all --smooth 1` (0 huérfanos, 0 dobles). Las otras semillas (dianas, caras, bolas) quedan en esa carpeta.
+
 ## 5. La maqueta por dentro (`docs/art/maqueta-tiles.html`)
 
 - **Mapa:** `docs/art/mapas/<nombre>.json` (`?mapa=`), terreno en las esquinas de las casillas

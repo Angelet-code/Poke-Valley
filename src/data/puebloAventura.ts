@@ -32,6 +32,7 @@ const R_PLAZA = 78;
 export const TABLON = { x: 440, y: 452 };           // tablón de misiones, al oeste de la hoguera
 export const TENDERO = { x: 838, y: 562 };          // Kecleon, el tendero: delante del mostrador del puesto de la tienda
 export const BAYERO = { x: 712, y: 468 };           // Aipom, el obseso de las bayas: en el césped al este de la plaza, junto al camino a la tienda
+export const MUNECO = { x: 650, y: 585 };           // el muñeco de prácticas (Sudowoodo): césped al sureste de la plaza, junto al camino a la tienda
 export const INICIO: P = [504, 540];                // donde apareces (en la plaza, al sur de la hoguera)
 export const SALIDA_X: [number, number] = [520, 600]; // boca norte del pueblo (al bosque)
 export const SALIDA_ESTE_Y: [number, number] = [314, 374]; // boca este (a la ciudad, 2026-10-16): la calle del norte sigue hasta el borde

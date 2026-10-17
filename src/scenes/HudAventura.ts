@@ -325,7 +325,7 @@ export class HudAventura extends Phaser.Scene {
     const k = `${clave(l.dex)}-${l.dex}`;
     if (mc.clave !== k) {
       mc.clave = k;
-      const tex = this.textures.exists(`${clave(l.dex)}-Idle`) ? `${clave(l.dex)}-Idle` : '__DEFAULT';
+      const tex = this.textures.exists(`${clave(l.dex)}-Idle`) ? `${clave(l.dex)}-Idle` : this.textures.exists(l.dex) ? l.dex : '__DEFAULT';   // el muñeco: su imagen
       mc.cara.setTexture(tex, 0);
       const fr = mc.cara.frame, s = Math.min(1, 22 / Math.max(fr.width, fr.height));
       mc.cara.setScale(S * Math.max(0.5, s));
@@ -369,7 +369,7 @@ export class HudAventura extends Phaser.Scene {
     this.pintarMarco(this.yo, 4, 4, p, p.estado ? NOMBRE_ESTADO[p.estado] : tipos, p.estado ? 0xb03a2e : C.maderaClara, m.nivel >= 100 ? 1 : (m.exp - e0) / Math.max(1, e1 - e0));
     // Objetivo.
     const o = av.objetivo;
-    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.rol === 'remoto' ? `${av.mundo!.luchandoCon(o) ? 'En duelo' : av.mundo!.duelo?.con === o.uid ? (av.mundo!.duelo.fase === 'reto' ? 'Retado' : 'Duelo en…') : 'Otro jugador'}${o.estado ? ` · ${NOMBRE_ESTADO[o.estado]}` : ''}` : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}${this.textoBall(o)}`;
+    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.rol === 'remoto' ? `${av.mundo!.luchandoCon(o) ? 'En duelo' : av.mundo!.duelo?.con === o.uid ? (av.mundo!.duelo.fase === 'reto' ? 'Retado' : 'Duelo en…') : 'Otro jugador'}${o.estado ? ` · ${NOMBRE_ESTADO[o.estado]}` : ''}` : o.munieco ? `Muñeco de prácticas${o.estado ? ` · ${NOMBRE_ESTADO[o.estado]}` : ''} · ${o.danoTotal ? `${o.danoTotal} de daño` : 'pégale'}` : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}${this.textoBall(o)}`;
     this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : av.mundo!.luchandoCon(o) ? 0xb03a2e : o.rol === 'vecino' || o.rol === 'remoto' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_REACCION[av.mundo!.reaccionA(o)], 0.6));
     // Reloj.
     const min = Math.floor(av.partida.estado.minuto) % (24 * 60), h = Math.floor(min / 60), mm = Math.floor(min % 60 / 10) * 10;
