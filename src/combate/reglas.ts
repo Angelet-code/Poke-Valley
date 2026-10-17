@@ -5,7 +5,7 @@ import { LINEAS, expNivel, forma, type Base6, type Linea } from '../data/pokedex
 import { eficacia, getMove, tiposDe, type Boosts, type MoveData, type Stat6, type TypeName } from '../data/movimientos';
 import { firmaAtaque, rangoAtaque } from '../data/lineasAtaque';
 
-export const GCD = 1.5;                  // s: enfriamiento global tras cualquier movimiento (como en el WoW)
+export const GCD = 1;                    // s: enfriamiento global tras cualquier movimiento (como los pícaros del WoW)
 // Ritmo del combate (§3.4): todos los tiempos de los movimientos (lanzamientos, CDs, agotado) se diseñaron con un
 // global de 1,1 s y se alargan en proporción con él.
 export const RITMO = GCD / 1.1;
@@ -53,6 +53,20 @@ export const ZONA_RADIO = 40, ALREDEDOR_RADIO = 50, CONO_LARGO = 90, CONO_ANGULO
 export const VEL_PROYECTIL = 300, ALCANCE_PROYECTIL = ALCANCE_DISTANCIA + 30, RADIO_PROYECTIL = 7;   // px/s, px, px
 const FIRMA_DIRIGIDO = 'Special · 100 % · distancia · objetivo';
 export const dirigido = (m: MoveData) => m.category === 'Special' && firmaAtaque(m).split(' · ').slice(1).join(' · ') === FIRMA_DIRIGIDO;
+// Movilidad (§3.8, fase 1). Carga (la del guerrero del WoW): los de contacto con prioridad (Ataque Rápido, Acua Jet,
+// Ultrapuño…) se lanzan desde lejos y te llevan corriendo hasta el objetivo. Embestida: los que se lanzan con el cuerpo
+// (los que te dañan a ti, Nitrocarga, Plancha…) son un dash hacia donde apuntas que golpea al primero que encuentras.
+// Ida y vuelta (Ida y Vuelta, Voltiocambio): golpea y saltas hacia atrás.
+export const CARGA_ALCANCE = 130, CARGA_VEL = 450, EMBESTIDA_LARGO = 90, EMBESTIDA_VEL = 400, ATRAS_LARGO = 70, ATRAS_VEL = 350;   // px, px/s
+const EMBESTIDAS = new Set(['flamecharge', 'lunge', 'dragonrush', 'headlongrush', 'wildcharge', 'volttackle', 'glaiverush', 'steamroller', 'skullbash', 'rollout', 'spark', 'aquastep']);
+export type Movilidad = 'carga' | 'embestida' | 'atras';
+export function movilidad(m: MoveData): Movilidad | null {
+  if (m.category === 'Status' || !m.flags.includes('contact')) return null;
+  if (m.selfSwitch) return 'atras';
+  if (m.priority > 0) return 'carga';
+  if (m.recoil || EMBESTIDAS.has(m.id)) return 'embestida';
+  return null;
+}
 export function formaArea(m: MoveData): FormaArea | null {
   if (m.category === 'Status') return null;
   if (m.target === 'allAdjacent') return 'alrededor';
@@ -140,7 +154,9 @@ export const celeridad = (velBase: number, etapaSpe = 0) => (0.8 + 0.4 * Math.mi
 // Velocidad al andar (px/s): la de base de cada uno (`vel`) por la Velocidad base y su etapa.
 export const velAndar = (vel: number, velBase: number, etapaSpe = 0) => vel * (0.9 + 0.2 * Math.min(velBase, 150) / 150) * etapaVel(etapaSpe);
 export const alcance = (m: MoveData) => {
-  const fa = formaArea(m);
+  const fa = formaArea(m), mv = movilidad(m);
+  if (mv === 'carga') return CARGA_ALCANCE;
+  if (mv === 'embestida') return EMBESTIDA_LARGO;
   return fa === 'alrededor' ? ALREDEDOR_RADIO : fa === 'cono' ? CONO_LARGO : m.flags.includes('contact') ? ALCANCE_CUERPO : ALCANCE_DISTANCIA;
 };
 // ¿Se lanza sobre otro? (los de estado sobre uno mismo, como Desarrollo, no necesitan objetivo).

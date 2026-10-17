@@ -22,6 +22,7 @@ import { rng } from '../util';
 import { IDS_NATURALEZA, NATURALEZAS, casoDe, tablaDe, type Naturaleza, type Reaccion } from './naturalezas';
 import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, RITMO, NOMBRE_ESTADO, NOMBRE_STAT,
+  ALCANCE_CUERPO, ATRAS_LARGO, ATRAS_VEL, CARGA_ALCANCE, CARGA_VEL, EMBESTIDA_LARGO, EMBESTIDA_VEL, movilidad, type Movilidad,
   ALCANCE_DISTANCIA, ALCANCE_PROYECTIL, RADIO_PROYECTIL, VEL_PROYECTIL, dirigido, ALREDEDOR_RADIO, AREA_VARIOS, CONO_ANGULO, CONO_LARGO, ZONA_RADIO, formaArea, type FormaArea,
   ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
   velAndar, type Clima, type Golpe, type Perfil, type Stats,
@@ -120,7 +121,8 @@ export interface Luchador {
   remoto?: { x: number; y: number; t: number; animN: number };   // a dónde va (lo último que ha llegado de la red) y cuándo llegó
   golpeadores?: Set<string>;           // uids de los jugadores (tú o remotos) que le han hecho daño: se reparten la experiencia
   ticObjeto?: number; bandaHasta?: number;   // Restos: próximo turno; Banda Focus: hasta cuándo se recarga
-  escudo?: { id: string; hasta: number; bloqueo: boolean };   // Protección y familia (§3.5): ventana y si ya bloqueó algo
+  escudo?: { id: string; hasta: number; bloqueo: boolean };
+  dash?: Dash;                         // carga, embestida o salto atrás en curso (§3.8)   // Protección y familia (§3.5): ventana y si ya bloqueó algo
   leyo?: Lanza;                        // salvaje: el lanzamiento de su rival al que ya decidió si responder con Protección
   munieco?: boolean; danoTotal?: number;   // el muñeco de prácticas del pueblo (hacerMunieco) y el daño que lleva encajado desde que estaba entero
 }
@@ -135,6 +137,10 @@ export interface EstadoRemoto {
   vida?: number;                                               // fracción de PS
   enMapa?: number;                                             // s que lleva en este mapa (el que más lleva es su dueño)
 }
+
+// Un desplazamiento de un movimiento (§3.8): carga hasta `obj`, embestida en (dx, dy) o salto atrás. `resta`: px que
+// le quedan; `hasta`: si no ha llegado para entonces, se acaba igual.
+export interface Dash { tipo: Movilidad; id: string; obj: Luchador | null; dx: number; dy: number; resta: number; vel: number; hasta: number }
 
 // Un movimiento dirigido en vuelo (§3.7): sale de `de` hacia (dx, dy) y da al primer enemigo que toca. `h`: a qué altura
 // del suelo va (la del pecho de quien lo lanzó), solo para dibujarlo.
@@ -624,7 +630,15 @@ export class Mundo {
       this.mirarA(l, p);
       punto = p; obj = null;
     }
-    const objetivo = !fa && !dir && necesitaObjetivo(m);
+    // Embestida: hacia donde apuntas (si no, hacia el objetivo); golpea al primero que encuentre.
+    const mv = m ? movilidad(m) : null;
+    if (mv === 'embestida') {
+      const p = punto ?? (yo ? this.apunta : null) ?? (obj && !obj.muerto ? { x: obj.x, y: obj.y } : null);
+      if (!p) { if (yo) this.aviso(`${m.nombre}: apunta con ${this.conMando ? 'el stick derecho' : 'el ratón'}`); return false; }
+      this.mirarA(l, p);
+      punto = p; obj = null;
+    }
+    const objetivo = !fa && !dir && mv !== 'embestida' && necesitaObjetivo(m);
     if (objetivo) {
       if (!obj && yo) obj = this.objetivo = this.salvajes.filter(s => !s.muerto && !s.enBall).sort((a, b) => Math.hypot(a.x - l.x, a.y - l.y) - Math.hypot(b.x - l.x, b.y - l.y))[0] ?? null;
       if (!obj || obj.muerto || obj.enBall) { if (yo) this.aviso(this.conMando ? 'Elige a quién (R2)' : 'Elige a quién (clic en un Pokémon o Tab)'); return false; }
@@ -639,6 +653,16 @@ export class Mundo {
     }
     const pf = perfil(m), k = this.cel(l), blanco = objetivo ? obj! : l;
     l.gcd = this.ahora + (l.gcdDura = GCD / k);
+    // Carga (lejos del objetivo) y embestida: primero el desplazamiento; el golpe sale al llegar (pasoDash).
+    const lejos = mv === 'carga' && objetivo && Math.hypot(obj!.x - l.x, obj!.y - l.y) > ALCANCE_CUERPO + Math.max(8, obj!.alto * 0.3);
+    if (lejos || (mv === 'embestida' && punto)) {
+      const dx = punto ? punto.x - l.x : 0, dy = punto ? punto.y - l.y : 0, d = Math.hypot(dx, dy) || 1;
+      l.dash = lejos ? { tipo: 'carga', id, obj: obj!, dx: 0, dy: 0, resta: CARGA_ALCANCE * 1.5, vel: CARGA_VEL, hasta: this.ahora + 0.8 }
+        : { tipo: 'embestida', id, obj: null, dx: dx / d, dy: dy / d, resta: EMBESTIDA_LARGO, vel: EMBESTIDA_VEL, hasta: this.ahora + 0.6 };
+      l.cd[id] = this.ahora + (l.cdDura[id] = pf.cd / k);
+      l.meta = null;
+      return true;
+    }
     if (pf.lanza !== 'instant') {
       // Lanzado o canalizado: se queda quieto (moverse lo corta) y sale al acabar o, canalizado, por tics.
       const t = pf.t / k;
@@ -668,7 +692,7 @@ export class Mundo {
     // Dirigido: apunta al salir (tú, adonde apuntes ahora; un salvaje, adonde está su rival).
     const apuntar = () => (l.rol === 'jugador' ? this.apunta : l.rival && !l.rival.muerto ? { x: l.rival.x, y: l.rival.y } : null) ?? punto ?? null;
     this.despues(Math.min(0.32, this.anatomia.anim(l.dex, anim)?.golpe ?? 0.2), () => formaArea(m) ? this.lanzarArea(l, id, punto ?? null)
-      : dirigido(m) ? this.disparar(l, id, apuntar()) : this.lanzarMov(l, id, blanco));
+      : dirigido(m) ? this.disparar(l, id, apuntar()) : (this.lanzarMov(l, id, blanco), movilidad(m) === 'atras' && blanco !== l && this.saltarAtras(l, blanco)));
   }
   // Cada paso: la barra de lanzamiento avanza; al llenarse sale el movimiento. Los canalizados pegan por tics.
   private pasoLanza(l: Luchador): void {
@@ -708,6 +732,36 @@ export class Mundo {
   }
   // Se tira el golpe y sus efectos y se pide la animación; lo tirado se aplica cuando la animación llega al impacto
   // (`impacto`) o, si no llega, a los IMPACTO_MAX s.
+  // Ida y vuelta: tras el golpe, un salto hacia atrás (lejos de a quien ha pegado).
+  private saltarAtras(l: Luchador, de: Luchador): void {
+    if (l.muerto) return;
+    const dx = l.x - de.x, dy = l.y - de.y, d = Math.hypot(dx, dy) || 1;
+    l.dash = { tipo: 'atras', id: '', obj: null, dx: dx / d, dy: dy / d, resta: ATRAS_LARGO, vel: ATRAS_VEL, hasta: this.ahora + 0.5 };
+  }
+  // Cada paso de un desplazamiento: en línea recta (una pared lo para). La carga persigue al objetivo y golpea al
+  // llegar a su lado; la embestida golpea al primer enemigo que toca.
+  private pasoDash(l: Luchador, dt: number): void {
+    const d = l.dash!, m = d.id ? getMove(d.id) : undefined;
+    if (l.muerto || l.enBall || this.cambiando || this.ahora > d.hasta) { l.dash = undefined; return; }
+    let ux = d.dx, uy = d.dy;
+    const golpear = (t: Luchador) => { l.dash = undefined; this.mirarA(l, t); this.soltar(l, d.id, t, perfil(m!)); };
+    if (d.tipo === 'carga') {
+      const o = d.obj!;
+      if (o.muerto || o.enBall) { l.dash = undefined; return; }
+      const dist = Math.hypot(o.x - l.x, o.y - l.y);
+      if (dist <= ALCANCE_CUERPO + Math.max(8, o.alto * 0.3) - 4) { golpear(o); return; }
+      ux = (o.x - l.x) / dist; uy = (o.y - l.y) / dist;
+    }
+    const paso = Math.min(d.vel * dt, d.resta), nx = l.x + ux * paso, ny = l.y + uy * paso;
+    if (this.bloqueado(l, nx, ny)) { l.dash = undefined; return; }
+    l.x = nx; l.y = ny; d.resta -= paso; l.anda = true;
+    if (d.tipo !== 'atras') this.mirarA(l, { x: l.x + ux, y: l.y + uy });
+    if (d.tipo === 'embestida') {
+      const t = this.enemigosDe(l).find(o => Math.hypot(o.x - l.x, o.y - l.y) <= ALCANCE_CUERPO * 0.6 + Math.max(6, o.alto * 0.3));
+      if (t) { golpear(t); return; }
+    }
+    if (d.resta <= 0) l.dash = undefined;
+  }
   // Sale un dirigido: un proyectil desde quien lo lanza hacia `p`.
   private disparar(l: Luchador, id: string, p: Punto | null): void {
     if (l.muerto || this.cambiando || !p) return;
@@ -1321,6 +1375,7 @@ export class Mundo {
   private pensar(l: Luchador, dt: number): void {
     if (l.muerto || l.enBall) return;
     if (l.munieco) { l.anda = false; return; }   // el muñeco de prácticas no se mueve ni pega
+    if (l.dash) return;                          // cargando, embistiendo o saltando atrás
     const quieto = l.estado === 'slp' || l.estado === 'frz' || l.quietoHasta > this.ahora;
     const vel = velAndar(60 + Math.min(60, this.formaL(l).base[5] * 0.3), 75, l.boosts.spe ?? 0) * (l.estado === 'par' ? VEL_PARALIZADO : 1);
     l.anda = false;
@@ -1561,7 +1616,7 @@ export class Mundo {
     // Tú.
     const p = this.jugador;
     p.anda = false;
-    if (!p.muerto && !this.cambiando && p.estado !== 'slp' && p.estado !== 'frz' && p.quietoHasta <= this.ahora && (e.vx || e.vy)) {
+    if (!p.muerto && !p.dash && !this.cambiando && p.estado !== 'slp' && p.estado !== 'frz' && p.quietoHasta <= this.ahora && (e.vx || e.vy)) {
       p.anda = this.mover(p, e.vx, e.vy, velAndar(VEL, this.formaL(p).base[5], p.boosts.spe ?? 0) * (p.estado === 'par' ? VEL_PARALIZADO : 1), dt);
       if (p.anda && p.lanza) this.cortarLanza(p);   // moverse corta lo que estés lanzando
       if (p.anim === 'Attack' || p.anim === 'Shoot' || p.anim === 'Charge') p.animHasta = 0;
@@ -1574,7 +1629,7 @@ export class Mundo {
     for (const v of this.vecinos) v.ps = v.stats.hp * v.miembro!.ps;
     for (const l of this.todos()) {
       const reflejo = this.espejo && l.rol === 'salvaje';   // lo lleva el dueño del mapa: aquí solo se mueve hacia su foto
-      if (!reflejo) { this.vivir(l, dt); this.pasoLanza(l); }
+      if (!reflejo) { if (l.dash) this.pasoDash(l, dt); this.vivir(l, dt); this.pasoLanza(l); }
       if (l !== p && !reflejo) this.pensar(l, dt);
       if (!l.muerto && l.anim && this.ahora >= l.animHasta) l.anim = null;
     }

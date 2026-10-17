@@ -23,12 +23,12 @@ import { S, VH, VW } from '../config';
 import { rotulo } from '../entrada/asignacion';
 import { C, FUENTE_PX, FUENTE_TIT, HEX, PANEL, marco, rect, type G } from './UIScene';
 import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
-import { NOMBRE_BAYERO, NOMBRE_TIENDA, VENTA, type Aura, type Aventura, type Luchador } from './Aventura';
+import { NOMBRE_BAYERO, NOMBRE_TIENDA, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES, RAREZAS, SLOTS, colorRareza, slotIdx } from '../combate/objetos';
 import { EVO_OBJETO, LINEAS } from '../data/pokedex';
-import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, necesitaObjetivo, perfil } from '../combate/reglas';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, movilidad, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
 import { NOMBRE_ZONA, ZONAS_MISION, type Mision } from '../combate/misiones';
@@ -53,7 +53,7 @@ const PIX: Record<string, string[]> = {
 const MONEDA = ['..kkk..', '.kyyyk.', 'kyhkyyk', 'kyykyyk', 'kyykyyk', '.kyyyk.', '..kkk..'];
 const COL_MONEDA = { k: 0xc28a2c, y: 0xf2c94c, h: 0xfff2b0 };
 // Lo que dice la tienda de cada cosa.
-const DESC_VENTA: Record<string, string> = { pokeball: 'Para capturar salvajes', superball: 'Captura mejor que la Poké Ball', pocion: 'Cura 20 PS', superpocion: 'Cura 60 PS' };
+const DESC_VENTA: Record<string, string> = { pokeball: 'Para capturar salvajes', superball: 'Captura mejor que la Poké Ball', ultraball: 'La que mejor captura', pocion: 'Cura 20 PS', superpocion: 'Cura 60 PS', hiperpocion: 'Cura 120 PS' };
 const pix = (g: G, x: number, y: number, id: string) => PIX[id].forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') rect(g, PIX_COL[ch], 1, x + i, y + j, 1, 1); }));
 // Marco del alfa (como el de élite del WoW): el sprite pixel art de Aerodactyl (PMD) entero de color tierra
 // (assets/game/pixel/ui/aerodactyl_alfa.png, de assets/gen/pixel/ui_dragon/tierra.py), en la esquinita de arriba a la
@@ -409,7 +409,7 @@ export class HudAventura extends Phaser.Scene {
       if (fr > 0) rect(g, 0x1a1008, 0.55, x, y + CH * (1 - fr), CW, CH * fr);
       if (it && !av.partida.tiene((a as { i: string }).i)) rect(g, 0x1a1008, 0.45, x, y, CW, CH);
       // Número en rojo si el objetivo está lejos para ese movimiento.
-      const lejos = !!(mv && necesitaObjetivo(mv) && formaArea(mv) !== 'zona' && !dirigido(mv) && av.objetivo && Math.hypot(av.objetivo.x - p.x, av.objetivo.y - p.y) > alcance(mv) + Math.max(8, av.objetivo.alto * 0.3));
+      const lejos = !!(mv && necesitaObjetivo(mv) && formaArea(mv) !== 'zona' && !dirigido(mv) && movilidad(mv) !== 'embestida' && av.objetivo && Math.hypot(av.objetivo.x - p.x, av.objetivo.y - p.y) > alcance(mv) + Math.max(8, av.objetivo.alto * 0.3));
       c.tecla.setColor(lejos ? '#ff8a7a' : '#fff6dc');
       if (av.asignando) rect(g, C.elegido, 0.35 + 0.2 * Math.sin(this.time.now / 150), x, y, CW, CH);
       if (i === sobre) { rect(g, C.elegido, 1, x - 1, y - 1, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y + CH, CW + 2, 1); rect(g, C.elegido, 1, x - 1, y, 1, CH); rect(g, C.elegido, 1, x + CW, y, 1, CH); }
@@ -513,7 +513,7 @@ export class HudAventura extends Phaser.Scene {
   // Tienda (F junto a Kecleon): una fila por cosa, con su icono, lo que hace, cuántas llevas y el precio. Lo que no
   // te llega, apagado.
   private pintarTienda(): void {
-    const av = this.av, pa = av.partida;
+    const av = this.av, pa = av.partida, VENTA = av.venta;
     const k = av.panel === 'tienda' ? `${pa.dinero}|${VENTA.map(id => pa.tiene(id)).join()}` : '';
     if (k === this.tiClave) return;
     this.tiClave = k;
@@ -588,7 +588,7 @@ export class HudAventura extends Phaser.Scene {
       // Cómo se lanza y cuánto tarda, con la celeridad de tu Pokémon (docs/GDD-combate.md §3.2).
       const pf = perfil(m), k = this.av.cel(this.av.jugador), seg = (v: number) => `${(Math.round(v / k * 10) / 10).toLocaleString('es')} s`;
       const lanza = pf.lanza === 'cast' ? `Lanzamiento ${seg(pf.t)}` : pf.lanza === 'canal' ? `Canalizado ${seg(pf.t)}` : 'Instantáneo';
-      const extra = [pf.escudo ? `Te protege ${pf.escudo} s · no gasta global · si bloquea algo, CD a la mitad` : '', pf.burst ? 'Burst: instantáneo, guárdalo para el momento' : '', pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
+      const mov = movilidad(m), extra = [mov === 'carga' ? 'Carga: corre hasta el objetivo desde lejos' : mov === 'embestida' ? 'Embestida: hacia donde apuntes, golpea al primero que toque' : mov === 'atras' ? 'Golpea y saltas hacia atrás' : '', pf.escudo ? `Te protege ${pf.escudo} s · no gasta global · si bloquea algo, CD a la mitad` : '', pf.burst ? 'Burst: instantáneo, guárdalo para el momento' : '', pf.interrumpe ? 'Interrumpe lanzamientos' : '', pf.agotado ? `Después, ${pf.agotado} s agotado` : '', pf.lanza !== 'instant' ? 'Moverte lo corta' : ''].filter(Boolean);
       const efectos = descEfecto(m);
       txt = `${m.nombre}\n${datos.join(' · ')}\n${(formaArea(m) ? { zona: 'Área donde apuntes', cono: 'Cono delante de ti', alrededor: 'Área alrededor de ti' }[formaArea(m)!] : null) ?? (m.flags.includes('contact') ? 'Cuerpo a cuerpo' : dirigido(m) ? 'Dirigido: hacia donde apuntes' : necesitaObjetivo(m) ? 'A distancia' : 'Sobre ti')} · ${lanza} · ${pf.cd > GCD ? `se recarga en ${seg(pf.cd)}` : 'sin recarga'}${extra.length ? `\n${extra.join(' · ')}` : ''}${efectos.length ? `\n${efectos.join('\n')}` : ''}`;
     } else txt = `${ITEMS[a.i]?.nombre ?? a.i} (${this.av.partida.tiene(a.i)})\n${ITEMS[a.i]?.tipo === 'pokeball' ? 'Lánzala al objetivo: cuanto más débil esté, más fácil' : ITEMS[a.i]?.cura ? `Te cura ${ITEMS[a.i]!.cura} PS` : 'Te cura un poco'}`;

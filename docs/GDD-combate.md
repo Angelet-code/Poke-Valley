@@ -54,7 +54,7 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
     Cinta Focus (10 %), Vidasfera (×1,3 y 1/10 por golpe), Cinta Fuerte y Gafas Especiales (×1,1), Cinta Experto
     (×1,2 supereficaz), Periscopio (+1 crítico), Campana Concha (1/8 del daño), Casco Dentado (1/6 al que toca) y
     uno por tipo (Carbón, Agua Mística…: ×1,2). Iconos de Pokémon Colleja (`assets/game/pixel/items/equipables/`).
-- **Enfriamientos y lanzamientos**: global de 1,5 s (§3.4); cada movimiento es instantáneo, lanzado o canalizado y tiene
+- **Enfriamientos y lanzamientos**: global de 1 s (§3.4); cada movimiento es instantáneo, lanzado o canalizado y tiene
   su enfriamiento según el modelo de §3.2 (`perfil()` en `reglas.ts`). Todo se acorta con la celeridad (Velocidad).
   La casilla se oscurece mientras se recarga.
 - **Alcance**: 30 px para los de contacto y 150 px para el resto. El número de la casilla se pone rojo si el
@@ -261,17 +261,18 @@ Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; 
 - **Suelo de CD** (`CD_MIN` = 6 s × ritmo): un movimiento es relleno (sin CD) o tiene un CD que se note.
 - **Área con CD propio** (`CD_AREA` = 8 s × ritmo): Terremoto, Onda Ígnea, Ventisca, Ácido… a varios rinden más.
 - Coste: los cuerpo a cuerpo flojos con CD rinden menos (Mordisco 44 → 40 de potencia/s); los lanzados no cambian.
-- **Ritmo de WoW** (`GCD` = 1,5 s, `RITMO` = 1,5 / 1,1 en `reglas.ts`): todos los tiempos de los movimientos se
-  alargan en proporción (lanzamientos, CDs, agotado, el CD del cortado). Lo que rinde cada uno queda igual en
-  proporción, pero todo pega un 27 % menos por segundo: los combates duran más. Ahora: lanzados 2-4,1 s (Lanzallamas
-  2,5 s, Rayo Solar 3,4 s), canalizados ~2,4 s, CD mínimo 8,2 s, áreas 10,9 s, agotado 2,7 s.
+- **Ritmo** (`GCD` y `RITMO` = GCD / 1,1 en `reglas.ts`): todos los tiempos de los movimientos van en proporción al
+  global (lanzamientos, CDs, agotado, el CD del cortado), porque el relleno solo lo frena el global: si el global baja
+  y lo demás no, el relleno rinde más que todo. Probado con 1,5 s (2026-10-17, a lo WoW); **ahora 1 s** (como los
+  pícaros del WoW): lanzados 1,4-2,7 s (Lanzallamas 1,6 s, Rayo Solar 2,3 s), canalizados ~1,6 s, CD mínimo 5,5 s,
+  áreas 7,3 s, agotado 1,8 s, Protección 13,6 s.
 - Sin hacer: CDs de burst de 1-2 min. Con la potencia fija, un CD largo solo debilita el movimiento.
 
 ### 3.5 Protección y burst (2026-10-17)
 - **Protección y familia** (`ESCUDO` en `reglas.ts`; `bloquea` en `mundo.ts`): al pulsarla, una ventana corta en
   la que los golpes no te hacen nada (Protección 0,9 s, Detección 1,4 s). **No gasta global** y corta lo que
   estuvieras lanzando: se usa para reaccionar, al ver acabar la barra de un salvaje o su área roja en el suelo.
-  - CD de sus PP: 15 s × ritmo con 10 PP (Protección 20,5 s), × √(10/PP) con menos (Detección 29 s). Si bloquea algo,
+  - CD de sus PP: 15 s × ritmo con 10 PP (Protección 13,6 s con el global de 1 s), × √(10/PP) con menos. Si bloquea algo,
     el CD que le queda baja a la mitad: acertar el momento compensa; pulsarla a ciegas, no.
   - Variantes, al que te toca con contacto: Barrera Espinosa (1/8 de su vida), Búnker (veneno), Baluarte Ardiente
     (quemadura), Escudo Real (−1 Ataque), Obstrucción (−2 Defensa), Telatrampa (−1 Velocidad).
@@ -325,6 +326,23 @@ habilidades con dirección del LoL (`dirigido` en `reglas.ts`; `disparar` y `pas
   nadie, falla. La animación del movimiento sale de donde dio.
 - Se pueden esquivar: un salvaje apunta a donde estás cuando lo suelta. Un Ascuas a 140 px tarda ~0,5 s en llegar.
 - Se ve una bola del color del tipo con estela. En el multijugador, los demás ven el impacto, no el vuelo.
+
+### 3.8 Movilidad (2026-10-17; fase 1)
+Al cuerpo a cuerpo le faltaba movilidad. Sale de los datos (`movilidad` en `reglas.ts`; `pasoDash` en `mundo.ts`):
+- **Carga** (la del guerrero del WoW): los de contacto con prioridad (Ataque Rápido, Velocidad Extrema, Acua Jet,
+  Ultrapuño, Puño Bala, Sombra Vil, Sorpresa, Golpe Bajo). Con objetivo a menos de 130 px, corres hasta él a 450 px/s
+  y el golpe sale al llegar; si ya estás a su lado, golpea sin más.
+- **Embestida**: los de contacto que te dañan (Doble Filo, Envite Ígneo, Pájaro Osado, Testarazo…) y los que se
+  lanzan con el cuerpo (Nitrocarga, Plancha, Rodar, Chispa, Carga Dragón, Arremetida…). Dash de 90 px a 400 px/s hacia
+  donde apuntas (ratón o stick derecho; si no, hacia el objetivo): golpea al primer enemigo que toca y te paras. Si no
+  toca a nadie, solo te mueves. Una pared lo para.
+- **Ida y vuelta** (Ida y Vuelta): golpea y saltas 70 px hacia atrás, lejos de a quien pegaste.
+- Mientras dura, no controlas el movimiento. El CD se pone al empezar. Los salvajes los usan igual (te cargan desde
+  130 px). En la ficha del movimiento se dice cuál es.
+- Siguientes fases (propuesta): saltos con caída en área (Patada Salto Alta, Pisotón), desaparecer (Vuelo, Excavar),
+  empujes (Cola Dragón, Llave Giro, Remolino), atrapar y ralentizar (Atadura, Bucle Arena, Viento Hielo),
+  contraataques (Contraataque, Manto Espejo, Golpe Bajo solo si el rival lanza) y aperturas (Sorpresa: aturde al
+  empezar el combate; Amago: rompe Protección).
 
 ## 4. Captura
 - La Poké Ball se lanza al objetivo hasta 150 px. Vuela, el Pokémon entra, la Ball se mueve tres veces y se queda

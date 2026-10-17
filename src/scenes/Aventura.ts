@@ -90,7 +90,7 @@ export const TIENDA_CERCA = 46;
 // una para entregar.
 export const DEX_BAYERO = '0190', NOMBRE_BAYERO = 'Aipom';
 export const BAYERO_CERCA = 54;
-// Lo que vende, por orden (precios de data/items.ts).
+// Lo que vende el del pueblo, por orden (precios de data/items.ts); cada zona puede traer su lista (MapaAventura.tienda.venta).
 export const VENTA = ['pokeball', 'superball', 'pocion', 'superpocion'];
 const ICONO_TIENDA = [
   '...d...d...',
@@ -260,7 +260,7 @@ export class Aventura extends Phaser.Scene {
     for (const r of this.mapa.salvajes) if (!r.munieco) formas.push(formaDe(r.linea, r.nivel).dex);   // el muñeco no es un Pokémon
     for (const nv of niveles) for (const l of tabla) formas.push(formaDe(l, nv).dex);
     formas.push(DEX_VUELO);
-    if (this.mapa.tienda) formas.push(DEX_TIENDA);
+    if (this.mapa.tienda) formas.push(this.dexTendero);
     if (this.mapa.bayero) formas.push(DEX_BAYERO);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
@@ -505,15 +505,19 @@ export class Aventura extends Phaser.Scene {
     for (const o of [sombra, placa, icono]) o.resetPipeline();
     this.vuelo = { x, y, spr, sombra, placa, icono, fila: 0 };
   }
-  // El tendero (Kecleon) en su sitio del pueblo, con su nombre, «‹Tienda›» y la bolsa encima; su huella se suma al mundo.
+  // El tendero de la zona: Kecleon, o el Kecleon morado (shiny) de la ciudad. Lo que vende: su lista o la del pueblo.
+  get dexTendero(): string { return idSprite(DEX_TIENDA, this.mapa.tienda?.shiny); }
+  get venta(): string[] { return this.mapa.tienda?.venta ?? VENTA; }
+  // El tendero (Kecleon) en su sitio, con su nombre, «‹Tienda›» y la bolsa encima; su huella se suma al mundo.
   private ponerTendero(bloques: Bloque[]): void {
     const t = this.mapa.tienda;
     if (!t) return;
-    const { x, y } = t, an = ancla(DEX_TIENDA), ancho = Math.max(10, Math.min(30, an.ancho * 0.75));
+    const dex = this.cargado(this.dexTendero);
+    const { x, y } = t, an = ancla(dex), ancho = Math.max(10, Math.min(30, an.ancho * 0.75));
     const nuevo: Bloque = { x, y: y + 2, w: 18, h: 8, rombo: true };
     this.mundo!.anadirBloques([nuevo]); bloques.push(nuevo);
     const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
-    poner(spr, DEX_TIENDA, 'Idle', 0);
+    poner(spr, dex, 'Idle', 0);
     const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
     const placa = this.add.text(x, y - an.alto - 2, `${NOMBRE_TIENDA}
 ‹Tienda›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#9be38a', stroke: '#16301a', strokeThickness: 2 * S, align: 'center' })
@@ -530,13 +534,13 @@ export class Aventura extends Phaser.Scene {
     v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2.5 + 1)) * 3).setVisible(this.panel !== 'tienda');
     const d = Math.hypot(p.x - v.x, p.y - v.y);
     const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
-    if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_TIENDA, 'Idle', fila); }
+    if (fila !== v.fila) { v.fila = fila; poner(v.spr, this.cargado(this.dexTendero), 'Idle', fila); }
     if (this.panel === 'tienda' && d > TIENDA_CERCA + 30) this.panel = null;
   }
   // Comprar en la tienda (clic en el HUD): `n` del objeto, si llega el dinero.
   comprar(id: string, n = 1): void {
     const it = ITEMS[id];
-    if (!it || this.panel !== 'tienda' || !VENTA.includes(id)) return;
+    if (!it || this.panel !== 'tienda' || !this.venta.includes(id)) return;
     if (!this.partida.comprar(id, it.precio, n)) { this.aviso(`No te llega: ${it.nombre} ×${n} cuesta ${it.precio * n} Pokécoins`); return; }
     this.guardar();
     this.aviso(`Compras ${it.nombre} ×${n} por ${it.precio * n} Pokécoins`);

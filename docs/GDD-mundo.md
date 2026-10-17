@@ -67,12 +67,16 @@ edificio, seto, la fuente y las farolas como piezas sueltas ([ARCANE.md](art/ARC
 `data/mundo.ts`, casilla 1,1, donde estaba el pantano): la calle del oeste lleva a la cantera, la del este al pantano,
 la del norte a las ruinas y el puente del sur al lago (que tiene una boca al norte). Sin salvajes. La boca este del
 pueblo sigue abierta pero ya no sale a ningún sitio.
+Servicios (2026-10-17): el **tablón de misiones** a la derecha del punto de vuelo (el mismo tablón que el del pueblo: las
+misiones son globales), el **Kecleon morado** (shiny; paleta a mano en `src/data/gen/shiny.json`) en la acera de la tienda
+morada, que vende lo del pueblo y además Ultra Balls e Hiperpociones (`VENTA_CIUDAD`; cada zona puede traer su lista en
+`MapaAventura.tienda.venta`), y el **patio de prácticas**: cinco muñecos en el césped al sureste de la plaza.
 
 ### Formato de una zona (`MapaAventura`)
 `id`, `nombre`, `lema` (lo que dice el rótulo), `bienvenida` (aviso al entrar), `datos` (suelo: 0 césped, 1 tierra o
 arena, 2 losas, 3 agua), `colocados` (elementos del catálogo por id), `llegada` (dónde apareces según de dónde vienes,
 con la dirección), `salidas` (rectángulos del borde y a qué zona llevan), `salvajes` (especie, nivel y sitio) y, si
-tiene, `alfa` (línea, forma, nivel y sitio) y `tablon` (pueblo).
+tiene, `alfa` (línea, forma, nivel y sitio), `tablon` (pueblo y ciudad) y `tienda` (sitio del Kecleon, su lista `venta` y si es `shiny`).
 
 Para añadir una zona: escribir su generador (o un mapa a mano), añadirla a `MapaId` y a `crearMapa`, y abrir una salida
 en la zona vecina.

@@ -44,7 +44,18 @@ const PIEZAS: [string, number, number, number?, boolean?][] = [
   // Objetos pequeños (kit de la ciudad): carrito, barriles, papeleras, buzón, maceta.
   ['carro', 402, 428, 0.6], ['cajas_barriles', 484, 404, 0.8], ['papelera', 261, 492], ['papelera', 522, 800],
   ['buzon', 1216, 380], ['maceta', 602, 356],
+  // El tablón de misiones (2026-10-17), a la derecha del punto de vuelo (VUELO), en el césped antes de la acera.
+  ['tablon', 628, 430],
 ];
+// El punto de vuelo, en el césped al sur de la tienda; el tablón, a su derecha (PIEZAS).
+const VUELO = [560, 425], TABLON = [628, 430];
+// El Kecleon morado (shiny), en la acera delante de la tienda morada: vende lo del pueblo y además Ultra Balls e
+// Hiperpociones (el de los objetos raros de Mystery Dungeon).
+const TENDERO = [452, 862];
+export const VENTA_CIUDAD = ['pokeball', 'superball', 'ultraball', 'pocion', 'superpocion', 'hiperpocion'];
+// El patio de prácticas (2026-10-17): cinco muñecos en el césped al sureste de la plaza, entre la acera y el cobertizo
+// (combate/mundo.ts hacerMunieco: quietos, sin captura, no caen).
+const MUNECOS = [[915, 612], [988, 640], [915, 690], [988, 718], [950, 778]];
 // El canal y su muro, a los dos lados del puente (706-832), que baja hasta el borde sur y sale al lago.
 const CANAL = [rect(0, 888, 706, 1152), rect(832, 888, 1536, 1152)];
 
@@ -66,8 +77,10 @@ export function ciudad(): MapaAventura {
       { x0: W - 14, y0: 450 * K, x1: W, y1: 498 * K, a: 'pantano', texto: 'Al pantano' },
       { x0: 722 * K, y0: 0, x1: 814 * K, y1: 14, a: 'ruinas', texto: 'A las ruinas' },
       { x0: 706 * K, y0: H - 14, x1: 832 * K, y1: H, a: 'lago', texto: 'Al lago' },
-    ], salvajes: [],
-    vuelo: { x: 560 * K, y: 425 * K },
+    ], salvajes: MUNECOS.map(([x, y]) => ({ linea: 'sudowoodo', nivel: 10, x: x * K, y: y * K, fija: true, munieco: true })),
+    vuelo: { x: VUELO[0] * K, y: VUELO[1] * K },
+    tablon: { x: TABLON[0] * K, y: TABLON[1] * K },
+    tienda: { x: TENDERO[0] * K, y: TENDERO[1] * K, shiny: true, venta: VENTA_CIUDAD },
   };
 }
 

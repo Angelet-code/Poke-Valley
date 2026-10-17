@@ -30,6 +30,9 @@ export interface Pavimento { tex: string; x: number; y: number; w: number; h: nu
 export type Poligono = [number, number][];
 export interface Pintado { tex: string; k: number; tapas: { poli: Poligono; base: number }[]; muros: Poligono[]; luces: [number, number, number][] }
 export interface Punto { x: number; y: number }
+// El tendero de una zona (Kecleon): dónde está, lo que vende (si no, lo del pueblo, scenes/Aventura.ts VENTA) y si es el
+// Kecleon morado (shiny), el de los objetos raros de Mystery Dungeon.
+export interface Tienda extends Punto { venta?: string[]; shiny?: boolean }
 export interface Llegada extends Punto { dir: number }   // dir: fila del sprite (0 abajo, 2 derecha, 4 arriba, 6 izquierda)
 export interface Salida { x0: number; y0: number; x1: number; y1: number; a: MapaId; texto: string }
 // Un salvaje en su sitio. `fija`: siempre la misma especie (la rareza del rincón secreto); si no, al reaparecer se
@@ -53,7 +56,7 @@ export interface MapaAventura {
   alfa?: Alfa;
   clima?: ClimaBase;              // clima de la zona (combate/mundo.ts: se sortea por tramos)
   tablon?: Punto;                 // el tablón de misiones (pueblo): F a su lado
-  tienda?: Punto;                 // el tendero (pueblo): F a su lado abre la tienda (Poké Balls y pociones)
+  tienda?: Tienda;                // el tendero: F a su lado abre la tienda (Poké Balls y pociones; la ciudad vende más)
   bayero?: Punto;                 // Aipom, el obseso de las bayas (pueblo): F a su lado, su cadena de misiones de bayas
   vuelo?: Punto;                  // dónde va el volador (en su rellano); si no, Aventura le busca sitio junto a la entrada
   rellano?: Punto;                // centro del rellano de vuelo (data/rellano.ts): sin detalles encima
