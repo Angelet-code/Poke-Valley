@@ -280,6 +280,13 @@ export class HudAventura extends Phaser.Scene {
     return key;
   }
   // Marco de un luchador: cara (primer fotograma de su Idle de frente), nombre, nivel, vida y una línea de abajo.
+  // «· Ball 12 %»: lo que tiene de quedarse en la Ball de tu barra (la primera; si no llevas, la Poké Ball), ahora mismo.
+  private textoBall(o: Luchador): string {
+    if (o.rol !== 'salvaje' || o.alfa) return '';
+    const b = this.av.partida.activo.barra.find((a): a is { i: string } => !!a && 'i' in a && ITEMS[a.i]?.tipo === 'pokeball');
+    const id = b?.i ?? 'pokeball';
+    return ` · ${ITEMS[id]?.nombre ?? 'Ball'} ${Math.round(this.av.mundo!.probBall(o, id) * 100)} %`;
+  }
   private pintarMarco(mc: Marco, x: number, y: number, l: Luchador | null, sub: string, colorSub: number, exp?: number): void {
     const g = mc.g, dy = l?.alfa ? ALFA_DY : 0;
     // El de un alfa baja (sitio para Aerodactyl): se mueve todo lo que se creó con el marco.
@@ -358,7 +365,7 @@ export class HudAventura extends Phaser.Scene {
     this.pintarMarco(this.yo, 4, 4, p, p.estado ? NOMBRE_ESTADO[p.estado] : tipos, p.estado ? 0xb03a2e : C.maderaClara, m.nivel >= 100 ? 1 : (m.exp - e0) / Math.max(1, e1 - e0));
     // Objetivo.
     const o = av.objetivo;
-    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.rol === 'remoto' ? `${av.mundo!.luchandoCon(o) ? 'En duelo' : av.mundo!.duelo?.con === o.uid ? (av.mundo!.duelo.fase === 'reto' ? 'Retado' : 'Duelo en…') : 'Otro jugador'}${o.estado ? ` · ${NOMBRE_ESTADO[o.estado]}` : ''}` : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}`;
+    const sub = !o ? '' : o.rol === 'vecino' ? 'De tu equipo · F para ser él' : o.rol === 'remoto' ? `${av.mundo!.luchandoCon(o) ? 'En duelo' : av.mundo!.duelo?.con === o.uid ? (av.mundo!.duelo.fase === 'reto' ? 'Retado' : 'Duelo en…') : 'Otro jugador'}${o.estado ? ` · ${NOMBRE_ESTADO[o.estado]}` : ''}` : o.estado ? NOMBRE_ESTADO[o.estado] : o.modo === 'pelear' ? (o.rival?.rol === 'remoto' ? `Ataca a ${o.rival.nombre}` : '¡Te ataca!') : `${o.tabla.nombre} · ${NOMBRE_REACCION[av.mundo!.reaccionA(o)]}${this.textoBall(o)}`;
     this.pintarMarco(this.obj, Math.round(VW / 2 - 64), 4, o, sub, !o ? 0 : av.mundo!.luchandoCon(o) ? 0xb03a2e : o.rol === 'vecino' || o.rol === 'remoto' ? 0x3f6ea8 : o.modo === 'pelear' ? 0xb03a2e : oscurecer(COLOR_REACCION[av.mundo!.reaccionA(o)], 0.6));
     // Reloj.
     const min = Math.floor(av.partida.estado.minuto) % (24 * 60), h = Math.floor(min / 60), mm = Math.floor(min % 60 / 10) * 10;

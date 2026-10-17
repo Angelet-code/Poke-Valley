@@ -33,6 +33,7 @@ const ANCHO = 9;                   // medio ancho del cuerpo contra paredes
 const ANCHO_NPC = 6;               // el de los demás Pokémon (salvajes y vecinos)
 const CUBO = 64;                   // px de lado de los cubos de colisión
 const TIRO = 150;                  // hasta dónde llega una Poké Ball
+const SIN_CURA_BALL = 30;          // s que un salvaje que se ha escapado de una Ball sigue alterado: no recupera vida
 const RESPAWN = 40;                // s hasta que vuelve a salir un salvaje en su sitio
 // Al cambiar la hora o el clima (data/aparicion.ts): en cuántos s se cambian los salvajes, a qué distancia de ti como
 // poco (px).
@@ -107,6 +108,7 @@ export interface Luchador {
   natu: string; tabla: Naturaleza; aguante: number;   // naturaleza (combate/naturalezas.ts), su tabla y golpes encajados (Aguanta)
   modo: 'pasear' | 'huir' | 'pelear' | 'volver'; casa: Punto; meta: Punto | null; espera: number;
   huirHasta: number; ultimoCombate: number; rival: Luchador | null;
+  sinCuraHasta: number;                // hasta cuándo no recupera vida fuera de combate (tras escaparse de una Ball)
   muerto: boolean; enBall: boolean;
   ruta: Punto[] | null; rutaA: Punto | null; rutaT: number; atasco: number;   // camino que sigue (navegacion.ts), hacia dónde y cuándo se calculó
   forma?: string;                      // forma fija (el alfa); si no, la de su nivel
@@ -395,7 +397,7 @@ export class Mundo {
       stats, ps: stats.hp, boosts: {}, boostHasta: {}, estado: null, estadoHasta: 0, ticEstado: 0, toxN: 0,
       x, y, dir: 0, anda: false, alto: Math.min(ALTO_MAX, as * escala),
       movs: miembro ? miembro.movs : movsHasta(f.id, nivel), cd: {}, gcd: 0, cdDura: {}, gcdDura: GCD, lanza: null, anim: null, animHasta: 0, animN: 0, quietoHasta: 0,
-      natu: 'fuerte', tabla: NATURALEZAS.fuerte, aguante: -99, modo: 'pasear', casa: { x, y }, meta: null, espera: rnd() * 2, huirHasta: 0, ultimoCombate: -99, rival: null,
+      natu: 'fuerte', tabla: NATURALEZAS.fuerte, aguante: -99, modo: 'pasear', casa: { x, y }, meta: null, espera: rnd() * 2, huirHasta: 0, ultimoCombate: -99, rival: null, sinCuraHasta: 0,
       muerto: false, enBall: false, ruta: null, rutaA: null, rutaT: -99, atasco: 0, forma, escala, golpeAlfa: 0, shiny: sh,
       sexo: miembro ? miembro.sexo ?? null : tirarSexo(f.id, rnd),
     };
@@ -1218,19 +1220,32 @@ export class Mundo {
       if (this.espejo) { this.miBall = t.uid; this.salir({ tipo: 'ball', a: t.uid, dentro: true }); }
       this.despues(MENEOS_BALL, () => {
         this.lanzando = false;
-        const atrapa = ESPECIES[t.linea]?.atrapa ?? 0.3, ok = this.rnd() < probCaptura(atrapa, BALL[id] ?? 1, t.ps, t.stats.hp, t.estado);
+        if (t.muerto) { this.emitir({ tipo: 'ballFin', n, ok: null }); if (this.miBall === t.uid) this.miBall = null; return; }   // ha caído mientras tanto (otro jugador)
+        const prob = this.probBall(t, id), ok = this.rnd() < prob;
         this.emitir({ tipo: 'ballFin', n, ok });
         if (this.miBall === t.uid) { this.miBall = null; this.salir({ tipo: 'ball', a: t.uid, dentro: false, ok }); }
         if (ok) this.capturado(t, id);
         else {
-          t.enBall = false;
+          this.escapaDeBall(t, p);
           if (!this.objetivo) this.objetivo = t;   // si se escapa, sigues con él fijado
           this.emitir({ tipo: 'destello', uid: t.uid, ms: 200 });
-          this.aviso(`¡${t.nombre} ha salido de la ${ITEMS[id]?.nombre ?? 'Ball'}!`);
-          this.provocar(t, p);
+          this.aviso(`¡${t.nombre} ha salido de la ${ITEMS[id]?.nombre ?? 'Ball'}! (tenías un ${Math.round(prob * 100)} %)`);
         }
       });
     });
+  }
+  // Probabilidad de que un salvaje se quede en esa Ball ahora mismo (reglas.ts probCaptura); la placa del HUD la enseña.
+  probBall(t: Luchador, ball: string): number {
+    if (t.alfa) return 0;
+    return probCaptura(ESPECIES[t.linea]?.atrapa ?? 0.3, BALL[ball] ?? 1, t.ps, t.stats.hp, t.estado);
+  }
+  // Se escapa de la Ball: sale alterado (no recupera vida en SIN_CURA_BALL s, aunque huya o pasee) y reacciona
+  // según su naturaleza. Así lo que le has bajado no se pierde si falla el primer intento.
+  private escapaDeBall(t: Luchador, de: Luchador): void {
+    t.enBall = false;
+    t.sinCuraHasta = this.ahora + SIN_CURA_BALL;
+    t.ultimoCombate = de.ultimoCombate = this.ahora;
+    this.provocar(t, de);
   }
   private capturado(t: Luchador, ball: string): void {
     t.muerto = true;
@@ -1327,7 +1342,7 @@ export class Mundo {
 
   // Estados, cambios de stats que caducan y vida que vuelve fuera de combate.
   private vivir(l: Luchador, dt: number): void {
-    if (l.muerto) return;
+    if (l.muerto || l.enBall) return;   // dentro de la Ball no le pasa nada (ni el veneno lo debilita ahí)
     const enCombate = l.rol === 'jugador' ? this.salvajes.some(s => s.modo === 'pelear' && s.rival === l && !s.muerto) : l.modo === 'pelear';
     if (l.estado) {
       if (this.ahora > l.estadoHasta) this.curarEstado(l);
@@ -1365,8 +1380,9 @@ export class Mundo {
       l.ticObjeto = this.ahora + TURNO;
     }
     for (const [s, h] of Object.entries(l.boostHasta) as [Stat6, number][]) if (this.ahora > h) { delete l.boosts[s]; delete l.boostHasta[s]; }
-    // Solo se cura fuera de combate: nadie le persigue, lleva 6 s sin pegar ni recibir y no tiene un estado que dañe.
-    if (!enCombate && this.ahora - l.ultimoCombate > 6 && !(l.estado && DANO_ESTADO[l.estado]) && !l.semilla && l.ps < l.stats.hp) l.ps = Math.min(l.stats.hp, l.ps + l.stats.hp * CURA_FUERA * dt);
+    // Solo se cura fuera de combate: nadie le persigue, lleva 6 s sin pegar ni recibir, no tiene un estado que dañe y no
+    // acaba de escaparse de una Ball.
+    if (!enCombate && this.ahora - l.ultimoCombate > 6 && this.ahora > l.sinCuraHasta && !(l.estado && DANO_ESTADO[l.estado]) && !l.semilla && l.ps < l.stats.hp) l.ps = Math.min(l.stats.hp, l.ps + l.stats.hp * CURA_FUERA * dt);
   }
 
   // Bufos y debufos de un luchador: su estado y sus cambios de stats, con la fracción de tiempo que les queda.
@@ -1647,9 +1663,8 @@ export class Mundo {
     if (this.espejo || !t || t.muerto) return;
     if (dentro) { t.enBall = true; t.meta = null; if (this.objetivo === t) this.objetivo = null; return; }
     if (ok) { t.muerto = true; this.quitar(t); this.reaparecer(t.ronda); return; }
-    t.enBall = false;
     const de = this.luchador(deUid);
-    if (de) this.provocar(t, de);
+    if (de) this.escapaDeBall(t, de); else { t.enBall = false; t.sinCuraHasta = this.ahora + SIN_CURA_BALL; }
   }
   recibirClima(c: Clima): void { if (!this.espejo) this.ponerClima(c); }
   // El dueño avisa de que ha caído un salvaje al que le pegaste: tu parte de experiencia.

@@ -297,8 +297,8 @@ Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; 
 - Dentro de los paneles (K, I, tienda, misiones) sigue haciendo falta el ratón: pendiente navegarlos con el mando.
 - **Configurable**: en el título, «Mando» (`scenes/ConfigMando.ts`): lista de acciones con su botón; la marcada se reasigna
   pulsando el botón en el mando (manteniendo «más» va a la segunda capa; un botón solo puede estar en una acción).
-  Rótulos de las caras por disposición (automática por el nombre del mando, o Xbox / Switch / PlayStation: en un mando
-  de Switch el botón de abajo se llama B). Se guarda en localStorage `pokemon-valley/mando` (`src/entrada/asignacion.ts`).
+  Tipo de mando (Automático por el nombre del mando, Xbox, Nintendo, PlayStation): elegirlo pone sus botones por defecto
+  (en Nintendo, A = derecha acepta y B = abajo cancela) y los nombres de sus caras; «Por defecto» (R) los vuelve a poner. Se guarda en localStorage `pokemon-valley/mando` (`src/entrada/asignacion.ts`).
   La cruceta se lee de los botones 12-15 y, en los mandos que Windows expone sin disposición standard, del "hat" (eje 9).
 - **Rótulos**: cuando lo último que se tocó fue el mando (`Aventura.conMando`, `mando.tUso` contra el último movimiento
   del ratón), la barra, la columna de ayuda, el pie del mapa y los avisos nombran los botones (`src/entrada/rotulos.ts`);
@@ -312,7 +312,18 @@ Comparado con el WoW: el global (1,1 s) y los lanzados (1,5-2,8 s) están bien; 
   - `atrapa` está en `data/especies.ts`, entre 0,1 y 0,6.
   - Las Balls multiplican así: Poké ×1, Super ×1,5, Ultra ×2; la Master no falla.
   - A vida llena, la probabilidad es un tercio de la que tiene casi debilitado.
-- Si sale de la Ball, reacciona según su naturaleza (§3, Naturaleza).
+- La placa del objetivo dice lo que tiene de quedarse ahora mismo («· Poké Ball 12 %», con la primera Ball de tu
+  barra), y el aviso al escaparse repite el porcentaje que tenías, para que se vea que hay que bajarle la vida o
+  dormirlo.
+- Si sale de la Ball, reacciona según su naturaleza (§3, Naturaleza) y **sale alterado: no recupera vida durante
+  30 s** (`SIN_CURA_BALL`), aunque huya o se ponga a pasear. Antes se curaba a los 6 s de quedarse tranquilo y, si
+  fallaba el primer intento, las siguientes Balls iban a vida llena (un tercio de probabilidad): por eso parecía que
+  «si no lo capturas a la primera, ya no». Si vuelve a su sitio por la correa (más de 330 px), sí se cura.
+- Dentro de la Ball no le pasa nada (ni el veneno ni el clima lo debilitan). Si aun así cae mientras tanto (otro
+  jugador), la Ball se pierde sin más.
+- Orientación (Poké Ball): a vida llena, entre un 4 % (`atrapa` 0,1) y un 25 % (0,6); casi debilitado, entre un
+  12 % y un 75 %; dormido o paralizado, ×1,5. Un Growlithe (0,13) a vida llena pide unas 18 Balls de media; con
+  1 PS, 6.
 - Si se queda, entra en tu equipo con su nivel y su vida y aparece en el pueblo.
 - Empiezas con 10 Poké Balls y 3 Bayas Aranja. Los derrotados a veces sueltan bayas o Balls.
 

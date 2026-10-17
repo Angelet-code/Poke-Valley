@@ -41,13 +41,18 @@ export const ACCIONES: Accion[] = [
 
 export type Disposicion = 'xbox' | 'switch' | 'ps';
 export const DISPOSICIONES: { id: Disposicion | 'auto'; nombre: string }[] = [
-  { id: 'auto', nombre: 'Automática' }, { id: 'xbox', nombre: 'Xbox' }, { id: 'switch', nombre: 'Switch' }, { id: 'ps', nombre: 'PlayStation' },
+  { id: 'auto', nombre: 'Automático' }, { id: 'xbox', nombre: 'Xbox' }, { id: 'switch', nombre: 'Nintendo' }, { id: 'ps', nombre: 'PlayStation' },
 ];
 const CARAS: Record<Disposicion, string[]> = { xbox: ['A', 'B', 'X', 'Y'], switch: ['B', 'A', 'Y', 'X'], ps: ['X', 'O', '□', '△'] };
 const RESTO: Record<number, string> = { 4: 'L1', 5: 'R1', 6: 'L2', 7: 'R2', 8: '−', 9: '+', 10: 'L3', 11: 'R3', 12: '↑', 13: '↓', 14: '←', 15: '→', 16: 'Home' };
 
 export interface Config { disposicion: Disposicion | 'auto'; asig: Record<string, number | null> }
-const defectos = (): Record<string, number | null> => Object.fromEntries(ACCIONES.map(a => [a.id, a.defecto]));
+// Botones por defecto de cada tipo de mando: en Nintendo, A (derecha, índice 1) acepta y B (abajo, 0) cancela.
+export function defectos(disp: Disposicion = 'xbox'): Record<string, number | null> {
+  const d = Object.fromEntries(ACCIONES.map(a => [a.id, a.defecto]));
+  if (disp === 'switch') { d.interactuar = 1; d.cancelar = 0; }
+  return d;
+}
 export const config: Config = { disposicion: 'auto', asig: defectos() };
 /** Disposición que sugiere el nombre del mando conectado (la pone mando.ts). */
 export let disposicionDetectada: Disposicion = 'xbox';
@@ -66,7 +71,10 @@ export function cargar(): void {
   } catch { /* guardado roto: valores por defecto */ }
 }
 export function guardar(): void { localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(config)); }
-export function restablecer(): void { config.disposicion = 'auto'; config.asig = defectos(); guardar(); }
+/** Botones por defecto del tipo de mando elegido (o del detectado, en automático). */
+export function restablecer(): void { config.asig = defectos(disposicion()); guardar(); }
+/** Elige el tipo de mando y pone sus botones por defecto. */
+export function elegirDisposicion(d: Disposicion | 'auto'): void { config.disposicion = d; restablecer(); }
 
 /** Nombre corto de un botón ("A", "L2", "↑", "L2X", "L2+R2"); null si no hay. */
 export function nombreBoton(codigo: number | null, disp: Disposicion = disposicion()): string {
