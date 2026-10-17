@@ -1,5 +1,5 @@
-// Misiones sin diálogo del modo aventura (docs/GDD-mundo.md §2): cada tablón (pueblo y ciudad) ofrece 3 por zona de
-// las suyas (TABLONES), que se
+// Misiones sin diálogo del modo aventura (docs/GDD-mundo.md §2): cada tablón (pueblo y ciudad) tiene 3 por zona de
+// las suyas (TABLONES) y las ofrece en cadena, de 3 en 3 (tandaDelTablon), que se
 // dicen solo con iconos (la cara del Pokémon, un número y la Ball o el objeto):
 // - derrotar N de la especie más común de la zona;
 // - capturar uno de otra especie de la zona;
@@ -36,6 +36,15 @@ export const TABLONES: Partial<Record<MapaId, MapaId[]>> = { pueblo: ['bosque', 
 export const ZONAS_MISION: MapaId[] = Object.values(TABLONES).flat();
 // Las misiones del tablón del mapa `en` (ni las de Aipom ni las de otro tablón).
 export const delTablon = (lista: Mision[], en: MapaId): Mision[] => { const z = TABLONES[en] ?? []; return lista.filter(m => z.includes(m.zona)); };
+// Cada tablón es una cadena: ofrece sus misiones de 3 en 3 (en el orden de sus zonas, de menos a más nivel) y no
+// enseña la tanda siguiente hasta haber entregado las tres. Acabada la cadena, se queda la última tanda (entregada).
+export const POR_TANDA = 3;
+export function tandaDelTablon(lista: Mision[], en: MapaId, hecha: (m: Mision) => boolean): { tanda: Mision[]; n: number; de: number } {
+  const todas = delTablon(lista, en), de = Math.ceil(todas.length / POR_TANDA);
+  let n = 0;
+  while (n < de - 1 && todas.slice(n * POR_TANDA, (n + 1) * POR_TANDA).every(hecha)) n++;
+  return { tanda: todas.slice(n * POR_TANDA, (n + 1) * POR_TANDA), n, de };
+}
 export const NOMBRE_ZONA: Record<MapaId, string> = { pueblo: 'Pueblo', bosque: 'Bosque Verde', lago: 'Lago Celeste',
   costa: 'Costa Brisa', cantera: 'Cantera Gris', pantano: 'Pantano Umbrío', ruinas: 'Ruinas Antiguas', volcan: 'Volcán Ascua', nieve: 'Cumbres Heladas', taller: 'Taller', ciudad: 'Ciudad' };
 // Por zona: cuántos derrotar y lo que da cada misión además de la experiencia.

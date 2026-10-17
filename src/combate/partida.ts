@@ -6,7 +6,8 @@ import { EVO_OBJETO, LINEAS } from '../data/pokedex';
 import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimientos';
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, nivelPorExp } from './reglas';
-import { misionesDe, type EstadoMision, type Mision } from './misiones';
+import type { MapaId } from '../data/bosque';
+import { misionesDe, tandaDelTablon, type EstadoMision, type Mision } from './misiones';
 import { EQUIPABLES, SLOTS, slotIdx } from './objetos';
 
 
@@ -231,6 +232,8 @@ export class Partida {
   progresoMision(m: Mision): number { return Math.min(m.n, m.tipo === 'bayas' ? this.tiene(m.baya ?? '') : this.estado.misiones?.[m.id]?.n ?? 0); }
   // ¿Se ofrece? (las de una cadena, cuando la anterior está entregada)
   disponible(m: Mision): boolean { return !m.previa || !!this.estado.misiones?.[m.previa]?.hecha; }
+  // Lo que ofrece ahora el tablón del mapa `en`: la tanda de 3 de su cadena que toca (y cuál es, de cuántas).
+  tablon(en: MapaId): { tanda: Mision[]; n: number; de: number } { return tandaDelTablon(this.misiones, en, m => this.estadoMision(m) === 'hecha'); }
   aceptar(m: Mision): void { (this.estado.misiones ??= {})[m.id] ??= { n: 0 }; }
   // Uno más de la línea derrotado: devuelve las tiradas de shiny si con este sube de tramo (para avisar), o 0.
   derrotado(linea: string): number {

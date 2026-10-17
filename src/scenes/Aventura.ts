@@ -18,7 +18,7 @@ import { enRellano } from '../data/rellano';
 import { FORMAS } from '../data/pokedex';
 import { ITEMS } from '../data/items';
 import { lineasDe } from '../data/aparicion';
-import { NOMBRE_ZONA, delTablon, type Mision } from '../combate/misiones';
+import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
 import { despejarPuentes, tirasDeBorde, vestirMacizo } from '../data/bordes';
 import { dibujar, enRect, ponerTinteSombra, expandirTiras, puntoLuz, tapa, type Elemento, type Pieza } from '../render/Dibujo';
 import { TIPOS_LUZ, animarLuz, type TipoLuz } from '../render/luces';
@@ -1310,7 +1310,7 @@ export class Aventura extends Phaser.Scene {
   private pasoTablon(): void {
     const t = this.mapa.tablon, p = this.mundo!.jugador;
     if (!t || !this.senal) return;
-    const est = delTablon(this.partida.misiones, this.mapa.id).map(m => this.partida.estadoMision(m)), c = est.includes('lista') ? '?' : est.includes('nueva') ? '!' : '';
+    const est = this.partida.tablon(this.mapa.id).tanda.map(m => this.partida.estadoMision(m)), c = est.includes('lista') ? '?' : est.includes('nueva') ? '!' : '';
     this.senal.setVisible(!!c && this.panel !== 'misiones');
     if (c && this.senal.text !== c) this.senal.setText(c).setColor(c === '?' ? '#ffe680' : '#ffd84a');
     this.senal.setY(t.y - 30 - Math.abs(Math.sin(this.mundo!.ahora * 3)) * 4);

@@ -98,6 +98,9 @@ Código: [src/combate/misiones.ts](../src/combate/misiones.ts) (qué misiones ha
   - derrotar N de la especie más común (5 en el bosque, 6 en el lago);
   - capturar uno de la segunda especie más común;
   - derrotar al alfa.
+- **En cadena, de 3 en 3** (2026-10-18): cada tablón ofrece solo una tanda de 3 (en el orden de sus zonas: pueblo →
+  bosque, lago; ciudad → cantera, pantano, ruinas). Al entregar las tres sale la siguiente («¡Nuevas misiones en el
+  tablón!»); el panel dice «MISIONES 1/2». Acabada la cadena queda la última tanda, entregada (`tandaDelTablon`).
 - **Solo iconos**: cada carta lleva la cara del Pokémon, el icono del tipo (espadas = derrotar, Poké Ball = capturar,
   corona y marco rojo = alfa), "×N" o lo que llevas ("2/5") y, abajo, la recompensa: "+exp" y los objetos con su icono.
   Clic en una nueva = aceptarla; clic en una cumplida = entregarla. Las entregadas quedan apagadas con un visto.

@@ -1141,10 +1141,12 @@ export class Mundo {
     this.aviso(`Recompensa: ${[`${m.premio.exp} exp`, ...(m.premio.oro ? [`${m.premio.oro} Pokécoins`] : []), ...m.premio.items.map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`)].join(', ')}`);
     this.procesar(this.partida.ganarExp(this.partida.activo, m.premio.exp));
     this.guardar();
+    const antes = this.partida.tablon(this.mapa.id).n;
   }
   private procesar(av: Aviso[]): void {
     // Si evoluciona, lo que aprende se cuenta en la cinemática (src/scenes/Evolucion.ts), no en avisos.
     const p = this.jugador, antes = formaDe(p.linea, p.nivel), evoluciona = av.some(a => a.tipo === 'evoluciona');
+    if (this.partida.tablon(this.mapa.id).n > antes) this.aviso('¡Nuevas misiones en el tablón!');   // la cadena avanza (de 3 en 3)
     for (const a of av) {
       if (a.tipo === 'nivel') {
         this.rotulo(p, `¡Nivel ${a.nivel}!`, 'strong', 600);

@@ -31,7 +31,7 @@ import { EVO_OBJETO, LINEAS } from '../data/pokedex';
 import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, movilidad, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
-import { NOMBRE_ZONA, TABLONES, delTablon, type Mision } from '../combate/misiones';
+import { NOMBRE_ZONA, TABLONES, type Mision } from '../combate/misiones';
 import { redDeLaPagina } from '../combate/red';
 import { TRATO_OBJS, TRATO_POKES } from '../combate/tradeo';
 import { idSprite } from '../combate/sprites';
@@ -452,7 +452,8 @@ export class HudAventura extends Phaser.Scene {
   private pintarMisiones(): void {
     const av = this.av, pa = av.partida, bayas = av.panel === 'bayas';
     // El tablón: las de las zonas. Aipom (F a su lado): su cadena, la que toca.
-    const lista = bayas ? av.misionesBayero : delTablon(pa.misiones, av.mapa.id);
+    // El tablón va en cadena: solo la tanda de 3 que toca (combate/misiones.ts, tandaDelTablon).
+    const cadena = bayas ? null : pa.tablon(av.mapa.id), lista = cadena ? cadena.tanda : av.misionesBayero;
     const k = av.panel === 'misiones' || bayas ? `${av.panel}|` + lista.map(m => `${m.id}:${pa.estadoMision(m)}:${pa.progresoMision(m)}`).join('|') : '';
     if (k === this.misClave) return;
     this.misClave = k;
@@ -466,7 +467,7 @@ export class HudAventura extends Phaser.Scene {
     this.misObjs.push(g);
     marco(g, x, y, w, h, PANEL);
     const t = (tx: number, ty: number, s: string, px: number, c: number, o: Phaser.Types.GameObjects.Text.TextStyle = {}) => { const q = this.texto(tx, ty, s, px, c, o).setDepth(8); this.misObjs.push(q); return q; };
-    t(x + 6, y + 5, bayas ? `MISIONES DE ${NOMBRE_BAYERO.toUpperCase()}` : 'MISIONES', 5, C.maderaClara, { fontFamily: FUENTE_TIT });
+    t(x + 6, y + 5, bayas ? `MISIONES DE ${NOMBRE_BAYERO.toUpperCase()}` : `MISIONES ${cadena!.n + 1}/${cadena!.de}`, 5, C.maderaClara, { fontFamily: FUENTE_TIT });
     t(x + w - 6, y + 5, 'Clic: aceptar · entregar', 5, C.maderaClara).setOrigin(1, 0);
     zonas.forEach((z, fila) => {
       const yz = y + 16 + fila * (MH + 14);
