@@ -337,6 +337,25 @@ claro, así que el sprite queda 100 % sin hierba ni sombra: la sombra la pone el
 y no está encerrado por tinta (el ribete junto a las raíces), con la tinta como barrera y el borde suavizado. Hecho en 17
 (`--menos arbol_alto`: ese lo limpió el usuario a mano en Photoshop; el lienzo salió recortado a 1366×1642 y se volvió a montar en el de 1643×1729 a (277, 0), que es lo que espera el catálogo; su recorte está en `v1_con_suelo/arbol_alto_recorte_usuario.png`). Después, `lab/tools/mascaras_arcane.py`
 (cambia `cubre`). Quedan matas pequeñas entre raíces (encerradas por tinta), invisibles a escala de juego.
+**Revisión y marcha atrás (2026-10-17, noche):** al `arbol_bajo` le comió el tronco (gris verdoso y abierto por abajo) y al
+`arbol_alcorque` las caras de la jardinera (piedra gris verdosa, indistinguible del suelo por color; ni la regla verde > azul
+ni `--huella` lo arreglan). El usuario decidió limpiar **todos** a mano en Photoshop: los 17 PNG vuelven a ser los
+originales con suelo (`v1_con_suelo/` sigue siendo la copia) y lo que sacó el script queda en `v1_script_sin_suelo/` como
+referencia. Regla al retocar: mismo lienzo (sin recortar), borrar a transparente; después, `python -I
+tools/normales_elementos.py --arboles` y `python -I lab/tools/mascaras_arcane.py`.
+Estado (2026-10-18): limpios a mano y revisados (solo se fue el suelo; tronco, raíces y jardinera intactos) `arbol_alto`,
+`arbol_alcorque`, `arbol_bajo`, `arbol_flores`, `arbol_muerto`, `arbol_quemado`, `arbol_viejo`, `arboleda_volcan` y `palmera`,
+con sus normales regeneradas; también el `tocon` (no es árbol, pero el usuario lo limpió y lleva normal desde entonces).
+`arboleda_cantera` y `arboleda_pantano` no traían suelo. También a mano: `sauce`.
+**Modelo de color aprendido de esos recortes (2026-10-18):** `tools/recorte_suelo_color.py` (idea del usuario: la sombra
+pintada es siempre el mismo verde; solo hay que quitarlo sin confundirlo con las hojas). `--entrenar <ids>` saca de cada par
+`v1_con_suelo/<id>.png` ↔ `<id>.png` un histograma RGB (32³) de lo borrado y de lo dejado → P(suelo | color), guardado en
+`assets/gen/normales/modelo_suelo.npz` (11 elementos). `--aplicar <ids>` borra P > 0,5 con limpieza espacial (mitad de abajo,
+ni tinta ni lo que encierra, manchas que llegan a la base, borde suave). `--validar` deja fuera cada árbol y mide: IoU 0,8-0,9
+en los árboles normales, casi nunca borra de más, pero **falla donde las hojas tienen el verde de la sombra** (sauce: se
+comía las ramas colgantes; árbol viejo: vetas verdosas de las raíces), así que se revisa siempre (`suelo_<id>.png` en
+`assets/gen/normales/elementos/`). Aplicado a `arboleda_comun/costa/nieve/ruinas`, `pino_nevado` y `pino_seco`: solo suelo;
+quedan briznas sueltas de hierba, por si el usuario las quiere retocar. Con esto, los 18 árboles y el tocón van sin suelo.
 En el juego: `Dibujo.precargar` carga `el_<id>_nrm` si existe el archivo (glob de Vite) y `screenTex` (Terrain.ts) lo reduce
 junto al elemento y lo cuelga como `dataSource` de la textura de pantalla; con eso `Aventura.iluminar`/`WorldScene.iluminar`
 le ponen el pipeline «Cel» (los mismos parámetros que los Pokémon). Los elementos volteados (`flip`) llevan una textura

@@ -23,7 +23,7 @@ Convención OpenGL (verde = arriba), la de Phaser. Fuera del elemento, normal pl
 antes el original en `lab/assets/elementos_arcane/v1_con_suelo/<id>.png`. El sprite queda solo con el árbol; la sombra la
 pone el juego (óvalo de día; de noche, sin sombra pintada que se encienda con las farolas). La máscara se calcula a la
 resolución reducida y se amplía al PNG; se extiende a lo verdoso pegado a la mancha que no esté encerrado por tinta (el
-ribete de hierba junto a las raíces), y respeta la tinta y lo que encierra (raíces, copas bajas). Después hay que pasar lab/tools/mascaras_arcane.py (la silueta `cubre` del catálogo cambia).
+ribete de hierba junto a las raíces), y respeta la tinta y lo que encierra (raíces, copas bajas). Un tronco gris verdoso abierto por abajo (arbol_bajo) se lo come: ese se limpió a mano. Después hay que pasar lab/tools/mascaras_arcane.py (la silueta `cubre` del catálogo cambia).
 """
 import argparse
 import json
@@ -117,7 +117,7 @@ def reducir(img: Image.Image, reduccion: int) -> np.ndarray:
     return rgba.astype(np.uint8)
 
 
-def quitar_suelo(id_: str, reduccion: int) -> bool:
+def quitar_suelo(id_: str, reduccion: int, huella: tuple[int, int, int, int] | None = None) -> bool:
     """Borra el suelo pintado del PNG (original a v1_con_suelo/). Devuelve si había algo que quitar."""
     ruta = os.path.join(CARPETA, f'{id_}.png')
     img = Image.open(ruta).convert('RGBA')
@@ -129,13 +129,16 @@ def quitar_suelo(id_: str, reduccion: int) -> bool:
     # no es tinta ni nieve y no está encerrado por tinta (las copas bajas y las raíces sí lo están).
     rgb = reducir(img, reduccion)[..., :3].astype(np.int16)
     _, lum, _ = tinta(reducir(img, reduccion))
-    verdoso = (rgb[..., 1] >= rgb[..., 0] - 5) & (lum < 0.55)
+    verdoso = (rgb[..., 1] >= rgb[..., 0] - 5) & (rgb[..., 1] > rgb[..., 2] + 3) & (lum < 0.55)   # verde apagado: ni piedra gris azulada ni nieve
     cerrado = ndi.binary_fill_holes(ndi.binary_dilation(contorno, iterations=2))
     ys = np.arange(a.shape[0])[:, None]
     candidata = a & verdoso & ~cerrado & ~contorno & (ys > 0.5 * a.shape[0])
     etiq, n = ndi.label(candidata | tierra)   # lo verdoso que toca la mancha (la tinta hace de barrera)
     toca = np.unique(etiq[tierra]); toca = toca[toca > 0]
     tierra = np.isin(etiq, toca)
+    if huella:   # --huella: dentro del rectángulo de la huella del catálogo no se borra nada (la jardinera del alcorque)
+        hx0, hy0, hx1, hy1 = (round(v / reduccion) for v in huella)
+        tierra[hy0:hy1 + 1, hx0:hx1 + 1] = False
     W, H = img.size
     m = np.asarray(Image.fromarray(tierra.astype(np.uint8) * 255).resize((W, H), Image.BILINEAR)).astype(np.float32) / 255
     m = np.clip(ndi.gaussian_filter(m, 1.5) * 1.3, 0, 1)   # borde suave sin dejar un halo de medio píxel
@@ -183,6 +186,7 @@ def main() -> None:
     ap.add_argument('--vista', action='store_true', help='guardar comparativa en assets/gen/normales/elementos/')
     ap.add_argument('--quitar-suelo', action='store_true', help='borrar antes el suelo pintado del PNG (original a v1_con_suelo/)')
     ap.add_argument('--menos', nargs='*', default=[], help='ids que se saltan (p. ej. los que se limpian a mano)')
+    ap.add_argument('--huella', action='store_true', help='con --quitar-suelo: no borrar nada dentro de la huella del catálogo (jardineras)')
     args = ap.parse_args()
     ids = list(args.ids) + (arboles() if args.arboles else [])
     if not ids:
@@ -190,7 +194,8 @@ def main() -> None:
     ids = [i for i in dict.fromkeys(ids) if i not in args.menos]
     for i in ids:
         if args.quitar_suelo:
-            print('suelo quitado' if quitar_suelo(i, args.reduccion) else 'sin suelo que quitar', i)
+            hu = catalogo().get(i, {}).get('huella') if args.huella else None
+            print('suelo quitado' if quitar_suelo(i, args.reduccion, hu) else 'sin suelo que quitar', i)
         print(procesar(i, args.reduccion, args.fuerza, args.detalle, args.vista, args.piezas))
 
 
