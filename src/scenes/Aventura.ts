@@ -90,6 +90,23 @@ export const TIENDA_CERCA = 46;
 // una para entregar.
 export const DEX_BAYERO = '0190', NOMBRE_BAYERO = 'Aipom';
 export const BAYERO_CERCA = 54;
+// El posadero (pueblo y ciudad): Slowbro. Como el posadero del WoW: F a su lado cura al equipo y fija la piedra de hogar
+// en esa posada (Mundo.descansar). Encima, una luna.
+export const DEX_POSADERO = '0080', NOMBRE_POSADERO = 'Slowbro';
+export const POSADERO_CERCA = 54;
+const ICONO_POSADA = [
+  '...ddddd...',
+  '..dYYYyd...',
+  '.dYYyddd...',
+  '.dYYd......',
+  '.dYyd......',
+  '.dYyd......',
+  '.dYyd......',
+  '.dYYyd.....',
+  '..dYYyddd..',
+  '...dyYYYd..',
+  '....ddddd..',
+];
 // Lo que vende el del pueblo, por orden (precios de data/items.ts); cada zona puede traer su lista (MapaAventura.tienda.venta).
 export const VENTA = ['pokeball', 'superball', 'pocion', 'superpocion'];
 const ICONO_TIENDA = [
@@ -154,6 +171,7 @@ export class Aventura extends Phaser.Scene {
   vuelo: { x: number; y: number; spr: Phaser.GameObjects.Sprite; sombra: Phaser.GameObjects.Ellipse; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   tendero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   bayero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Text; fila: number } | null = null;
+  posadero: { x: number; y: number; spr: Phaser.GameObjects.Sprite; placa: Phaser.GameObjects.Text; icono: Phaser.GameObjects.Image; fila: number } | null = null;
   private camMapa: Phaser.Cameras.Scene2D.Camera | null = null;
   panel: 'movs' | 'misiones' | 'inv' | 'tienda' | 'bayas' | null = null;   // panel abierto (K movimientos, I inventario, F en el tablón o el tendero): lo dibuja el HUD
   asignando: { m: string } | { i: string } | null = null; // atajo elegido en el panel, a la espera de casilla
@@ -233,7 +251,7 @@ export class Aventura extends Phaser.Scene {
     carga?.progreso(0.08);
     this.mundo = null; this.piezas = []; this.luces = []; this.vistas.clear(); this.balls.clear(); this.suelo.clear(); this.panel = null; this.asignando = null;
     this.luzJugador = null; this.luzAhora = null; this.tLuz = 0; this.evolucionando = false; this.senal = null; this.hogarLuz = null; this.siguiendo = null;
-    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null; this.bayero = null;
+    this.verMapa = false; this.camMapa = null; this.modoVuelo = false; this.vuelo = null; this.tendero = null; this.bayero = null; this.posadero = null;
     this.placas.clear(); this.bocadillos.clear();
     this.red?.fuente(null);
     if (!this.partida || data.nueva) this.partida = (data.nueva ? null : Partida.cargar()) ?? Partida.nueva(data.inicial, data.usuario);
@@ -262,6 +280,7 @@ export class Aventura extends Phaser.Scene {
     formas.push(DEX_VUELO);
     if (this.mapa.tienda) formas.push(this.dexTendero);
     if (this.mapa.bayero) formas.push(DEX_BAYERO);
+    if (this.mapa.posadero) formas.push(DEX_POSADERO);
     if (this.mapa.alfa) formas.push(FORMAS[this.mapa.alfa.forma].dex);
     for (const m of this.partida.misiones) formas.push(m.dex);   // caras de los iconos de misión (HUD)
     // Progreso: los sprites van en dos pasadas del cargador (AnimData.xml y luego las hojas); el suelo, aparte.
@@ -295,6 +314,7 @@ export class Aventura extends Phaser.Scene {
     this.ponerVuelo(porId, bloques);
     this.ponerTendero(bloques);
     this.ponerBayero(bloques);
+    this.ponerPosadero(bloques);
     this.ponerDetalles(cat.elementos, porId, bloques);
     const mundo = this.mundo;
     if (data.pos) { mundo.jugador.x = data.pos.x; mundo.jugador.y = data.pos.y; }
@@ -562,6 +582,33 @@ export class Aventura extends Phaser.Scene {
       .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setVisible(false);
     for (const o of [sombra, placa, icono]) o.resetPipeline();
     this.bayero = { x, y, spr, placa, icono, fila: 0 };
+  }
+  // El posadero (Slowbro) en su sitio, con su nombre, «‹Posada›» y la luna encima; su huella se suma al mundo.
+  private ponerPosadero(bloques: Bloque[]): void {
+    const t = this.mapa.posadero;
+    if (!t) return;
+    const { x, y } = t, an = ancla(DEX_POSADERO), ancho = Math.max(10, Math.min(40, an.ancho * 0.75));
+    const nuevo: Bloque = { x, y: y + 2, w: 18, h: 8, rombo: true };
+    this.mundo!.anadirBloques([nuevo]); bloques.push(nuevo);
+    const spr = this.add.sprite(x, y, '__DEFAULT').setDepth(y);
+    poner(spr, DEX_POSADERO, 'Idle', 0);
+    const sombra = this.add.ellipse(x, y - 1, ancho, ancho * 0.36, 0x2c4422, 0.3).setDepth(y - 1);
+    const placa = this.add.text(x, y - an.alto - 2, `${NOMBRE_POSADERO}
+‹Posada›`, { fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: `${5.5 * S}px`, fontStyle: 'bold', color: '#9fd0ff', stroke: '#16243a', strokeThickness: 2 * S, align: 'center' })
+      .setOrigin(0.5, 1).setScale(1 / S).setDepth(1e5).setLineSpacing(-1 * S);
+    texturaPixel(this, 'icono_posada', ICONO_POSADA);
+    const icono = this.add.image(x, placa.y - 16, 'icono_posada').setOrigin(0.5, 1).setDepth(1e5).setScale(2);
+    for (const o of [sombra, placa, icono]) o.resetPipeline();
+    this.posadero = { x, y, spr, placa, icono, fila: 0 };
+  }
+  // Quieto, mira hacia ti cuando te acercas; la luna flota.
+  private pasoPosadero(): void {
+    const v = this.posadero, p = this.mundo!.jugador;
+    if (!v) return;
+    v.icono.setY(v.placa.y - 13 - Math.abs(Math.sin(this.mundo!.ahora * 2 + 2)) * 3);
+    const d = Math.hypot(p.x - v.x, p.y - v.y);
+    const fila = d < 110 ? ROW_FROM_ANGLE[(Math.round(Math.atan2(p.y - v.y, p.x - v.x) / (Math.PI / 4)) + 8) % 8] : 0;
+    if (fila !== v.fila) { v.fila = fila; poner(v.spr, DEX_POSADERO, 'Idle', fila); }
   }
   // Las misiones de Aipom que se ofrecen ahora (la cadena avanza al entregar cada una).
   get misionesBayero(): Mision[] { return this.partida.misiones.filter(m => m.zona === 'pueblo' && this.partida.disponible(m)); }
@@ -936,6 +983,11 @@ export class Aventura extends Phaser.Scene {
     if (ti && Math.hypot(ti.x - p.x, ti.y - p.y) < TIENDA_CERCA) { this.panel = this.panel === 'tienda' ? null : 'tienda'; this.asignando = null; return; }
     const by = this.bayero;
     if (by && Math.hypot(by.x - p.x, by.y - p.y) < BAYERO_CERCA) { this.panel = this.panel === 'bayas' ? null : 'bayas'; this.asignando = null; return; }
+    const po = this.posadero;
+    if (po && Math.hypot(po.x - p.x, po.y - p.y) < POSADERO_CERCA) {
+      if (mundo.salvajes.some(s => s.modo === 'pelear' && s.rival === p && !s.muerto)) { this.aviso('No se puede descansar en pleno combate'); return; }
+      mundo.descansar(); this.panel = null; this.asignando = null; return;
+    }
     mundo.interactuar();
   }
 
@@ -1449,6 +1501,7 @@ ${l.nombre} Nv.${l.nivel}`;
     this.pasoVuelo();
     this.pasoTendero();
     this.pasoBayero();
+    this.pasoPosadero();
     this.pintarHogar();
     this.dibujarBarras();
     this.stage.actualizar(t, dtMs);
