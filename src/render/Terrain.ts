@@ -41,19 +41,38 @@ export const DECALS: DecalKind[] = [
 
 // Textura reducida de antemano a `ph` px de alto en pantalla, a mitades (la GPU sin mipmaps
 // dentaría los trazos al reducir mucho).
-export function screenTex(scene: Phaser.Scene, name: string, ph: number): string {
+// Reduce la textura `name` al alto `ph` en pantalla (por mitades, con suavizado) y la cachea como `${name}_${ph}`.
+// Si hay un mapa de normales `${name}_nrm` (tools/normales_elementos.py), se reduce igual y se cuelga como dataSource
+// de la textura: así Aventura/WorldScene le ponen el pipeline «Cel» y la luz le da volumen. Con `flip` (el elemento va
+// con setFlipX) la X de la normal se invierte (rojo = 255 - rojo), porque el pipeline de luz de Phaser no voltea las
+// normales; sale una textura aparte (`_f`), con la misma imagen.
+export function screenTex(scene: Phaser.Scene, name: string, ph: number, flip = false): string {
   const src = scene.textures.get(name).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
-  const pw = Math.round(src.width * ph / src.height), key = `${name}_${ph}`;
+  const nrm = scene.textures.exists(name + '_nrm') ? scene.textures.get(name + '_nrm').getSourceImage() as HTMLImageElement | HTMLCanvasElement : null;
+  const pw = Math.round(src.width * ph / src.height), key = `${name}_${ph}${nrm && flip ? '_f' : ''}`;
   if (!scene.textures.exists(key)) {
-    let c: HTMLImageElement | HTMLCanvasElement = src, cw = src.width, ch = src.height;
-    do {
-      cw = Math.max(pw, Math.round(cw / 2)); ch = Math.max(ph, Math.round(ch / 2));
-      const n = document.createElement('canvas'); n.width = cw; n.height = ch;
-      const g = n.getContext('2d')!; g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, cw, ch); c = n;
-    } while (cw > pw || ch > ph);
-    scene.textures.addCanvas(key, c as HTMLCanvasElement)!.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    const tex = scene.textures.addCanvas(key, reducir(src, pw, ph))!;
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    if (nrm) {
+      const n = reducir(nrm, pw, ph);
+      if (flip) {
+        const g = n.getContext('2d')!, d = g.getImageData(0, 0, n.width, n.height);
+        for (let i = 0; i < d.data.length; i += 4) d.data[i] = 255 - d.data[i];
+        g.putImageData(d, 0, 0);
+      }
+      tex.setDataSource(n);
+    }
   }
   return key;
+}
+function reducir(src: HTMLImageElement | HTMLCanvasElement, pw: number, ph: number): HTMLCanvasElement {
+  let c: HTMLImageElement | HTMLCanvasElement = src, cw = src.width, ch = src.height;
+  do {
+    cw = Math.max(pw, Math.round(cw / 2)); ch = Math.max(ph, Math.round(ch / 2));
+    const n = document.createElement('canvas'); n.width = cw; n.height = ch;
+    const g = n.getContext('2d')!; g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, cw, ch); c = n;
+  } while (cw > pw || ch > ph);
+  return c as HTMLCanvasElement;
 }
 
 function pixels(scene: Phaser.Scene, key: string): Uint8ClampedArray {

@@ -30,7 +30,8 @@ Las zonas colocan los elementos por id (`arbol_alto`, `roca_2`…). Cambiar de e
 - **Agua:** la del suelo con la paleta Arcane (azul verdoso apagado). Más adelante, una textura de pinceladas como
   la de la referencia y ondas en la orilla.
 - **Luz:** la curva del día (`luzAmbiente`) se queda, quizá con un ambiente algo más frío. La noche con farolas
-  encaja muy bien con Arcane.
+  encaja muy bien con Arcane. **Los 18 árboles llevan mapa de normales (2026-10-17, `tools/normales_elementos.py`,
+  PIPELINE §6d): de noche la farola les da por su lado, en bandas (pipeline cel).**
 
 ## Referencia única
 Hace de **referencia de estilo** la escena repintada `assets/gen/ab_lago/escena/arcane_s1_0.png` (copia en

@@ -307,6 +307,31 @@ y luces propias de ataques, partículas y efectos (destello eléctrico duro, lla
 la transición sean por luz, no globales: ampliar `Phaser.GameObjects.Light` con esos campos y pasarlos al shader como
 uniformes por luz (hoy `uAltura`/`uSuave` son únicos para todo el pipeline).
 
+## 6d. Mapas de normales para los árboles del escenario (2026-10-17)
+
+`tools/normales_elementos.py --arboles [--vista]` (o ids sueltos: `arbol_alto sauce…`) escribe
+`lab/assets/elementos_arcane/<id>_normal.png` junto a cada PNG del catálogo Arcane, a la mitad de su tamaño (`--reduccion 2`;
+en pantalla se reducen mucho más y así cada uno pesa 0,5-1 MB). Hechos los 18 árboles: `arbol_alto/bajo/flores/muerto/
+quemado/viejo/alcorque`, `sauce`, `palmera`, `pino_seco/nevado` y las siete `arboleda_<bioma>`. Mismo "inflado" que
+§6c (silueta → semiesfera; piezas separadas por la tinta, cada mata de hojas abomba por su cuenta y la línea queda
+como surco; paso alto de la luminancia para las pinceladas) con dos cambios para un dibujo grande: la tinta es lo casi
+negro (`lum < 0.07`, un 5-10 % de los píxeles) y **el suelo que el recorte trae pegado** (la hierba y la sombra pintada al
+pie: opaco, sin tinta alrededor, en la mitad de abajo y llegando a la base) se aplana, porque si no salía como un montículo.
+Comparativas (elemento, normal, 4 luces): `assets/gen/normales/elementos/<id>.png`.
+**Suelo pintado fuera del sprite (2026-10-17, tarde):** de noche esa mancha se encendía con la farola como un charco verde
+claro, así que el sprite queda 100 % sin hierba ni sombra: la sombra la pone el juego. `--quitar-suelo` la borra del PNG
+(originales en `lab/assets/elementos_arcane/v1_con_suelo/`): la mancha detectada se extiende a todo lo verdoso que la toca
+y no está encerrado por tinta (el ribete junto a las raíces), con la tinta como barrera y el borde suavizado. Hecho en 17
+(`--menos arbol_alto`: ese lo limpió el usuario a mano en Photoshop; el lienzo salió recortado a 1366×1642 y se volvió a montar en el de 1643×1729 a (277, 0), que es lo que espera el catálogo; su recorte está en `v1_con_suelo/arbol_alto_recorte_usuario.png`). Después, `lab/tools/mascaras_arcane.py`
+(cambia `cubre`). Quedan matas pequeñas entre raíces (encerradas por tinta), invisibles a escala de juego.
+En el juego: `Dibujo.precargar` carga `el_<id>_nrm` si existe el archivo (glob de Vite) y `screenTex` (Terrain.ts) lo reduce
+junto al elemento y lo cuelga como `dataSource` de la textura de pantalla; con eso `Aventura.iluminar`/`WorldScene.iluminar`
+le ponen el pipeline «Cel» (los mismos parámetros que los Pokémon). Los elementos volteados (`flip`) llevan una textura
+aparte (`_f`) con la X de la normal invertida, porque el pipeline de luz de Phaser no voltea las normales. De día no cambia
+nada (ambiente blanco, sin luces); de noche, las matas de la copa que miran a la farola se encienden en bandas:
+`assets/gen/normales/elementos/pueblo_noche_con_normales.jpg` frente a `pueblo_noche_sin_normales.jpg`.
+Pendiente: el resto del catálogo (casas, rocas, muros) con el mismo script (habrá que afinar el detector de suelo por tipo).
+
 ## 7. Pendiente
 
 - Detalles del suelo (piedrecitas, matitas, manchas).

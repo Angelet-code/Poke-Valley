@@ -8,6 +8,9 @@ import { F, PNG_X, type Colocado } from '../data/mapaDibujo';
 import { screenTex } from './Terrain';
 
 export const L = '/lab/assets/';
+// Elementos Arcane con mapa de normales (tools/normales_elementos.py: <id>_normal.png junto al PNG). Se cargan como
+// `el_<id>_nrm` y screenTex los cuelga de la textura de pantalla; con eso el elemento va con el pipeline «Cel».
+const NORMALES = new Set(Object.keys(import.meta.glob('/lab/assets/elementos_arcane/*_normal.png')).map(r => r.replace(/^.*\//, '').replace('_normal.png', '')));
 export const SOMBRA_ALFA = 0.45;
 
 export interface Elemento {
@@ -109,6 +112,7 @@ export function precargar(scene: Phaser.Scene, cat: { elementos: Elemento[]; vec
     if (el.sombra) scene.load.image('so_' + el.id, `${L}${dir}/${el.sombra.archivo}`);
     if (dir === 'elementos_klein' && vec.has(el.id)) scene.load.svg('el_' + el.id, `${L}vector/elementos_klein/${el.id}.svg`, { scale: F / PNG_X * S * (el.k ?? 1) * (ESCALA[el.id] ?? 1) });
     else scene.load.image('el_' + el.id, `${L}${dir}/${el.archivo}`);
+    if (dir === 'elementos_arcane' && NORMALES.has(el.id)) scene.load.image('el_' + el.id + '_nrm', `${L}${dir}/${el.id}_normal.png`);
   }
 }
 
@@ -121,7 +125,7 @@ export function ponerTinteSombra(t: number): void { tinteSombra = t; }
 // ordenado por la base de su huella; los planos (caminos, detalles, estanque) van a ras de suelo.
 export function dibujar(scene: Phaser.Scene, el: Elemento, c: Colocado): Pieza {
   const k = F / PNG_X * (c.s ?? 1) * (el.k ?? 1) * (ESCALA[el.id] ?? 1), hM = el.h * k;
-  const key = screenTex(scene, 'el_' + el.id, Math.max(1, Math.round(hM * S)));
+  const key = screenTex(scene, 'el_' + el.id, Math.max(1, Math.round(hM * S)), !!c.flip);
   const [ax, ay] = el.ancla, plano = el.tipo === 'piedras' || el.tipo === 'losa' || el.tipo === 'detalle' || el.tipo === 'estanque' || el.tipo === 'puente';
   // Farolas: la huella del catálogo abarca medio poste (no se podía pasar por detrás); solo la base de piedra.
   let hu = el.huella ?? (el.huellas ? [Math.min(...el.huellas.map(q => q[0])), Math.min(...el.huellas.map(q => q[1])), Math.max(...el.huellas.map(q => q[2])), Math.max(...el.huellas.map(q => q[3]))] as Elemento['huella'] : null);

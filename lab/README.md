@@ -137,7 +137,7 @@ http://127.0.0.1:5179/lab/?noche=1 — el mismo valle de noche, aprovechando los
   Una farola del mapa elige el suyo con `luz: 'vela'` en `Colocado`. **Banco de pruebas: `?luces=1`**: el valle vacío de
   noche con una farola por tipo, en fila y con su nombre encima (capturas `assets/captura_luces_a.png`, `_b.png`).
 - Las sombras proyectadas de Klein se pintan con menos opacidad (0,2) de noche.
-- Pendiente: normales para los elementos (casas, árboles) para que la luz les dé volumen; luces por ventanas; ciclo
+- Pendiente: normales para los elementos (casas, rocas; los árboles Arcane ya los tienen, 2026-10-17: PIPELINE §6d) para que la luz les dé volumen; luces por ventanas; ciclo
   día/noche real (hoy es un modo fijo).
 
 ## Receta para añadir elementos de otro dibujo
