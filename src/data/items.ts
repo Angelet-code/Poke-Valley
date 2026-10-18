@@ -45,6 +45,10 @@ export const ITEMS: Record<string, ItemDef> = {
   firestone: { id: 'firestone', nombre: 'Piedra Fuego', precio: 200, tipo: 'evolutivo', icono: 'icono_firestone' },
   leafstone: { id: 'leafstone', nombre: 'Piedra Hoja', precio: 200, tipo: 'evolutivo', icono: 'icono_leafstone' },
   icestone: { id: 'icestone', nombre: 'Piedra Hielo', precio: 200, tipo: 'evolutivo', icono: 'icono_icestone' },
+  sunstone: { id: 'sunstone', nombre: 'Piedra Solar', precio: 200, tipo: 'evolutivo', icono: 'icono_sunstone' },
+  moonstone: { id: 'moonstone', nombre: 'Piedra Lunar', precio: 200, tipo: 'evolutivo', icono: 'icono_moonstone' },
+  duskstone: { id: 'duskstone', nombre: 'Piedra Noche', precio: 200, tipo: 'evolutivo', icono: 'icono_duskstone' },
+  shinystone: { id: 'shinystone', nombre: 'Piedra Día', precio: 200, tipo: 'evolutivo', icono: 'icono_shinystone' },
   // Gachapón de Meowth (combate/gacha.ts): la moneda la sueltan los alfas; el caramelo y el huevo salen de la máquina.
   // Iconos de tools/iconos_gacha.py.
   moneda_meowth: { id: 'moneda_meowth', nombre: 'Moneda Meowth', precio: 0, tipo: 'especial', icono: 'icono_moneda_meowth' },

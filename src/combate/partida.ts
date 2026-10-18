@@ -2,7 +2,7 @@
 // pueblo), lo que llevas en la mochila y la hora. Se guarda en localStorage aparte de la partida del pueblo.
 // Cada Pokémon tiene su nivel, su experiencia, los movimientos que sabe y su barra de atajos (10 casillas:
 // movimientos u objetos, colocados al gusto).
-import { EVO_OBJETO, FORMAS, INTERCAMBIOS, LINEAS, type Forma } from '../data/pokedex';
+import { EVO_OBJETO, EVO_PIEDRA, FORMAS, INTERCAMBIOS, LINEAS, type Forma } from '../data/pokedex';
 import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimientos';
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
 import { expDeNivel, formaDe, formaM, nivelPorExp } from './reglas';
@@ -46,7 +46,7 @@ export interface Miembro {
   sexo?: Sexo;                 // ♂/♀ (null: sin sexo, como Magnemite); se tira al crearlo con la proporción oficial
   objetos?: (string | null)[]; // objetos equipados, HUECOS_OBJ huecos (combate/objetos.ts): se ponen y se quitan en el inventario (I)
   objeto?: string;             // partidas de antes de los dos huecos: pasa a objetos[0] al cargar
-  forma?: string;              // la forma de intercambio a la que ya pasó (Gengar…), al recibirlo en un comercio; sin ella, la de su nivel
+  forma?: string;              // la forma de intercambio o de piedra a la que ya pasó (Gengar, Cloyster…); sin ella, la de su nivel
 }
 export interface Estado {
   version: number; uid: number;
@@ -66,6 +66,7 @@ export interface Estado {
   vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;
   incubando?: number;                         // derrotas que lleva el primer huevo de la mochila (combate/gacha.ts HUEVO_DERROTAS)   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
   evoIntercambio?: true;                      // partida de después del 2026-10-18: sus Gengar por nivel ya llevan `forma` (se pone al cargar una de antes)
+  evoPiedra?: true;                           // ídem con las formas por piedra (Cloyster…, data/pokedex.ts Forma.piedra)
 }
 export type Aviso =
   | { tipo: 'nivel'; uid: number; nivel: number }
@@ -86,7 +87,7 @@ export class Partida {
 
   // `inicial`: la línea elegida en scenes/Eleccion.ts (Bulbasaur si no se dice); `usuario`: el nombre que se pide después.
   static nueva(inicial = 'bulbasaur', usuario?: string): Partida {
-    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dinero: DINERO_INICIAL, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {}, evoIntercambio: true });
+    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dinero: DINERO_INICIAL, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {}, evoIntercambio: true, evoPiedra: true });
     const b = p.crear(LINEAS[inicial] ? inicial : 'bulbasaur', 1);
     p.estado.activo = b.uid;
     return p;
@@ -119,6 +120,10 @@ export class Partida {
       if (!e.evoIntercambio) {
         for (const m of e.equipo) { const i = INTERCAMBIOS[m.linea]; if (i && !m.forma && m.nivel >= i.a.nv) m.forma = i.a.id; }
         e.evoIntercambio = true;
+      }
+      if (!e.evoPiedra) {   // lo mismo con las formas por piedra (2026-10-18): el Cloyster por nivel sigue siéndolo
+        for (const m of e.equipo) { const i = EVO_PIEDRA[m.linea]; if (i && !m.forma && m.nivel >= i.a.nv) m.forma = i.a.id; }
+        e.evoPiedra = true;
       }
       for (const m of e.equipo) if (m.forma && FORMAS[m.forma]?.linea !== m.linea) delete m.forma;   // una forma que no es de su línea no vale
       for (const m of e.equipo) if (m.sexo === undefined) m.sexo = tirarSexo(formaM(m).id);   // partidas de antes
@@ -183,17 +188,25 @@ export class Partida {
     if (libre >= 0) m.barra[libre] = { m: mov };
     av.push({ tipo: 'aprende', uid: m.uid, mov, casilla: libre });
   }
-  // La línea a la que pasaría con un objeto (Eevee + Piedra Agua → Vaporeon; data/pokedex.ts EVO_OBJETO), o nada.
-  evoCon(m: Miembro, item: string): string | undefined { return EVO_OBJETO[m.linea]?.[item]; }
-  // Evolucionar con un objeto: gasta el objeto y pasa a la otra línea con el mismo nivel. Aprende lo de la forma nueva
-  // hasta su nivel que la de antes no aprende nunca (Pistola Agua, Niebla…): sus movimientos de nivel 1 repiten los de
-  // Eevee y llenarían la barra.
+  // La forma a la que pasaría con un objeto, o nada: otra línea (Eevee + Piedra Agua → Vaporeon; data/pokedex.ts
+  // EVO_OBJETO) o la forma por piedra de la suya (Shellder + Piedra Agua → Cloyster; `Forma.piedra`), si está en la de
+  // justo antes (Gloom, no Oddish), a cualquier nivel. Si es su piedra pero aún no le toca, por qué no (`falta`).
+  evoCon(m: Miembro, item: string): { a: Forma; linea?: string } | { a: Forma; falta: string } | undefined {
+    const l = EVO_OBJETO[m.linea]?.[item];
+    if (l) return { a: LINEAS[l].formas[0], linea: l };
+    const p = EVO_PIEDRA[m.linea];
+    if (!p || p.a.piedra !== item || m.forma === p.a.id) return undefined;
+    return this.forma(m).id === p.de.id ? { a: p.a } : { a: p.a, falta: `tiene que ser ${p.de.nombre}` };
+  }
+  // Evolucionar con un objeto: lo gasta y pasa a la otra línea (con el mismo nivel) o a la forma por piedra. Aprende lo
+  // de la forma nueva hasta su nivel que la de antes no aprende nunca (Pistola Agua, Niebla…): sus movimientos de nivel
+  // 1 repiten los de Eevee y llenarían la barra.
   evolucionarCon(m: Miembro, item: string): Aviso[] | null {
-    const dest = this.evoCon(m, item);
-    if (!dest || !this.gastar(item)) return null;
+    const e = this.evoCon(m, item);
+    if (!e || 'falta' in e || !this.gastar(item)) return null;
     const antes = this.forma(m);
-    m.linea = dest;
-    m.exp = Math.max(m.exp, expDeNivel(dest, m.nivel));
+    if (e.linea) { m.linea = e.linea; m.exp = Math.max(m.exp, expDeNivel(e.linea, m.nivel)); }
+    else m.forma = e.a.id;
     return this.aprenderDeNueva(m, antes);
   }
   // Ya en la forma nueva: el aviso y lo que aprende de ella hasta su nivel que la de antes no aprende nunca.

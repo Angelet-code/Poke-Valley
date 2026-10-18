@@ -1321,11 +1321,13 @@ export class Mundo {
     }
     this.aviso(`${def.nombre}: aquí no sirve`);
   }
-  // Piedra evolutiva en el que manejas (Eevee + Piedra Agua → Vaporeon): la cinemática de la evolución (procesar) y,
-  // al acabar, cambiarForma. No en combate, como cambiar de objeto.
+  // Piedra evolutiva en el que manejas (Eevee + Piedra Agua → Vaporeon, Shellder + Piedra Agua → Cloyster): la
+  // cinemática de la evolución (procesar) y, al acabar, cambiarForma. No en combate, como cambiar de objeto.
   private evolucionarCon(id: string): void {
     const l = this.jugador, m = this.partida.activo, nombre = ITEMS[id]?.nombre ?? id;
-    if (!this.partida.evoCon(m, id)) { this.aviso(`${nombre}: no le hace nada a ${l.nombre}`); return; }
+    const e = this.partida.evoCon(m, id);
+    if (!e) { this.aviso(`${nombre}: no le hace nada a ${l.nombre}`); return; }
+    if ('falta' in e) { this.aviso(`${nombre}: para ser ${e.a.nombre}, ${e.falta}`); return; }
     if (this.ahora - l.ultimoCombate < 6) { this.aviso('No puedes evolucionar en combate'); return; }
     const av = this.partida.evolucionarCon(m, id);
     if (!av) return;

@@ -37,8 +37,9 @@ export const NOMBRE_GRUPO: Record<GrupoExp, string> = {
 // Stats base oficiales: [PS, Ataque, Defensa, At. Esp., Def. Esp., Velocidad].
 export type Base6 = [number, number, number, number, number, number];
 // `inter`: forma de intercambio (solo al recibirlo en un comercio; `objeto`: el equipable que debe llevar, id base de
-// combate/objetos.ts). En ellas `nv` solo sirve al modo granja y a pokedex.html (forma(l, nv, true)).
-export interface Forma { id: string; dex: string; nombre: string; nv: number; base: Base6; como?: string; inter?: { objeto?: string } }
+// combate/objetos.ts). `piedra`: forma por piedra (2026-10-18; id del objeto de data/items.ts: solo usándola sobre la
+// forma de antes, a cualquier nivel). En las dos `nv` solo sirve al modo granja y a pokedex.html (forma(l, nv, true)).
+export interface Forma { id: string; dex: string; nombre: string; nv: number; base: Base6; como?: string; inter?: { objeto?: string }; piedra?: string }
 // `tipo`: el tipo por el que cuenta en el valle (Pidgey cuenta como Volador); `tipos`: los oficiales de la forma básica.
 export interface Linea { id: string; tipo: Tipo; tipos: Tipo[]; exp: GrupoExp; formas: Forma[] }
 
@@ -46,6 +47,16 @@ export interface Linea { id: string; tipo: Tipo; tipos: Tipo[]; exp: GrupoExp; f
 export const OBJETO_INTERCAMBIO: Record<string, string> = {
   'Revestimiento Metálico': 'metalcoat', 'Escama Dragón': 'dragonscale', 'Protector': 'protector',
   'Tela Terrible': 'reapercloth', 'Magmatizador': 'magmarizer', 'Electrizador': 'electirizer',
+};
+// Piedras evolutivas: nombre (como va en `como`) → id del objeto (data/items.ts).
+export const PIEDRA_DE: Record<string, string> = {
+  'piedra agua': 'waterstone', 'piedra trueno': 'thunderstone', 'piedra fuego': 'firestone', 'piedra hoja': 'leafstone',
+  'piedra hielo': 'icestone', 'piedra solar': 'sunstone', 'piedra lunar': 'moonstone', 'piedra noche': 'duskstone', 'piedra día': 'shinystone',
+};
+const piedraDe = (como?: string): string | undefined => {
+  if (!como?.startsWith('piedra')) return undefined;
+  if (!PIEDRA_DE[como]) throw new Error(`pokedex: piedra sin id: ${como}`);
+  return PIEDRA_DE[como];
 };
 const interDe = (como?: string): Forma['inter'] => {
   if (!como?.startsWith('intercambio')) return undefined;
@@ -58,7 +69,10 @@ const interDe = (como?: string): Forma['inter'] => {
 type F = [dex: string, nombre: string, nv: number, base: Base6, como?: string];
 const idDe = (nombre: string) => nombre.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const L = (tipo: Tipo, tipos: Tipo[], exp: GrupoExp, ...formas: F[]): Omit<Linea, 'id'> =>
-  ({ tipo, tipos, exp, formas: formas.map(([dex, nombre, nv, base, como]) => { const inter = interDe(como); return { id: idDe(nombre), dex, nombre, nv, base, como, ...(inter ? { inter } : {}) }; }) });
+  ({ tipo, tipos, exp, formas: formas.map(([dex, nombre, nv, base, como], i) => {
+    const inter = interDe(como), piedra = i > 0 ? piedraDe(como) : undefined;   // las ramas de Eevee (una sola forma) van por EVO_OBJETO
+    return { id: idDe(nombre), dex, nombre, nv, base, como, ...(inter ? { inter } : {}), ...(piedra ? { piedra } : {}) };
+  }) });
 
 // Tres líneas por tipo. La clave es el id de la forma básica. Todas las formas tienen sprites PMD en
 // assets/sprites/pokemon/<dex>/ (Rolycoly no los tiene: por eso no está). Algunos tipos tienen ya más de tres:
@@ -322,7 +336,7 @@ const DATOS: Record<string, Omit<Linea, 'id'>> = {
   tympole: L('agua', ['agua'], 'parabolico', ['0535', 'Tympole', 1, [50, 50, 40, 50, 40, 64]],
     ['0536', 'Palpitoad', 30, [75, 65, 55, 65, 55, 69]], ['0537', 'Seismitoad', 36, [105, 95, 75, 85, 75, 74]]),
   shellder: L('agua', ['agua'], 'lento', ['0090', 'Shellder', 1, [30, 65, 100, 45, 25, 40]],
-    ['0091', 'Cloyster', 35, [50, 95, 180, 85, 45, 70], 'piedra hielo']),
+    ['0091', 'Cloyster', 35, [50, 95, 180, 85, 45, 70], 'piedra agua']),
   mareanie: L('veneno', ['veneno', 'agua'], 'medio', ['0747', 'Mareanie', 1, [50, 53, 62, 43, 52, 45]],
     ['0748', 'Toxapex', 38, [50, 63, 152, 53, 142, 35]]),
   shellos: L('agua', ['agua'], 'medio', ['0422', 'Shellos', 1, [76, 48, 48, 57, 62, 34]],
@@ -451,7 +465,8 @@ export const INICIALES = ['bulbasaur', 'charmander', 'squirtle', 'chikorita', 'c
   'turtwig', 'chimchar', 'piplup', 'snivy', 'tepig', 'oshawott', 'chespin', 'fennekin', 'froakie', 'rowlet', 'litten', 'popplio',
   'grookey', 'scorbunny', 'sobble', 'sprigatito', 'fuecoco', 'quaxly'];
 
-// Evoluciones con objeto (modo aventura): línea de origen → objeto → línea a la que pasa. Las de destino son ramas:
+// Evoluciones con objeto que cambian de línea (modo aventura; las de dentro de una línea son `Forma.piedra`): línea de
+// origen → objeto → línea a la que pasa. Las de destino son ramas:
 // no salen como salvajes, ni como visitantes del pueblo, ni para elegir al empezar.
 export const EVO_OBJETO: Record<string, Record<string, string>> = {
   eevee: { waterstone: 'vaporeon', thunderstone: 'jolteon', firestone: 'flareon', leafstone: 'leafeon', icestone: 'glaceon' },
@@ -466,6 +481,11 @@ export const FORMAS: Record<string, Forma & { linea: string }> = Object.fromEntr
 // La forma de intercambio de cada línea que la tiene (gastly → Gengar), con la forma de la que se pasa (`de`).
 export const INTERCAMBIOS: Record<string, { de: Forma; a: Forma }> = Object.fromEntries(Object.values(LINEAS).flatMap(l => {
   const i = l.formas.findIndex(f => f.inter);
+  return i > 0 ? [[l.id, { de: l.formas[i - 1], a: l.formas[i] }]] : [];
+}));
+// Las formas por piedra de cada línea que las tiene (shellder → Cloyster), con la forma de la que se pasa (`de`).
+export const EVO_PIEDRA: Record<string, { de: Forma; a: Forma }> = Object.fromEntries(Object.values(LINEAS).flatMap(l => {
+  const i = l.formas.findIndex(f => f.piedra);
   return i > 0 ? [[l.id, { de: l.formas[i - 1], a: l.formas[i] }]] : [];
 }));
 
@@ -486,13 +506,13 @@ export function expNivel(g: GrupoExp, n: number): number {
       : n < 36 ? n3 * (n + 14) / 50 : n3 * (Math.floor(n / 2) + 32) / 50);
   }
 }
-// La forma que le toca a una línea en un nivel (la última a la que ya ha llegado). Las de intercambio (`inter`) no se
-// dan por nivel: solo si `evo` es su id (el Miembro la alcanzó en un comercio, `Miembro.forma`) o `true` (modo granja y
-// pokedex.html, que no comercian: ahí cuentan por nivel). Sin ella, la línea se queda en la forma de antes.
+// La forma que le toca a una línea en un nivel (la última a la que ya ha llegado). Las de intercambio (`inter`) y las de
+// piedra (`piedra`) no se dan por nivel: solo si `evo` es su id (el Miembro la alcanzó en un comercio o con la piedra,
+// `Miembro.forma`) o `true` (modo granja y pokedex.html: ahí cuentan por nivel). Sin ella, se queda en la de antes.
 export function forma(l: Linea, nv: number, evo?: string | true): Forma {
   let f = l.formas[0];
   for (const g of l.formas) {
-    if (g.inter) { if (evo === g.id || (evo === true && g.nv <= nv)) f = g; else break; }
+    if (g.inter || g.piedra) { if (evo === g.id || (evo === true && g.nv <= nv)) f = g; else break; }
     else if (g.nv <= nv) f = g;
   }
   return f;

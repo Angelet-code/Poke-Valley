@@ -436,6 +436,13 @@ Al cuerpo a cuerpo le faltaba movilidad. Sale de los datos (`movilidad` en `regl
   Agua, Niebla…). Las piedras salen en el suelo de las zonas (12 % de cada hallazgo) y del alfa (30 %), en
   `combate/botin.ts`; iconos de `tools/iconos_piedras.py`. Falta: Espeon, Umbreon y Sylveon (amistad).
 
+  - **Todas las de piedra de los juegos (2026-10-18)**, no solo Eevee y Pikachu: Cloyster, Vileplume, Arcanine,
+    Ninetales, Starmie, Poliwrath, Ludicolo (Agua/Fuego/Hoja), Sunflora y Heliolisk (Solar), Clefable y Musharna
+    (Lunar), Mismagius, Honchkrow y Chandelure (Noche), Togekiss y Florges (Día), Eelektross (Trueno), Cetitan (Hielo).
+    Ya no van por nivel: `Forma.piedra` (sale del `como` «piedra …», `PIEDRA_DE`) y `forma()` las salta como a las de
+    intercambio; se llega usando la piedra sobre la forma de justo antes (Gloom, no Oddish), a cualquier nivel, y el
+    Miembro guarda `forma`. Las partidas de antes conservan las que ya tenían por nivel (`Estado.evoPiedra`). Piedras
+    nuevas: Solar, Lunar, Noche y Día (mismo botín que las otras).
 ## 6. Pueblo y cambiar de Pokémon
 Tus otros Pokémon pasean por la plaza. Con F a su lado te conviertes en él e intercambiáis el sitio. El que dejas
 se queda paseando con su vida guardada. Cada uno conserva su nivel, su experiencia, sus movimientos y su barra.

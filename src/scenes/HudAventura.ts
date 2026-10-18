@@ -27,7 +27,7 @@ import { NOMBRE_BAYERO, NOMBRE_GACHA, NOMBRE_TIENDA, type Aura, type Aventura, t
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
 import { EQUIPABLES, RAREZAS, SLOTS, baseDe, colorRareza, slotIdx } from '../combate/objetos';
-import { EVO_OBJETO, INTERCAMBIOS, LINEAS } from '../data/pokedex';
+import { EVO_OBJETO, EVO_PIEDRA, INTERCAMBIOS, LINEAS } from '../data/pokedex';
 import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, formaM, movilidad, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
@@ -920,8 +920,11 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     if (inter.length) desc = `${eq!.desc}. Si lo lleva al recibirlo otro jugador en un comercio, ${inter.map(i => `${i.de.nombre} evoluciona en ${i.a.nombre}`).join(' y ')} (se gasta)\n${desc.split('\n')[1]}`;
     if (ITEMS[id]?.tipo === 'evolutivo') {   // piedra: a quién hace evolucionar y si le sirve al que manejas
       const nom = (l: string) => LINEAS[l].formas[0].nombre, dest = this.av.partida.evoCon(this.av.partida.activo, id);
-      desc = `Hace evolucionar a ${Object.entries(EVO_OBJETO).filter(([, o]) => o[id]).map(([l, o]) => `${nom(l)} en ${nom(o[id])}`).join(', ')}`;
-      uso = dest ? `Clic: usarla (${this.av.jugador.nombre} → ${nom(dest)})` : `A ${this.av.jugador.nombre} no le hace nada`;
+      const a = [...Object.entries(EVO_OBJETO).filter(([, o]) => o[id]).map(([l, o]) => `${nom(l)} en ${nom(o[id])}`),
+        ...Object.values(EVO_PIEDRA).filter(p => p.a.piedra === id).map(p => `${p.de.nombre} en ${p.a.nombre}`)];
+      desc = `Hace evolucionar a ${a.join(', ')}`;
+      uso = !dest ? `A ${this.av.jugador.nombre} no le hace nada` : 'falta' in dest ? `${this.av.jugador.nombre}: para ser ${dest.a.nombre}, ${dest.falta}`
+        : `Clic: usarla (${this.av.jugador.nombre} → ${dest.a.nombre})`;
     }
     if (id === MONEDA_GACHA) { desc = 'La sueltan los alfas. Una tirada en el gachapón de Meowth (ciudad)'; uso = 'F junto a Meowth'; }
     if (id === 'rarecandy') { desc = 'Sube un nivel al que manejas'; uso = 'Clic: usarlo (fuera de combate)'; }
