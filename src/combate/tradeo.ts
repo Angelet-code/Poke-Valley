@@ -8,6 +8,8 @@
 // Sin Phaser: la escena le pasa los mensajes de la red (`recibir`) y le da cada fotograma (`paso`).
 import { lineaValida, type Miembro, type Partida } from './partida';
 import { ITEMS } from '../data/items';
+import { FORMAS, type Forma } from '../data/pokedex';
+import { getMove } from '../data/movimientos';
 
 const CADUCA = 30;          // s que dura una petición sin respuesta
 export const TRATO_LEJOS = 160;   // px: más lejos, se cancela (también al cambiar de mapa)
@@ -25,7 +27,9 @@ export interface Trato {
   listoEl: [number, number] | null;               // aceptó [su versión, la tuya]
   cerrando: boolean;                              // coordinador: «cierra» mandado, esperando «hecho»
 }
-export interface Recibido { items: Record<string, number>; dinero: number; pokes: Miembro[] }
+// `evos`: los recibidos que han evolucionado por el intercambio (data/pokedex.ts `Forma.inter`), de qué forma a cuál y lo
+// que aprenden (la escena les pone la cinemática); `de`: el uid de red de quien te lo da.
+export interface Recibido { items: Record<string, number>; dinero: number; pokes: Miembro[]; evos?: { m: Miembro; de: Forma; a: Forma; aprende: string[] }[]; de?: string }
 
 export class Tradeo {
   pide: { con: string; nombre: string; hasta: number } | null = null;     // tu petición, esperando respuesta
@@ -221,13 +225,17 @@ export class Tradeo {
       dados.pokes.push(e.equipo[i]);
       e.equipo.splice(i, 1);
     }
-    const r: Recibido = { items: tr.suya.items, dinero: tr.suya.dinero, pokes: [] };
+    const r: Recibido = { items: tr.suya.items, dinero: tr.suya.dinero, pokes: [], evos: [], de: tr.con };
     for (const [id, n] of Object.entries(r.items)) pa.dar(id, n);
     pa.cobrar(r.dinero);
     for (const p of tr.suya.pokes) {
       const m: Miembro = { ...JSON.parse(JSON.stringify(p)), uid: e.uid++, nivel: Math.max(1, Math.min(100, Math.floor(p.nivel) || 1)) };
+      if (m.forma && FORMAS[m.forma]?.linea !== m.linea) delete m.forma;   // una forma que no es de su línea no vale
       e.equipo.push(m);
       r.pokes.push(m);
+      // Evolución por intercambio (Haunter → Gengar; con objeto si lo pide, que se gasta): al recibirlo, a cualquier nivel.
+      const de = pa.forma(m), av = pa.evolucionarIntercambio(m);
+      if (av) r.evos!.push({ m, de, a: pa.forma(m), aprende: av.filter(a => a.tipo === 'aprende').map(a => getMove((a as { mov: string }).mov)?.nombre ?? (a as { mov: string }).mov) });
     }
     pa.guardar();
     this.hecho(r, dados);

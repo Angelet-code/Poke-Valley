@@ -15,7 +15,7 @@ import { muroPintado } from '../data/ciudad';
 import { crearMapa, type MapaAventura, type MapaId } from '../data/bosque';
 import { guardarMiniatura, revisarSalidas } from '../data/mundo';
 import { enRellano } from '../data/rellano';
-import { FORMAS } from '../data/pokedex';
+import { FORMAS, type Forma } from '../data/pokedex';
 import { ITEMS } from '../data/items';
 import { lineasDe } from '../data/aparicion';
 import { NOMBRE_ZONA, type Mision } from '../combate/misiones';
@@ -33,7 +33,7 @@ import { TYPE_FX } from '../fx/fx/palette';
 import { Stage, fxSprite, type FxSprite, type SlotGeometry } from '../fx/stage';
 import type { MoveCue } from '../fx/tipos';
 import { CASILLAS, PROB_SHINY, Partida } from '../combate/partida';
-import { ALCANCE_DISTANCIA, ALREDEDOR_RADIO, CONO_ANGULO, CONO_LARGO, NOMBRE_ESTADO, NOMBRE_STAT, ZONA_RADIO, formaArea, formaDe, statsDe, type Clima, type FormaArea, type Golpe } from '../combate/reglas';
+import { ALCANCE_DISTANCIA, ALREDEDOR_RADIO, CONO_ANGULO, CONO_LARGO, NOMBRE_ESTADO, NOMBRE_STAT, ZONA_RADIO, formaArea, formaDe, formaM, statsDe, type Clima, type FormaArea, type Golpe } from '../combate/reglas';
 import { ALFA_RADIO, DEX_MUNECO, Mundo, RAYO_AVISO, RAYO_RADIO, VUELO_BALL, type Anatomia, type Aura, type Bloque, type Foto, type Luchador, type Salida, type Suceso } from '../combate/mundo';
 import { COLOR_REACCION } from '../combate/naturalezas';
 import { redDeLaPagina, type Mensaje } from '../combate/red';
@@ -278,7 +278,7 @@ export class Aventura extends Phaser.Scene {
     const su = this.mapa.suelo;
     this.terrain = new Terrain(this.mapa.datos, S, su ? { paleta: PALETAS_BIOMA[su], decals: false, claves: { cesped: `suelo_${su}_a`, tierra: `suelo_${su}_b` } } : { paleta: PALETA_DIBUJO, decals: false });
     // Sprites de quien sale en este mapa (en paralelo al suelo).
-    const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
+    const formas = [this.partida.activo, ...(this.mapa.id === 'pueblo' ? this.partida.estado.equipo : [])].map(m => idSprite(formaM(m).dex, m.shiny));
     // Los salvajes y todo lo que puede salir cuando reaparecen (la tabla de la zona, a los niveles que hay).
     const niveles = new Set(this.mapa.salvajes.map(r => r.nivel)), tabla = lineasDe(this.mapa.id);
     for (const r of this.mapa.salvajes) if (!r.munieco) formas.push(formaDe(r.linea, r.nivel).dex);   // el muñeco no es un Pokémon
@@ -1223,35 +1223,47 @@ export class Aventura extends Phaser.Scene {
   // escena 'evolucion' lo cuenta encima. Al terminar, el mundo le pone la forma nueva y todo sigue donde estaba (con
   // la escena en pausa el mundo no avanza).
   private async evolucionar(antes: ReturnType<typeof formaDe>, aprende: string[]): Promise<void> {
-    const mundo = this.mundo!, p = mundo.jugador, m = this.partida.activo, f = formaDe(m.linea, m.nivel);
+    const mundo = this.mundo!, p = mundo.jugador, m = this.partida.activo, f = formaM(m);
     await cargar(this, [idSprite(f.dex, m.shiny)]);
     // Si mientras cargaba ha cambiado de mapa o se ha debilitado, la forma nueva sale al volver a montar el mapa.
     if (this.mundo !== mundo || mundo.jugador !== p || p.muerto || mundo.cambiando || !this.listo || this.evolucionando) return;
-    this.mostrarMapa(false);
-    this.evolucionando = true;
-    const cam = this.cameras.main, v = this.vistaDe(p);
-    const datos: DatosEvolucion = {
-      de: { dex: v.dex, nombre: antes.nombre, stats: statsDe(antes.base, m.nivel), tipos: tiposDe(antes.id) },
-      a: { dex: idSprite(f.dex, m.shiny), nombre: f.nombre, stats: statsDe(f.base, m.nivel), tipos: tiposDe(f.id) }, nivel: m.nivel,
-      color: COLOR_TIPO[tiposDe(f.id)[0]] ?? 0xffffff, aprende,
-      x: (v.spr.x - cam.worldView.x) * cam.zoom, y: (v.spr.y - cam.worldView.y) * cam.zoom, escala: cam.zoom * v.spr.scaleX,
-      pose: { tex: v.spr.texture.key, frame: v.spr.frame.name, ox: v.spr.originX, oy: v.spr.originY, dir: p.dir, flipX: v.spr.flipX },
-      tinte: Phaser.Display.Color.GetColor(...(['r', 'g', 'b'] as const).map(k => Math.min(255, Math.round(this.lights.ambientColor[k] * 255))) as [number, number, number]),
-      ocultar: () => { v.spr.setVisible(false); v.sombra.setVisible(false); },
-      fin: () => {
-        mundo.cambiarForma();
-        v.spr.setVisible(true); v.sombra.setVisible(true);
-        this.sincronizar();
-        this.stage.visible(true);
-        this.scene.resume(); this.scene.resume('hud'); this.scene.setVisible(true, 'hud');
-        this.input.keyboard?.resetKeys();
-        this.evolucionando = false;
-        mundo.guardar();
-      },
-    };
-    this.stage.visible(false);
-    this.scene.pause(); this.scene.pause('hud'); this.scene.setVisible(false, 'hud');
-    this.scene.launch('evolucion', datos);
+    const v = this.vistaDe(p);
+    await this.cinematica(mundo, m.nivel, { f: antes, dex: v.dex }, { f, dex: idSprite(f.dex, m.shiny) }, aprende, v,
+      { tex: v.spr.texture.key, frame: v.spr.frame.name, ox: v.spr.originX, oy: v.spr.originY, dir: p.dir, flipX: v.spr.flipX }, () => mundo.cambiarForma());
+  }
+  // La cinemática (escena 'evolucion') sobre el sprite `v` (el del que manejas o el de quien te dio el Pokémon), que se
+  // esconde mientras dura; `pose`: cómo empieza (el fotograma del mapa, o el reposo del Haunter recibido); `alFin`: lo
+  // que cambia en el mundo al acabar. Se resuelve cuando todo sigue donde estaba.
+  private cinematica(mundo: Mundo, nivel: number, de: { f: Forma; dex: string }, a: { f: Forma; dex: string }, aprende: string[], v: Vista,
+    pose: DatosEvolucion['pose'], alFin: () => void): Promise<void> {
+    return new Promise(resolve => {
+      this.mostrarMapa(false);
+      this.evolucionando = true;
+      const cam = this.cameras.main;
+      const datos: DatosEvolucion = {
+        de: { dex: de.dex, nombre: de.f.nombre, stats: statsDe(de.f.base, nivel), tipos: tiposDe(de.f.id) },
+        a: { dex: a.dex, nombre: a.f.nombre, stats: statsDe(a.f.base, nivel), tipos: tiposDe(a.f.id) }, nivel,
+        color: COLOR_TIPO[tiposDe(a.f.id)[0]] ?? 0xffffff, aprende,
+        x: (v.spr.x - cam.worldView.x) * cam.zoom, y: (v.spr.y - cam.worldView.y) * cam.zoom, escala: cam.zoom * v.spr.scaleX,
+        pose,
+        tinte: Phaser.Display.Color.GetColor(...(['r', 'g', 'b'] as const).map(k => Math.min(255, Math.round(this.lights.ambientColor[k] * 255))) as [number, number, number]),
+        ocultar: () => { v.spr.setVisible(false); v.sombra.setVisible(false); },
+        fin: () => {
+          alFin();
+          v.spr.setVisible(true); v.sombra.setVisible(true);
+          this.sincronizar();
+          this.stage.visible(true);
+          this.scene.resume(); this.scene.resume('hud'); this.scene.setVisible(true, 'hud');
+          this.input.keyboard?.resetKeys();
+          this.evolucionando = false;
+          mundo.guardar();
+          resolve();
+        },
+      };
+      this.stage.visible(false);
+      this.scene.pause(); this.scene.pause('hud'); this.scene.setVisible(false, 'hud');
+      this.scene.launch('evolucion', datos);
+    });
   }
 
   // ---- Dibujar ----
@@ -1385,18 +1397,42 @@ export class Aventura extends Phaser.Scene {
     tr.paso(dt, con => { const o = mundo.remotos.find(l => l.uid === `remoto-${con}`); return !!o && Math.hypot(o.x - p.x, o.y - p.y) < TRATO_LEJOS; });
     // Las caras de la ventana: tu equipo y lo que ofrece el otro (se cargan la primera vez).
     if (!tr.trato) return;
-    const ids = [...this.partida.estado.equipo, ...tr.trato.suya.pokes].map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny));
+    const ids = [...this.partida.estado.equipo, ...tr.trato.suya.pokes].map(m => idSprite(formaM(m).dex, m.shiny));
     const faltan = ids.filter(id => !listo(this, id) && !this.cargandoTrato.has(id));
     if (faltan.length) { faltan.forEach(id => this.cargandoTrato.add(id)); void cargar(this, faltan).finally(() => faltan.forEach(id => this.cargandoTrato.delete(id))); }
   }
   // Hecho el cambio: guardar, contarlo y, en el pueblo, que los Pokémon que se van se vayan y los nuevos salgan.
+  // Los recibidos que evolucionan por el intercambio (Haunter → Gengar) ya llegan evolucionados en los datos (tradeo.ts);
+  // aquí se les pone la cinemática, una detrás de otra, y después salen a pasear ya como Gengar.
   private tratoHecho(r: Recibido, dados: Recibido): void {
     this.guardar();
-    const lista = (x: Recibido) => [...x.pokes.map(m => `${formaDe(m.linea, m.nivel).nombre} Nv ${m.nivel}${m.shiny ? ' ✦' : ''}`),
+    const lista = (x: Recibido) => [...x.pokes.map(m => `${(x.evos?.find(e => e.m === m)?.de.nombre ?? formaM(m).nombre)} Nv ${m.nivel}${m.shiny ? ' ✦' : ''}`),
       ...Object.entries(x.items).map(([id, n]) => `${ITEMS[id]?.nombre ?? id} ×${n}`), ...(x.dinero ? [`${x.dinero} Pokécoins`] : [])].join(', ') || 'nada';
     this.aviso(`¡Comercio hecho! Recibes: ${lista(r)}. Das: ${lista(dados)}`);
-    const ids = r.pokes.map(m => idSprite(formaDe(m.linea, m.nivel).dex, m.shiny)), mundo = this.mundo;
-    void cargar(this, ids).then(() => { if (this.mundo === mundo && mundo) mundo.rehacerVecinos(); });
+    void this.recibidos(r);
+  }
+  private async recibidos(r: Recibido): Promise<void> {
+    const mundo = this.mundo;
+    for (const e of r.evos ?? []) await this.evolucionarRecibido(e, r.de);
+    await cargar(this, r.pokes.map(m => idSprite(formaM(m).dex, m.shiny)));
+    if (this.mundo === mundo && mundo) mundo.rehacerVecinos();
+  }
+  // Un Pokémon recibido en un comercio que evoluciona por el intercambio: la misma cinemática que la del que manejas, pero
+  // sobre quien te lo dio (o sobre ti, si ya no está a la vista) y empezando con el Haunter en reposo; al acabar sigues
+  // manejando el tuyo. Si otra cinemática está en marcha (o llegan varios), espera a que acabe.
+  private async evolucionarRecibido(e: NonNullable<Recibido['evos']>[number], de?: string): Promise<void> {
+    const mundo = this.mundo!, m = e.m;
+    for (let i = 0; i < 600 && this.evolucionando; i++) await new Promise(r => setTimeout(r, 200));
+    await cargar(this, [idSprite(e.de.dex, m.shiny), idSprite(e.a.dex, m.shiny)]);
+    if (this.mundo !== mundo || !this.listo || this.evolucionando || mundo.cambiando || mundo.jugador.muerto) return;
+    const dexDe = this.cargado(idSprite(e.de.dex, m.shiny)), dexA = this.cargado(idSprite(e.a.dex, m.shiny));
+    const l = (de && mundo.remotos.find(q => q.uid === `remoto-${de}`)) || mundo.jugador, v = this.vistaDe(l);
+    const tmp = this.add.sprite(0, 0, '__DEFAULT').setVisible(false);
+    poner(tmp, dexDe, 'Idle', 0);
+    const pose: DatosEvolucion['pose'] = { tex: tmp.texture.key, frame: tmp.frame.name, ox: tmp.originX, oy: tmp.originY, dir: 0, flipX: false };
+    tmp.destroy();
+    await this.cinematica(mundo, m.nivel, { f: e.de, dex: dexDe }, { f: e.a, dex: dexA }, e.aprende, v, pose, () => { /* los datos ya evolucionaron en tradeo.ts */ });
+    this.aviso(`¡${e.de.nombre} ha evolucionado en ${e.a.nombre}! Te espera en el pueblo.`);
   }
 
   // ---- Multijugador ----

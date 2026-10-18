@@ -22,7 +22,10 @@ export function statsDe(base: Base6, nv: number): Stats {
   return { hp: Math.floor((2 * base[0] + IV) * nv / 100) + nv + 10, atk: s(base[1]), def: s(base[2]), spa: s(base[3]), spd: s(base[4]), spe: s(base[5]) };
 }
 export const lineaDe = (id: string): Linea => LINEAS[id];
-export const formaDe = (linea: string, nv: number) => forma(LINEAS[linea], nv);
+// `evo`: la forma de intercambio ya alcanzada (Miembro.forma); sin ella esas formas no se dan (data/pokedex.ts forma()).
+export const formaDe = (linea: string, nv: number, evo?: string) => forma(LINEAS[linea], nv, evo);
+// La forma de un Miembro (o de cualquier cosa con línea, nivel y, si la alcanzó, forma de intercambio).
+export const formaM = (m: { linea: string; nivel: number; forma?: string }) => formaDe(m.linea, m.nivel, m.forma);
 
 // Multiplicador de una etapa de stat (−6…+6); precisión y evasión van por tercios.
 export const etapa = (n: number, precision = false) => {

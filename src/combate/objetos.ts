@@ -52,12 +52,26 @@ const BASE: Omit<Equipable, 'rareza' | 'base'>[] = [
   { id: 'shellbell', slot: 'accesorio', nombre: 'Campana Concha', desc: 'Recupera 1/8 del daño que hace' },
 ];
 
-export const EQUIPABLES: Record<string, Equipable> = Object.fromEntries(BASE.flatMap(b => RAREZAS.map(r => {
-  const e: Equipable = { ...b, id: b.id + r.sufijo, base: b.id, rareza: r.id,
-    nombre: r.id === 'comun' ? b.nombre : `${b.nombre} ${r.nombre.toLowerCase()}`,
-    desc: r.id === 'comun' ? b.desc : `${b.desc}. ${r.nombre}: efecto ×${String(r.escala).replace('.', ',')}` };
-  return [e.id, e] as const;
-})));
+// Objetos de las evoluciones por intercambio (data/pokedex.ts OBJETO_INTERCAMBIO; el Revestimiento Metálico ya está
+// arriba, como amuleto de Acero): accesorios sin efecto en combate, solo de rareza común, que se venden en la tienda
+// del pueblo (scenes/Aventura.ts VENTA) y no los sueltan los alfas. Iconos: tools/iconos_intercambio.py.
+const INTERCAMBIO: Omit<Equipable, 'rareza' | 'base'>[] = [
+  { id: 'dragonscale', slot: 'accesorio', nombre: 'Escama Dragón', desc: 'No hace nada en combate' },
+  { id: 'protector', slot: 'accesorio', nombre: 'Protector', desc: 'No hace nada en combate' },
+  { id: 'reapercloth', slot: 'accesorio', nombre: 'Tela Terrible', desc: 'No hace nada en combate' },
+  { id: 'magmarizer', slot: 'accesorio', nombre: 'Magmatizador', desc: 'No hace nada en combate' },
+  { id: 'electirizer', slot: 'accesorio', nombre: 'Electrizador', desc: 'No hace nada en combate' },
+];
+
+export const EQUIPABLES: Record<string, Equipable> = Object.fromEntries([
+  ...BASE.flatMap(b => RAREZAS.map(r => {
+    const e: Equipable = { ...b, id: b.id + r.sufijo, base: b.id, rareza: r.id,
+      nombre: r.id === 'comun' ? b.nombre : `${b.nombre} ${r.nombre.toLowerCase()}`,
+      desc: r.id === 'comun' ? b.desc : `${b.desc}. ${r.nombre}: efecto ×${String(r.escala).replace('.', ',')}` };
+    return [e.id, e] as const;
+  })),
+  ...INTERCAMBIO.map(b => [b.id, { ...b, base: b.id, rareza: 'comun' } as Equipable] as const),
+]);
 
 const RAREZA_DE = (id: string): typeof RAREZAS[number] => RAREZAS.find(r => r.id === EQUIPABLES[id]?.rareza) ?? RAREZAS[0];
 export const escalaDe = (id: string): number => RAREZA_DE(id).escala;

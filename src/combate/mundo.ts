@@ -24,7 +24,7 @@ import {
   CLIMA_DE, CLIMA_TRAMO, COLOR_ESTADO, CORTO_ESTADO, DANO_ESTADO, DANO_SEMILLA, DURA_BOOST, DURA_CLIMA, DURA_ESTADO, DURA_SEMILLA, FIN_CLIMA, GCD, NOMBRE_CLIMA, RITMO, NOMBRE_ESTADO, NOMBRE_STAT,
   ALCANCE_CUERPO, ATRAS_LARGO, ATRAS_VEL, CARGA_ALCANCE, CARGA_VEL, EMBESTIDA_LARGO, EMBESTIDA_VEL, movilidad, type Movilidad,
   ALCANCE_DISTANCIA, ALCANCE_PROYECTIL, RADIO_PROYECTIL, VEL_PROYECTIL, dirigido, ALREDEDOR_RADIO, AREA_VARIOS, CONO_ANGULO, CONO_LARGO, ZONA_RADIO, formaArea, type FormaArea,
-  ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expDeNivel, expPor, formaDe, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
+  ESCUDO, TURNO, VEL_PARALIZADO, alcance, celeridad, curaClima, danaClima, enfriamiento, expDeNivel, expPor, formaDe, formaM, golpe, necesitaObjetivo, perfil, probCaptura, statsDe,
   velAndar, type Clima, type Golpe, type Perfil, type Stats,
 } from './reglas';
 import type { AnimId } from './sprites';
@@ -415,7 +415,7 @@ export class Mundo {
   private crearLuchador(rol: Luchador['rol'], linea: string, nivel: number, x: number, y: number, miembro?: Miembro, forma?: string, shiny = false, uid?: string): Luchador {
     // Un remoto o un espejo (uid que llega de fuera) no gasta la semilla ni numera: así la simulación sale igual haya quien haya conectado.
     const fuera = rol === 'remoto' || uid !== undefined, rnd = fuera ? Math.random : this.rnd;
-    const f = forma ? FORMAS[forma] : formaDe(linea, nivel), sh = miembro?.shiny ?? shiny, dex = idSprite(f.dex, sh);
+    const f = forma ? FORMAS[forma] : formaDe(linea, nivel, miembro?.forma), sh = miembro?.shiny ?? shiny, dex = idSprite(f.dex, sh);
     const stats = statsDe(f.base, nivel), as = this.anatomia.alto(dex), escala = escalaEspecie(f.id, as);
     return {
       uid: fuera ? uid ?? '' : `${rol}-${++this.uid}`, rol, linea, nivel, miembro, dex, nombre: f.nombre, tipos: tiposDe(f.id),
@@ -427,7 +427,7 @@ export class Mundo {
       sexo: miembro ? miembro.sexo ?? null : tirarSexo(f.id, rnd),
     };
   }
-  private formaL(l: Luchador) { return l.forma ? FORMAS[l.forma] : formaDe(l.linea, l.nivel); }
+  private formaL(l: Luchador) { return l.forma ? FORMAS[l.forma] : formaDe(l.linea, l.nivel, l.miembro?.forma); }
   private crearSalvaje(r: Ronda): Luchador {
     const l = this.crearLuchador('salvaje', r.linea, r.nivel, r.x, r.y, undefined, undefined, this.rnd() < this.partida.probShiny(r.linea, this.probShiny));
     l.ronda = r;
@@ -1163,13 +1163,13 @@ export class Mundo {
   }
   private procesar(av: Aviso[]): void {
     // Si evoluciona, lo que aprende se cuenta en la cinemática (src/scenes/Evolucion.ts), no en avisos.
-    const p = this.jugador, antes = formaDe(p.linea, p.nivel), evoluciona = av.some(a => a.tipo === 'evoluciona');
+    const p = this.jugador, antes = this.formaL(p), evoluciona = av.some(a => a.tipo === 'evoluciona');
     for (const a of av) {
       if (a.tipo === 'nivel') {
         this.rotulo(p, `¡Nivel ${a.nivel}!`, 'strong', 600);
         p.nivel = a.nivel;
         const viejo = p.stats.hp;
-        p.stats = statsDe(formaDe(p.linea, a.nivel).base, a.nivel);
+        p.stats = statsDe(formaDe(p.linea, a.nivel, p.miembro?.forma).base, a.nivel);
         p.ps = Math.min(p.stats.hp, p.ps + (p.stats.hp - viejo));
       } else if (a.tipo === 'aprende') {
         const m = getMove(a.mov);
@@ -1182,7 +1182,7 @@ export class Mundo {
   // Al terminar la cinemática de la evolución: el que manejas pasa a la forma de su nivel, conservando sitio, vida (en
   // fracción), estado, cambios y enfriamientos.
   cambiarForma(): void {
-    const p = this.jugador, m = p.miembro!, f = formaDe(m.linea, m.nivel), frac = p.ps / p.stats.hp;
+    const p = this.jugador, m = p.miembro!, f = formaM(m), frac = p.ps / p.stats.hp;
     p.linea = m.linea; p.nivel = m.nivel; p.dex = idSprite(f.dex, m.shiny); p.nombre = f.nombre; p.tipos = tiposDe(f.id);
     p.stats = statsDe(f.base, m.nivel); p.ps = Math.max(1, Math.round(p.stats.hp * frac));
     const as = this.anatomia.alto(p.dex);

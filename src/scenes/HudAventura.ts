@@ -26,9 +26,9 @@ import { COLOR_REACCION, NOMBRE_REACCION } from '../combate/naturalezas';
 import { NOMBRE_BAYERO, NOMBRE_GACHA, NOMBRE_TIENDA, type Aura, type Aventura, type Luchador } from './Aventura';
 import { COLOR_TIPO, TIPO_ES, getMove, type Stat6, type TypeName } from '../data/movimientos';
 import { ITEMS } from '../data/items';
-import { EQUIPABLES, RAREZAS, SLOTS, colorRareza, slotIdx } from '../combate/objetos';
-import { EVO_OBJETO, LINEAS } from '../data/pokedex';
-import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, movilidad, necesitaObjetivo, perfil } from '../combate/reglas';
+import { EQUIPABLES, RAREZAS, SLOTS, baseDe, colorRareza, slotIdx } from '../combate/objetos';
+import { EVO_OBJETO, INTERCAMBIOS, LINEAS } from '../data/pokedex';
+import { GCD, NOMBRE_CLIMA, NOMBRE_ESTADO, alcance, descEfecto, dirigido, expDeNivel, formaArea, formaDe, formaM, movilidad, necesitaObjetivo, perfil } from '../combate/reglas';
 import { CASILLAS, HOGAR_CARGA, HOGAR_CD, HUECOS_OBJ, type Atajo } from '../combate/partida';
 import { ancla, clave, listo, poner } from '../combate/sprites';
 import { NOMBRE_ZONA, TABLONES, type Mision } from '../combate/misiones';
@@ -54,7 +54,10 @@ const PIX: Record<string, string[]> = {
 const MONEDA = ['..kkk..', '.kyyyk.', 'kyhkyyk', 'kyykyyk', 'kyykyyk', '.kyyyk.', '..kkk..'];
 const COL_MONEDA = { k: 0xc28a2c, y: 0xf2c94c, h: 0xfff2b0 };
 // Lo que dice la tienda de cada cosa.
-const DESC_VENTA: Record<string, string> = { pokeball: 'Para capturar salvajes', superball: 'Captura mejor que la Poké Ball', ultraball: 'La que mejor captura', pocion: 'Cura 20 PS', superpocion: 'Cura 60 PS', hiperpocion: 'Cura 120 PS' };
+const DESC_VENTA: Record<string, string> = { pokeball: 'Para capturar salvajes', superball: 'Captura mejor que la Poké Ball', ultraball: 'La que mejor captura', pocion: 'Cura 20 PS', superpocion: 'Cura 60 PS', hiperpocion: 'Cura 120 PS',
+  // Objetos de las evoluciones por intercambio (combate/objetos.ts INTERCAMBIO): quién evoluciona si lo lleva al cambiarlo.
+  metalcoat: 'Onix → Steelix y Scyther → Scizor al cambiarlos', dragonscale: 'Seadra → Kingdra al cambiarlo', protector: 'Rhydon → Rhyperior al cambiarlo',
+  reapercloth: 'Dusclops → Dusknoir al cambiarlo', magmarizer: 'Magmar → Magmortar al cambiarlo', electirizer: 'Electabuzz → Electivire al cambiarlo' };
 const pix = (g: G, x: number, y: number, id: string) => PIX[id].forEach((f, j) => [...f].forEach((ch, i) => { if (ch !== '.') rect(g, PIX_COL[ch], 1, x + i, y + j, 1, 1); }));
 // Marco del alfa (como el de élite del WoW): el sprite pixel art de Aerodactyl (PMD) entero de color tierra
 // (assets/game/pixel/ui/aerodactyl_alfa.png, de assets/gen/pixel/ui_dragon/tierra.py), en la esquinita de arriba a la
@@ -590,7 +593,10 @@ export class HudAventura extends Phaser.Scene {
     this.tiClave = k;
     this.tiObjs.forEach(o => o.destroy()); this.tiObjs = []; this.tiZonas = []; this.tiCaja = null;
     if (av.panel !== 'tienda') return;
-    const FH = 24, w = 176, h = 18 + VENTA.length * (FH + 3) + 12, x = 4, y = 40;   // a la izquierda, como la ventana del vendedor del WoW (no tapa al tendero ni los avisos)
+    // A la izquierda, como la ventana del vendedor del WoW (no tapa al tendero ni los avisos). Si no caben en una
+    // columna (la ciudad vende también los objetos de intercambio), en varias.
+    const FH = 24, FW = 164, x = 4, y = 40, filas = Math.max(1, Math.min(VENTA.length, Math.floor((VH - y - 46) / (FH + 3)))), cols = Math.ceil(VENTA.length / filas);
+    const w = 12 + cols * FW + (cols - 1) * 6, h = 18 + filas * (FH + 3) + 12;
     this.tiCaja = { x, y, w, h };
     const g = this.add.graphics().setDepth(6);
     this.tiObjs.push(g);
@@ -601,7 +607,7 @@ export class HudAventura extends Phaser.Scene {
     const din = t(x + w - 6, y + 4, String(pa.dinero), 6.5, C.tinta, { fontStyle: 'bold' }).setOrigin(1, 0);
     moneda(x + w - 6 - din.width / S - 9, y + 8.5);
     VENTA.forEach((id, i) => {
-      const it = ITEMS[id], fx = x + 6, fy = y + 16 + i * (FH + 3), fw = w - 12, llega = pa.dinero >= it.precio;
+      const it = ITEMS[id], fx = x + 6 + Math.floor(i / filas) * (FW + 6), fy = y + 16 + (i % filas) * (FH + 3), fw = FW, llega = pa.dinero >= it.precio;
       rect(g, C.huecoSombra, 1, fx - 1, fy - 1, fw + 2, FH + 2);
       rect(g, C.hueco, 1, fx, fy, fw, FH);
       rect(g, C.bandeja, 1, fx + 2, fy + 2, FH - 4, FH - 4);
@@ -909,6 +915,9 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     if (!id) { this.ficha.setVisible(false); return; }
     const eq = EQUIPABLES[id];
     let desc = eq ? `${eq.desc}\n${SLOTS.find(s => s.id === eq.slot)!.nombre} · ${RAREZAS.find(r => r.id === eq.rareza)!.nombre}` : '', uso = z.hueco !== undefined ? 'Clic: quitárselo' : 'Clic: ponérselo';
+    // Objeto de una evolución por intercambio (data/pokedex.ts INTERCAMBIOS): quién evoluciona si lo lleva al cambiarlo.
+    const inter = eq ? Object.values(INTERCAMBIOS).filter(i => i.a.inter?.objeto === baseDe(eq.id)) : [];
+    if (inter.length) desc = `${eq!.desc}. Si lo lleva al recibirlo otro jugador en un comercio, ${inter.map(i => `${i.de.nombre} evoluciona en ${i.a.nombre}`).join(' y ')} (se gasta)\n${desc.split('\n')[1]}`;
     if (ITEMS[id]?.tipo === 'evolutivo') {   // piedra: a quién hace evolucionar y si le sirve al que manejas
       const nom = (l: string) => LINEAS[l].formas[0].nombre, dest = this.av.partida.evoCon(this.av.partida.activo, id);
       desc = `Hace evolucionar a ${Object.entries(EVO_OBJETO).filter(([, o]) => o[id]).map(([l, o]) => `${nom(l)} en ${nom(o[id])}`).join(', ')}`;
@@ -928,7 +937,7 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
   // solo un cartel bajo el marco del objetivo.
   private pintarTrato(): void {
     const av = this.av, tr = av.tradeo, t0 = tr?.trato ?? null, pa = av.partida, e = pa.estado;
-    const caras = t0 ? [...e.equipo, ...t0.suya.pokes].filter(m => listo(this, idSprite(formaDe(m.linea, m.nivel).dex, m.shiny))).length : 0;
+    const caras = t0 ? [...e.equipo, ...t0.suya.pokes].filter(m => listo(this, idSprite(formaM(m).dex, m.shiny))).length : 0;
     const k = t0 ? JSON.stringify([t0, e.items, e.dinero, e.activo, e.equipo.map(m => m.uid), caras]) : tr?.pideDe ? `pide|${tr.pideDe.nombre}` : '';
     if (k === this.trClave) return;
     this.trClave = k;
@@ -946,12 +955,14 @@ Se recarga en ${HOGAR_CD / 60} min${falta > 0 ? ` (faltan ${Math.ceil(falta / 60
     const PASO = 20, CS = 18, COLS = 6, CW2 = 6 + COLS * PASO + 4, w = 6 + 3 * CW2 + 2 * 4 + 6;
     const x = Math.round((VW - w) / 2), y = 56, cy0 = y + 18;
     const moneda = (mx: number, my: number) => { const im = this.add.image(mx * S, my * S, this.pixeles('hud_moneda', MONEDA, COL_MONEDA)).setOrigin(0, 0.5).setDepth(8); this.trObjs.push(im); };
-    const nombrePoke = (m: Miembro) => `${formaDe(m.linea, m.nivel).nombre}${m.shiny ? ' ✦' : ''}${m.sexo === 'm' ? ' ♂' : m.sexo === 'f' ? ' ♀' : ''}  Nv ${m.nivel}\n${m.movs.map(id => getMove(id)?.name ?? id).join(', ')}${m.objetos?.some(Boolean) ? `\nLleva: ${m.objetos.filter(Boolean).map(id => ITEMS[id!]?.nombre ?? id).join(', ')}` : ''}`;
+    // Ficha de un Pokémon; si es de una línea «por intercambio» (data/pokedex.ts INTERCAMBIOS), si evolucionará al recibirlo.
+    const inter = (m: Miembro) => { const ev = pa.evoIntercambio(m); return ev ? `\n${'falta' in ev ? `Evolucionaría en ${ev.a.nombre} al recibirlo, pero ${ev.falta}` : `¡Al recibirlo evoluciona en ${ev.a.nombre}!`}` : ''; };
+    const nombrePoke = (m: Miembro) => `${formaM(m).nombre}${m.shiny ? ' ✦' : ''}${m.sexo === 'm' ? ' ♂' : m.sexo === 'f' ? ' ♀' : ''}  Nv ${m.nivel}\n${m.movs.map(id => getMove(id)?.name ?? id).join(', ')}${m.objetos?.some(Boolean) ? `\nLleva: ${m.objetos.filter(Boolean).map(id => ITEMS[id!]?.nombre ?? id).join(', ')}` : ''}${inter(m)}`;
     // Las casillas: hueco, contenido y su zona (clic, ficha).
     const hueco = (cx: number, cy: number) => { rect(g, C.huecoSombra, 1, cx - 1, cy - 1, CS + 2, CS + 2); rect(g, C.hueco, 1, cx, cy, CS, CS); };
     const poke = (cx: number, cy: number, m: Miembro, clic?: (mayus: boolean) => void, uso = '') => {
       hueco(cx, cy);
-      this.cara(cx + CS / 2, cy + CS / 2, idSprite(formaDe(m.linea, m.nivel).dex, m.shiny), CS - 2, this.trObjs, 8);
+      this.cara(cx + CS / 2, cy + CS / 2, idSprite(formaM(m).dex, m.shiny), CS - 2, this.trObjs, 8);
       this.trObjs.push(this.sombreado(cx + CS - 0.5, cy + CS + 0.5, String(m.nivel), 4.5).setOrigin(1, 1).setDepth(9));
       if (m.shiny) this.trObjs.push(this.sombreado(cx + 0.5, cy - 0.5, '✦', 4.5, 0xfff0a0).setDepth(9));
       this.trZonas.push({ x: cx, y: cy, w: CS, h: CS, clic, ficha: nombrePoke(m) + (uso ? `\n${uso}` : '') });

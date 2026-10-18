@@ -50,9 +50,11 @@ const PIEZAS: [string, number, number, number?, boolean?][] = [
 // El punto de vuelo, en el césped al sur de la tienda; el tablón, a su derecha (PIEZAS).
 const VUELO = [560, 425], TABLON = [628, 430];
 // El Kecleon morado (shiny), en la acera delante de la tienda morada: vende lo del pueblo y además Ultra Balls e
-// Hiperpociones (el de los objetos raros de Mystery Dungeon).
+// Hiperpociones (el de los objetos raros de Mystery Dungeon) y, desde el 2026-10-18, los seis objetos de las
+// evoluciones por intercambio (data/pokedex.ts OBJETO_INTERCAMBIO).
 const TENDERO = [452, 862];
-export const VENTA_CIUDAD = ['pokeball', 'superball', 'ultraball', 'pocion', 'superpocion', 'hiperpocion'];
+export const VENTA_CIUDAD = ['pokeball', 'superball', 'ultraball', 'pocion', 'superpocion', 'hiperpocion',
+  'metalcoat', 'dragonscale', 'protector', 'reapercloth', 'magmarizer', 'electirizer'];
 // Slowbro, el posadero de la ciudad (2026-10-18): en la acera al oeste de la plaza de la fuente, junto al camino al puente.
 const POSADERO = [610, 700];
 // Meowth y su gachapón (2026-10-18): en la plaza, al nordeste de la fuente (combate/gacha.ts).

@@ -2,13 +2,14 @@
 // pueblo), lo que llevas en la mochila y la hora. Se guarda en localStorage aparte de la partida del pueblo.
 // Cada Pokémon tiene su nivel, su experiencia, los movimientos que sabe y su barra de atajos (10 casillas:
 // movimientos u objetos, colocados al gusto).
-import { EVO_OBJETO, LINEAS } from '../data/pokedex';
+import { EVO_OBJETO, FORMAS, INTERCAMBIOS, LINEAS, type Forma } from '../data/pokedex';
 import { ataqueBasico, aprendizaje, getMove, probMacho } from '../data/movimientos';
 import { MIN_DESMAYO, MIN_DIA, SEG_POR_MINUTO } from '../sim/World';
-import { expDeNivel, formaDe, nivelPorExp } from './reglas';
+import { expDeNivel, formaDe, formaM, nivelPorExp } from './reglas';
 import type { MapaId } from '../data/bosque';
 import { misionesDe, tandaDelTablon, type EstadoMision, type Mision } from './misiones';
-import { EQUIPABLES, SLOTS, slotIdx } from './objetos';
+import { EQUIPABLES, SLOTS, baseDe, slotIdx } from './objetos';
+import { ITEMS } from '../data/items';
 
 
 export const CASILLAS = 10;
@@ -45,6 +46,7 @@ export interface Miembro {
   sexo?: Sexo;                 // ♂/♀ (null: sin sexo, como Magnemite); se tira al crearlo con la proporción oficial
   objetos?: (string | null)[]; // objetos equipados, HUECOS_OBJ huecos (combate/objetos.ts): se ponen y se quitan en el inventario (I)
   objeto?: string;             // partidas de antes de los dos huecos: pasa a objetos[0] al cargar
+  forma?: string;              // la forma de intercambio a la que ya pasó (Gengar…), al recibirlo en un comercio; sin ella, la de su nivel
 }
 export interface Estado {
   version: number; uid: number;
@@ -63,6 +65,7 @@ export interface Estado {
   derrotas?: Record<string, number>;          // por línea: cuántos has derrotado (racha de shiny, RACHA_SHINY)
   vuelos?: Record<string, { x: number; y: number; u: number; v: number }>;
   incubando?: number;                         // derrotas que lleva el primer huevo de la mochila (combate/gacha.ts HUEVO_DERROTAS)   // puntos de vuelo descubiertos: por zona, dónde está su volador (px y fracción de la zona)
+  evoIntercambio?: true;                      // partida de después del 2026-10-18: sus Gengar por nivel ya llevan `forma` (se pone al cargar una de antes)
 }
 export type Aviso =
   | { tipo: 'nivel'; uid: number; nivel: number }
@@ -83,7 +86,7 @@ export class Partida {
 
   // `inicial`: la línea elegida en scenes/Eleccion.ts (Bulbasaur si no se dice); `usuario`: el nombre que se pide después.
   static nueva(inicial = 'bulbasaur', usuario?: string): Partida {
-    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dinero: DINERO_INICIAL, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {} });
+    const p = new Partida({ version: VERSION, uid: 1, ...(usuario ? { usuario } : {}), equipo: [], activo: 0, items: { pokeball: 10, oran: 3 }, dinero: DINERO_INICIAL, dia: 1, minuto: 8 * 60, semilla: Math.floor(Math.random() * 1e9), misiones: {}, alfas: {}, evoIntercambio: true });
     const b = p.crear(LINEAS[inicial] ? inicial : 'bulbasaur', 1);
     p.estado.activo = b.uid;
     return p;
@@ -111,7 +114,14 @@ export class Partida {
         }
         delete e.regalo;
       }
-      for (const m of e.equipo) if (m.sexo === undefined) m.sexo = tirarSexo(formaDe(m.linea, m.nivel).id);   // partidas de antes
+      // Partidas de antes de las evoluciones por intercambio (2026-10-18): el que ya era Gengar por nivel sigue siéndolo
+      // (no se le quita nada a nadie); el Haunter de nivel 30 se queda Haunter hasta que lo cambien.
+      if (!e.evoIntercambio) {
+        for (const m of e.equipo) { const i = INTERCAMBIOS[m.linea]; if (i && !m.forma && m.nivel >= i.a.nv) m.forma = i.a.id; }
+        e.evoIntercambio = true;
+      }
+      for (const m of e.equipo) if (m.forma && FORMAS[m.forma]?.linea !== m.linea) delete m.forma;   // una forma que no es de su línea no vale
+      for (const m of e.equipo) if (m.sexo === undefined) m.sexo = tirarSexo(formaM(m).id);   // partidas de antes
       return new Partida(e);
     } catch { return null; }
   }
@@ -121,7 +131,7 @@ export class Partida {
     const p = Partida.cargar();
     if (!p) return null;
     const m = p.activo;
-    return { nombre: formaDe(m.linea, m.nivel).nombre, nivel: m.nivel, equipo: p.estado.equipo.length, dia: p.estado.dia, usuario: p.estado.usuario };
+    return { nombre: formaM(m).nombre, nivel: m.nivel, equipo: p.estado.equipo.length, dia: p.estado.dia, usuario: p.estado.usuario };
   }
   // Cambia el nombre de usuario de la partida guardada (desde el título).
   static renombrar(usuario: string): void {
@@ -135,7 +145,7 @@ export class Partida {
   // Partidas de antes del nombre de usuario: «Jugador».
   get usuario(): string { return this.estado.usuario ?? 'Jugador'; }
   get activo(): Miembro { return this.estado.equipo.find(m => m.uid === this.estado.activo) ?? this.estado.equipo[0]; }
-  forma(m: Miembro) { return formaDe(m.linea, m.nivel); }
+  forma(m: Miembro) { return formaM(m); }
 
   // Un Pokémon nuevo en tu equipo (al empezar, o capturado): con su barra ya puesta (movimientos y, detrás, las Balls).
   crear(linea: string, nivel: number, shiny = false, sexo?: Sexo): Miembro {
@@ -181,12 +191,39 @@ export class Partida {
   evolucionarCon(m: Miembro, item: string): Aviso[] | null {
     const dest = this.evoCon(m, item);
     if (!dest || !this.gastar(item)) return null;
-    const antes = this.forma(m), suyos = new Set(aprendizaje(antes.id).map(([, mov]) => mov));
+    const antes = this.forma(m);
     m.linea = dest;
     m.exp = Math.max(m.exp, expDeNivel(dest, m.nivel));
+    return this.aprenderDeNueva(m, antes);
+  }
+  // Ya en la forma nueva: el aviso y lo que aprende de ella hasta su nivel que la de antes no aprende nunca.
+  private aprenderDeNueva(m: Miembro, antes: Forma): Aviso[] {
+    const suyos = new Set(aprendizaje(antes.id).map(([, mov]) => mov));
     const f = this.forma(m), av: Aviso[] = [{ tipo: 'evoluciona', uid: m.uid, de: antes.nombre, a: f.nombre }];
     for (const [nv, mov] of aprendizaje(f.id)) if (nv <= m.nivel && !suyos.has(mov) && !m.movs.includes(mov) && getMove(mov)) this.aprender(m, mov, av);
     return av;
+  }
+  // Evolución por intercambio (data/pokedex.ts `Forma.inter`): la forma a la que pasaría al recibirlo en un comercio, si
+  // está en la de justo antes (Haunter, no Gastly) y, cuando la pide, lleva puesto el objeto (de cualquier rareza:
+  // `hueco` dice dónde). Si no, por qué no (`falta`): para la ficha del comercio.
+  evoIntercambio(m: Miembro): { a: Forma; hueco: number } | { a: Forma; falta: string } | null {
+    const i = INTERCAMBIOS[m.linea];
+    if (!i || m.forma === i.a.id) return null;
+    if (this.forma(m).id !== i.de.id) return { a: i.a, falta: `tiene que ser ${i.de.nombre}` };
+    const obj = i.a.inter?.objeto;
+    if (!obj) return { a: i.a, hueco: -1 };
+    const hueco = this.objetos(m).findIndex(id => id && baseDe(id) === obj);
+    return hueco >= 0 ? { a: i.a, hueco } : { a: i.a, falta: `tiene que llevar ${ITEMS[obj]?.nombre ?? obj}` };
+  }
+  // Al recibirlo en un comercio (combate/tradeo.ts): pasa a la forma de intercambio, gasta el objeto si lo pedía y
+  // aprende lo de la forma nueva. null si no le toca.
+  evolucionarIntercambio(m: Miembro): Aviso[] | null {
+    const e = this.evoIntercambio(m);
+    if (!e || 'falta' in e) return null;
+    const antes = this.forma(m);
+    if (e.hueco >= 0) m.objetos![e.hueco] = null;
+    m.forma = e.a.id;
+    return this.aprenderDeNueva(m, antes);
   }
 
   // Objetos de la mochila.

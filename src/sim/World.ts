@@ -103,7 +103,7 @@ const VEL_REF = 45;                   // Velocidad que anda a VEL_ALDEANO
 const EXP_POR_MINUTO = 1;             // experiencia por cada minuto de trabajo terminado (tala, pico, cosecha, riego)
 export const nivelLlegada = (especie: string) => ESPECIES[especie]?.nivel ?? NIVEL_LLEGADA;
 export const statsDe = (a: Aldeano): Stats => stats(LINEAS[a.especie], a.nivel);
-export const formaDe = (a: Aldeano) => forma(LINEAS[a.especie], a.nivel);
+export const formaDe = (a: Aldeano) => forma(LINEAS[a.especie], a.nivel, true);   // la granja no comercia: Gengar por nivel
 // Afinidad de la especie (data/especies.ts): su trabajo favorito lo hace al doble de ritmo.
 // En un edificio con `tipo` (el horno, Fuego), la afinidad es por el tipo de su línea.
 export const afin = (a: Aldeano, t: Tarea) => t.tipo === 'edificio' ? !!LINEAS[a.especie] && EDIFICIO[t.edif ?? '']?.tipo === LINEAS[a.especie].tipo
@@ -830,10 +830,10 @@ export class World {
     const l = LINEAS[a.especie];
     if (!l || a.nivel >= NIVEL_MAX) return [];
     a.exp += Math.round(minutos * EXP_POR_MINUTO * (a.festin ? 2 : 1));
-    const antes = forma(l, a.nivel), nv0 = a.nivel;
+    const antes = forma(l, a.nivel, true), nv0 = a.nivel;
     while (a.nivel < NIVEL_MAX && a.exp >= expNivel(l.exp, a.nivel + 1)) a.nivel++;
     if (a.nivel === nv0) return [];
-    const despues = forma(l, a.nivel), evs: Evento[] = [{ tipo: 'subeNivel', uid: a.uid, nivel: a.nivel }];
+    const despues = forma(l, a.nivel, true), evs: Evento[] = [{ tipo: 'subeNivel', uid: a.uid, nivel: a.nivel }];
     if (despues.id !== antes.id) evs.push({ tipo: 'evoluciona', uid: a.uid, de: antes.nombre, a: despues.nombre });
     return evs;
   }

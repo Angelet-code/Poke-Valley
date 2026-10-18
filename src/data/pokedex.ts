@@ -1,8 +1,15 @@
 // Pokédex del valle: tipos, stats, niveles y evoluciones (GDD-pueblo §10).
 // Referencia: los juegos oficiales. Cada línea evolutiva guarda, por forma, sus stats base oficiales
 // (Gen. 9, comprobadas en pokemondb.net) y el nivel desde el que se es esa forma; el grupo de
-// experiencia (lo que cuesta subir de nivel) también es el oficial. Las evoluciones por piedra,
-// intercambio o amistad aquí van por nivel: `como` dice cómo era en los juegos.
+// experiencia (lo que cuesta subir de nivel) también es el oficial. Las evoluciones por piedra o amistad aquí van
+// por nivel: `como` dice cómo era en los juegos (menos las piedras del modo aventura, EVO_OBJETO).
+// Las 13 que en los juegos son por intercambio (`como` empieza por «intercambio»: Gengar, Alakazam, Machamp, Golem,
+// Gigalith, Trevenant, Conkeldurr y, con objeto, Steelix, Scizor, Kingdra, Rhyperior, Dusknoir, Magmortar, Electivire)
+// aquí también lo son (2026-10-18): `Forma.inter` las marca y `forma()` no las da por nivel; solo se llega al recibir
+// el Pokémon en un comercio entre jugadores (combate/tradeo.ts, docs/GDD-combate.md § Comercio), a cualquier nivel,
+// y el Miembro se queda con `forma: <id>` para saberlo. Las «con objeto» piden llevarlo equipado al cambiarlo
+// (OBJETO_INTERCAMBIO, combate/objetos.ts) y lo gastan. El modo granja y la página pokedex.html no comercian: ahí
+// `forma(l, nv, true)` las cuenta por nivel como siempre.
 //
 // De las 6 stats oficiales salen las 5 de trabajo del valle:
 //   Fuerza ← Ataque (talar, picar) · Maña ← At. Esp. (prado: cosechar y regar) · Carga ← Defensa (lo
@@ -29,14 +36,29 @@ export const NOMBRE_GRUPO: Record<GrupoExp, string> = {
 
 // Stats base oficiales: [PS, Ataque, Defensa, At. Esp., Def. Esp., Velocidad].
 export type Base6 = [number, number, number, number, number, number];
-export interface Forma { id: string; dex: string; nombre: string; nv: number; base: Base6; como?: string }
+// `inter`: forma de intercambio (solo al recibirlo en un comercio; `objeto`: el equipable que debe llevar, id base de
+// combate/objetos.ts). En ellas `nv` solo sirve al modo granja y a pokedex.html (forma(l, nv, true)).
+export interface Forma { id: string; dex: string; nombre: string; nv: number; base: Base6; como?: string; inter?: { objeto?: string } }
 // `tipo`: el tipo por el que cuenta en el valle (Pidgey cuenta como Volador); `tipos`: los oficiales de la forma básica.
 export interface Linea { id: string; tipo: Tipo; tipos: Tipo[]; exp: GrupoExp; formas: Forma[] }
+
+// Objetos de las evoluciones por intercambio: nombre (como va en `como`) → id del equipable (combate/objetos.ts).
+export const OBJETO_INTERCAMBIO: Record<string, string> = {
+  'Revestimiento Metálico': 'metalcoat', 'Escama Dragón': 'dragonscale', 'Protector': 'protector',
+  'Tela Terrible': 'reapercloth', 'Magmatizador': 'magmarizer', 'Electrizador': 'electirizer',
+};
+const interDe = (como?: string): Forma['inter'] => {
+  if (!como?.startsWith('intercambio')) return undefined;
+  const nombre = como.replace(/^intercambio( con )?/, '');
+  if (!nombre) return {};
+  if (!OBJETO_INTERCAMBIO[nombre]) throw new Error(`pokedex: objeto de intercambio sin id: ${nombre}`);
+  return { objeto: OBJETO_INTERCAMBIO[nombre] };
+};
 
 type F = [dex: string, nombre: string, nv: number, base: Base6, como?: string];
 const idDe = (nombre: string) => nombre.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const L = (tipo: Tipo, tipos: Tipo[], exp: GrupoExp, ...formas: F[]): Omit<Linea, 'id'> =>
-  ({ tipo, tipos, exp, formas: formas.map(([dex, nombre, nv, base, como]) => ({ id: idDe(nombre), dex, nombre, nv, base, como })) });
+  ({ tipo, tipos, exp, formas: formas.map(([dex, nombre, nv, base, como]) => { const inter = interDe(como); return { id: idDe(nombre), dex, nombre, nv, base, como, ...(inter ? { inter } : {}) }; }) });
 
 // Tres líneas por tipo. La clave es el id de la forma básica. Todas las formas tienen sprites PMD en
 // assets/sprites/pokemon/<dex>/ (Rolycoly no los tiene: por eso no está). Algunos tipos tienen ya más de tres:
@@ -441,6 +463,11 @@ export const LINEAS: Record<string, Linea> = Object.fromEntries(Object.entries(D
 // Cada forma con su línea (bibarel → bidoof), para buscar sprites y nombres.
 export const FORMAS: Record<string, Forma & { linea: string }> = Object.fromEntries(
   Object.values(LINEAS).flatMap(l => l.formas.map(f => [f.id, { ...f, linea: l.id }])));
+// La forma de intercambio de cada línea que la tiene (gastly → Gengar), con la forma de la que se pasa (`de`).
+export const INTERCAMBIOS: Record<string, { de: Forma; a: Forma }> = Object.fromEntries(Object.values(LINEAS).flatMap(l => {
+  const i = l.formas.findIndex(f => f.inter);
+  return i > 0 ? [[l.id, { de: l.formas[i - 1], a: l.formas[i] }]] : [];
+}));
 
 // ---- Niveles ----
 export const NIVEL_MAX = 100;
@@ -459,10 +486,15 @@ export function expNivel(g: GrupoExp, n: number): number {
       : n < 36 ? n3 * (n + 14) / 50 : n3 * (Math.floor(n / 2) + 32) / 50);
   }
 }
-// La forma que le toca a una línea en un nivel (la última a la que ya ha llegado).
-export function forma(l: Linea, nv: number): Forma {
+// La forma que le toca a una línea en un nivel (la última a la que ya ha llegado). Las de intercambio (`inter`) no se
+// dan por nivel: solo si `evo` es su id (el Miembro la alcanzó en un comercio, `Miembro.forma`) o `true` (modo granja y
+// pokedex.html, que no comercian: ahí cuentan por nivel). Sin ella, la línea se queda en la forma de antes.
+export function forma(l: Linea, nv: number, evo?: string | true): Forma {
   let f = l.formas[0];
-  for (const g of l.formas) if (g.nv <= nv) f = g;
+  for (const g of l.formas) {
+    if (g.inter) { if (evo === g.id || (evo === true && g.nv <= nv)) f = g; else break; }
+    else if (g.nv <= nv) f = g;
+  }
   return f;
 }
 
@@ -473,7 +505,7 @@ export const NOMBRE_STAT: Record<Stat, string> = { fuerza: 'Fuerza', mana: 'Mañ
 export type Stats = Record<Stat, number>;
 export const factorNivel = (nv: number) => 1 + 2 * (nv - 1) / 99;
 export function stats(l: Linea, nv: number): Stats {
-  const [ps, at, df, ae, de, ve] = forma(l, nv).base, k = factorNivel(nv), r = (v: number) => Math.round(v * k);
+  const [ps, at, df, ae, de, ve] = forma(l, nv, true).base, k = factorNivel(nv), r = (v: number) => Math.round(v * k);
   return { fuerza: r(at), mana: r(ae), carga: r(df), aguante: r((ps + de) / 2), velocidad: r(ve) };
 }
 export const total = (s: Stats) => STATS.reduce((t, k) => t + s[k], 0);

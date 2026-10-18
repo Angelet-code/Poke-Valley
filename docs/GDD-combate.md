@@ -624,6 +624,27 @@ Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
   dos ofertas y deja de poder cambiar la suya; el otro, si sigue de acuerdo, hace el cambio y contesta «hecho»; con
   «hecho» lo hace el primero. Se cancela con Esc, al alejaros más de 160 px o al cambiar de mapa. Los Pokémon
   recibidos llegan con uid nuevo y, en el pueblo, salen a pasear al momento (`mundo.rehacerVecinos`).
+- **Evoluciones por intercambio** (2026-10-18; `data/pokedex.ts` `Forma.inter`, `INTERCAMBIOS`). Las 13 líneas que en
+  los juegos evolucionan al intercambiarlas lo hacen aquí **solo** al recibirlas en un comercio, nunca por nivel:
+  Haunter → Gengar, Kadabra → Alakazam, Machoke → Machamp, Graveler → Golem, Boldore → Gigalith, Phantump →
+  Trevenant y Gurdurr → Conkeldurr sin más; con objeto equipado (que se gasta), Onix → Steelix y Scyther → Scizor con
+  el Revestimiento Metálico, Seadra → Kingdra con la Escama Dragón, Rhydon → Rhyperior con el Protector, Dusclops →
+  Dusknoir con la Tela Terrible, Magmar → Magmortar con el Magmatizador y Electabuzz → Electivire con el Electrizador.
+  Los seis objetos son accesorios sin efecto en combate (`combate/objetos.ts` INTERCAMBIO; el Revestimiento es el
+  amuleto de Acero de siempre, de cualquier rareza) y los vende el Kecleon de la ciudad; como van equipados, viajan con
+  el Pokémon. Al cerrar el trato, `Tradeo.cambiar` llama a `Partida.evolucionarIntercambio` con cada recibido: si está
+  en la forma de justo antes (Haunter, no Gastly) y lleva el objeto si lo pide, a cualquier nivel se queda con
+  `Miembro.forma = 'gengar'` (`formaDe(linea, nivel, forma)` / `formaM(m)` la respetan; `forma()` sin ella se para en
+  Haunter) y aprende lo de la forma nueva como con las piedras. `Aventura.tratoHecho` lanza la **cinemática de
+  siempre** (`scenes/Evolucion.ts`, `Aventura.cinematica`, la misma que usa el que manejas) por cada recibido que
+  evoluciona, una detrás de otra si llegan varios: sale sobre quien te lo dio (o sobre ti si ya no está a la vista),
+  empieza con el Haunter en reposo, enseña stats y lo que aprende, y al acabar sigues manejando el tuyo y el recibido
+  sale a pasear ya como Gengar (`rehacerVecinos` se hace al terminar la cadena). La ficha del Pokémon en la ventana
+  del comercio dice si evolucionará al recibirlo o qué le falta.
+  Un Gengar recibido que se vuelve a cambiar sigue siendo Gengar. Partidas guardadas de antes: al cargar por primera
+  vez (`Estado.evoIntercambio`), el que ya era Gengar por nivel se queda Gengar (`forma` puesta); un Haunter por debajo
+  del nivel se queda Haunter hasta que lo cambien. El modo granja y `pokedex.html` no comercian: ahí siguen por nivel
+  (`forma(l, nv, true)`).
 
 Falta: probar el golpe del alfa y el clima con dos jugadores, un indicador en el HUD de quién lleva el mapa, ver a
 los vecinos del pueblo de los demás y entrar en la sala desde el título.
