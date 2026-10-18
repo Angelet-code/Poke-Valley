@@ -107,6 +107,23 @@ Las zonas (pueblo, Bosque Verde y Lago Celeste), cómo se conectan y el arte que
   Antes era un 0,72 fijo: Pikachu flotaba sobre su sombra y saltaba al atacar. El alto del cuerpo y el ancho de la
   sombra también salen de esa medida. Pendiente: los que vuelan (Zubat, Gastly) deberían tener la sombra algo
   separada; haría falta su `Shadow.png` de SpriteCollab.
+- **Tamaño por especie** (2026-10-15; curva nueva el 2026-10-18): los sprites PMD vienen casi todos entre 15 y 30 px, así
+  que un Gengar se veía como un Bulbasaur. Cada forma se dibuja a una escala según su **altura oficial** (metros de la
+  Pokédex, los `heightm` de Showdown que ya trae `src/data/gen/combate.json`; `src/data/alturas.ts`):
+  - `factorAltura(m)`: ×1 a 1 m; por debajo baja despacio (raíz 0,18: 0,4 m → ×0,85, tope abajo) y por encima sube
+    como la raíz cuadrada (1,5 m → ×1,22; 2,1 m → ×1,45) hasta el tope ×1,6 en 2,5 m. No es proporcional a propósito:
+    un Wailord (14,5 m) no cabe y un Joltik (0,1 m) se perdería. `escalaDe('gengar' | '0094')` lo da por forma o dex.
+  - `escalaEspecie` (mundo.ts) lo corrige a medias por lo que ya mide el sprite (×√(23 / alto del Idle)): los de las
+    especies grandes ya vienen más altos (Wailord 60 px, Gyarados 55) y sin esto Pikachu (sprite de 25 px) saldría más
+    alto que Bulbasaur (21). Resultado en px de juego: Joltik 14, Pikachu 20, Bulbasaur 21, Gengar 27, Charizard 32,
+    Snorlax 36, Lapras 44, Wailord 59. Los alfas multiplican ×1,4 encima (ALFA_ESCALA). Tabla completa:
+    `python -I tools/alturas_tabla.py`.
+  - Lo que acompaña a la escala: el **alto del cuerpo** (`l.alto`: barra de vida, placa, hitbox del ratón), la
+    **sombra**, el **alcance cuerpo a cuerpo** (ALCANCE_CUERPO + 0,3 × alto del objetivo: a un Snorlax se le llega desde
+    más lejos, como a un alfa) y el **medio ancho contra paredes** (ANCHO × escala, entre ×0,8 y ×1,4: los grandes no se
+    cuelan por los huecos pequeños ni se atascan en los senderos). Los luchadores no chocan entre sí (se atraviesan).
+  - La cinemática de evolución (Evolucion.ts) recibe `escala` (la de la forma vieja) y `escalaFin` (la de la nueva):
+    al volver al mapa, el sprite ya baja a su tamaño nuevo en vez de dar un salto al cambiar la forma.
 - **Naturaleza de cada salvaje** (2026-10-15; sustituye al temple Tranquilo/Asustadizo/Peleón): sale al azar entre
   las 25 (`combate/naturalezas.ts`) y decide su reacción según tu nivel frente al suyo: **igual** (±1), **fuerte**
   (tú 2 o más por encima) o **débil** (tú 2 o más por debajo). La placa del objetivo dice su naturaleza y qué hará
@@ -624,6 +641,10 @@ Cómo va (`src/combate/red.ts` + `mundo.ts` + `Aventura.ts`):
   dos ofertas y deja de poder cambiar la suya; el otro, si sigue de acuerdo, hace el cambio y contesta «hecho»; con
   «hecho» lo hace el primero. Se cancela con Esc, al alejaros más de 160 px o al cambiar de mapa. Los Pokémon
   recibidos llegan con uid nuevo y, en el pueblo, salen a pasear al momento (`mundo.rehacerVecinos`).
+  Lo que das en cada trato queda apuntado en localStorage `pokemon-valley/tratos` (los últimos 20, con fecha y con
+  quién): el cierre en dos pasos tiene un hueco mínimo (si el coordinador cierra el juego entre su «cierra» y el «hecho»
+  del otro, el otro da sin recibir) y así nada es irrecuperable. Probado el 2026-10-18 con dos pestañas: Haunter, Onix
+  con Revestimiento y Pichu por Machoke y Growlithe, más objetos y Pokécoins; nada se pierde ni se duplica.
 - **Evoluciones por intercambio** (2026-10-18; `data/pokedex.ts` `Forma.inter`, `INTERCAMBIOS`). Las 13 líneas que en
   los juegos evolucionan al intercambiarlas lo hacen aquí **solo** al recibirlas en un comercio, nunca por nivel:
   Haunter → Gengar, Kadabra → Alakazam, Machoke → Machamp, Graveler → Golem, Boldore → Gigalith, Phantump →

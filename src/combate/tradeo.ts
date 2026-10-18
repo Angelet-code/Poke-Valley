@@ -238,6 +238,7 @@ export class Tradeo {
       if (av) r.evos!.push({ m, de, a: pa.forma(m), aprende: av.filter(a => a.tipo === 'aprende').map(a => getMove((a as { mov: string }).mov)?.nombre ?? (a as { mov: string }).mov) });
     }
     pa.guardar();
+    apuntar(tr.con, tr.nombre, dados);
     this.hecho(r, dados);
   }
 
@@ -261,6 +262,19 @@ export class Tradeo {
     if (tr.mia.dinero > pa.dinero) { tr.mia.dinero = pa.dinero; cambio = true; }
     if (cambio) this.cambiada();
   }
+}
+
+// Diario de lo que has dado en cada trato (los últimos DIARIO), en localStorage: el cierre en dos pasos tiene un hueco
+// mínimo (si el coordinador cierra el juego entre su «cierra» y el «hecho» del otro, el otro da sin recibir) y con esto
+// nada es irrecuperable: `JSON.parse(localStorage['pokemon-valley/tratos'])` en la consola.
+export const CLAVE_TRATOS = 'pokemon-valley/tratos';
+const DIARIO = 20;
+function apuntar(con: string, nombre: string, dados: Recibido): void {
+  try {
+    const lista = (JSON.parse(localStorage.getItem(CLAVE_TRATOS) ?? '[]') as unknown[]).slice(-(DIARIO - 1));
+    lista.push({ fecha: new Date().toISOString(), con, nombre, items: dados.items, dinero: dados.dinero, pokes: dados.pokes });
+    localStorage.setItem(CLAVE_TRATOS, JSON.stringify(lista));
+  } catch { /* sin almacenamiento: se juega igual */ }
 }
 
 function limpiarItems(o: Record<string, number> | undefined): Record<string, number> {
