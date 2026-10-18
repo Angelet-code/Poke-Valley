@@ -2,5 +2,7 @@
  "volcan/escalera": 3,
  "ciudad/fachada": 2,
  "ciudad/valla_v": 2,
- "volcan/montana": 3
+ "volcan/montana": 3,
+ "llanura/acantilado": 3,
+ "llanura/arboleda": 2
 }

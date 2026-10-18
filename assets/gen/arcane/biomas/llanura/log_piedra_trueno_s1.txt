@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\llanura\piedra_trueno_s1_0.png
+104.6s

@@ -10815,6 +10815,1084 @@
     "f": 18,
     "b": "000001111000000111111110011111111111011111111111011111111111011111111111011111111111011111111111011111111111011111111111001111111110001111111110001111111111011111111110111111111110011111111000001111110000000111100000"
    }
+  },
+  {
+   "id": "arbol_viento",
+   "tipo": "arbol",
+   "archivo": "arbol_viento.png",
+   "w": 1512,
+   "h": 1638,
+   "ancla": [
+    756,
+    1637
+   ],
+   "huella": [
+    574,
+    1407,
+    937,
+    1637
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/arbol_viento_s3_0.png",
+   "sombra": {
+    "archivo": "arbol_viento_sombra.png",
+    "w": 1329,
+    "h": 1480,
+    "dx": -126,
+    "dy": 185
+   },
+   "k": 0.2937,
+   "cubre": {
+    "c": 12,
+    "f": 13,
+    "b": "000001100000000111111100001111111100011111111110011111111110001111111110000011111110000001000000000011000000000001000000000001000000000011100000000011100000"
+   }
+  },
+  {
+   "id": "arbol_partido",
+   "tipo": "arbol",
+   "archivo": "arbol_partido.png",
+   "w": 1790,
+   "h": 1824,
+   "ancla": [
+    895,
+    1823
+   ],
+   "huella": [
+    680,
+    1567,
+    1109,
+    1823
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/arbol_partido_s1_0.png",
+   "sombra": {
+    "archivo": "arbol_partido_sombra.png",
+    "w": 1468,
+    "h": 1376,
+    "dx": 0,
+    "dy": 425
+   },
+   "k": 0.2212,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000000000000000000010000000000001001000000001111000000000111000000000110000000000110000000000110000000001111000000001111000000000000000"
+   }
+  },
+  {
+   "id": "roca_iman",
+   "tipo": "roca",
+   "archivo": "roca_iman.png",
+   "w": 1365,
+   "h": 1351,
+   "ancla": [
+    682,
+    1349
+   ],
+   "huella": [
+    163,
+    781,
+    1201,
+    1294
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/roca_iman_s1_0.png",
+   "k": 0.1934,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000001110000000111111100001111111110001111111110011111111111011111111111011111111111111111111111111111111110011111111110001111111100000011110000"
+   }
+  },
+  {
+   "id": "pararrayos_roca",
+   "tipo": "roca",
+   "archivo": "pararrayos_roca.png",
+   "w": 945,
+   "h": 1732,
+   "ancla": [
+    472,
+    1730
+   ],
+   "huella": [
+    113,
+    1002,
+    831,
+    1660
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/pararrayos_roca_s3_0.png",
+   "sombra": {
+    "archivo": "pararrayos_roca_sombra.png",
+    "w": 1430,
+    "h": 1052,
+    "dx": -451,
+    "dy": 676
+   },
+   "k": 0.2159,
+   "cubre": {
+    "c": 12,
+    "f": 22,
+    "b": "000000100000000000100000000000110000000001110000000001110000000001111000000001111000000001111000000011111000000011111000000011111100000011111100000111111100000111111110000111111110001111111110001111111110111111111111011111111111001111111110000011111000000000110000"
+   }
+  },
+  {
+   "id": "cristal_electrico",
+   "tipo": "roca",
+   "archivo": "cristal_electrico.png",
+   "w": 1292,
+   "h": 1505,
+   "ancla": [
+    646,
+    1504
+   ],
+   "huella": [
+    155,
+    871,
+    1136,
+    1443
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/cristal_electrico_s1_0.png",
+   "k": 0.1393,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000000010000000000110000000000110000000011111100000011111100000011111110000111111100000111111110001111111110011111111110111111111111111111111110001111111100000011100000"
+   }
+  },
+  {
+   "id": "hierba_alta",
+   "tipo": "losa",
+   "archivo": "hierba_alta.png",
+   "w": 1556,
+   "h": 1579,
+   "ancla": [
+    778,
+    1578
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/llanura/hierba_alta_s3_0.png",
+   "sombra": {
+    "archivo": "hierba_alta_sombra.png",
+    "w": 1375,
+    "h": 1764,
+    "dx": 124,
+    "dy": -160
+   },
+   "k": 0.1003,
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000000001000000001001010000001101010000000111100000001111110000000111100000000111100000000111100000000111100000001111111000000111100000"
+   }
+  },
+  {
+   "id": "flores_amarillas",
+   "tipo": "losa",
+   "archivo": "flores_amarillas.png",
+   "w": 1039,
+   "h": 1229,
+   "ancla": [
+    519,
+    1227
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/llanura/flores_amarillas_s2_0.png",
+   "sombra": {
+    "archivo": "flores_amarillas_sombra.png",
+    "w": 990,
+    "h": 979,
+    "dx": 78,
+    "dy": 205
+   },
+   "k": 0.127,
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000000110000000111110000001111101110000111111111001111111110001111111101000011111110000111111100001111111110001111111111011111111110001111111110000111111110000001100000"
+   }
+  },
+  {
+   "id": "charco_tormenta",
+   "tipo": "estanque",
+   "archivo": "charco_tormenta.png",
+   "w": 1587,
+   "h": 795,
+   "ancla": [
+    793,
+    794
+   ],
+   "huella": [
+    63,
+    78,
+    1523,
+    770
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/charco_tormenta_s3_0.png",
+   "sombra": {
+    "archivo": "charco_tormenta_sombra.png",
+    "w": 1613,
+    "h": 1275,
+    "dx": -150,
+    "dy": -463
+   },
+   "k": 0.242,
+   "cubre": {
+    "c": 12,
+    "f": 6,
+    "b": "000111111000011111111110111111111111011111111110001111111100000011110000"
+   }
+  },
+  {
+   "id": "piedra_trueno",
+   "tipo": "roca",
+   "archivo": "piedra_trueno.png",
+   "w": 1270,
+   "h": 1680,
+   "ancla": [
+    635,
+    1679
+   ],
+   "huella": [
+    152,
+    973,
+    1117,
+    1611
+   ],
+   "origen": "assets/gen/arcane/biomas/llanura/piedra_trueno_s2_0.png",
+   "sombra": {
+    "archivo": "piedra_trueno_sombra.png",
+    "w": 1665,
+    "h": 334,
+    "dx": -261,
+    "dy": 1350
+   },
+   "k": 0.3969,
+   "cubre": {
+    "c": 12,
+    "f": 16,
+    "b": "000000100000000011100000000011110000000111110000000111111000000111111000000111111000000111111000000011111000000011110000000011110000000011110000001111111100011111111110011111111110000111111000"
+   }
+  },
+  {
+   "id": "nido_mareep",
+   "tipo": "losa",
+   "archivo": "nido_mareep.png",
+   "w": 1626,
+   "h": 1032,
+   "ancla": [
+    813,
+    1031
+   ],
+   "huella": null,
+   "origen": "assets/gen/arcane/biomas/llanura/nido_mareep_s3_0.png",
+   "sombra": {
+    "archivo": "nido_mareep_sombra.png",
+    "w": 1667,
+    "h": 654,
+    "dx": -18,
+    "dy": 436
+   },
+   "k": 0.1624,
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000011110000000111111100011111111110011111111110111111111111011111111111011111111110000011111000"
+   }
+  },
+  {
+   "id": "acantilado_llanura_izq",
+   "tipo": "muro",
+   "archivo": "acantilado_llanura_izq.png",
+   "w": 609,
+   "h": 707,
+   "ancla": [
+    304,
+    707
+   ],
+   "k": 0.645,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_s3_0.png",
+   "tira": {
+    "id": "acantilado_llanura",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    466,
+    609,
+    707
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 14,
+    "b": "000000000000011111111111011111111111111111111111111111111111111111111111111111111111111111111111111111111111011111111111011111111111011111111111011111111111011111111111"
+   }
+  },
+  {
+   "id": "acantilado_llanura_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_llanura_tramo.png",
+   "w": 1145,
+   "h": 707,
+   "ancla": [
+    572,
+    707
+   ],
+   "k": 0.645,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_s3_0.png",
+   "tira": {
+    "id": "acantilado_llanura",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    466,
+    1145,
+    707
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 7,
+    "b": "011000000000111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "acantilado_llanura_der",
+   "tipo": "muro",
+   "archivo": "acantilado_llanura_der.png",
+   "w": 694,
+   "h": 707,
+   "ancla": [
+    347,
+    707
+   ],
+   "k": 0.645,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_s3_0.png",
+   "tira": {
+    "id": "acantilado_llanura",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    466,
+    694,
+    707
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110111111111110"
+   }
+  },
+  {
+   "id": "escalera_llanura",
+   "tipo": "muro",
+   "archivo": "escalera_llanura.png",
+   "w": 1029,
+   "h": 707,
+   "ancla": [
+    514,
+    707
+   ],
+   "k": 0.645,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_s3_0.png",
+   "tira": {
+    "id": "acantilado_llanura",
+    "parte": "escalera",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     466,
+     329,
+     707
+    ],
+    [
+     699,
+     466,
+     1029,
+     707
+    ]
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "011110011110111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "acantilado_v_llanura_arr",
+   "tipo": "muro",
+   "archivo": "acantilado_v_llanura_arr.png",
+   "w": 535,
+   "h": 480,
+   "ancla": [
+    267,
+    480
+   ],
+   "k": 0.785,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_llanura",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    64,
+    144,
+    470,
+    480
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "000000000000000011110000000111111000001111111100011111111100011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "acantilado_v_llanura_tramo",
+   "tipo": "muro",
+   "archivo": "acantilado_v_llanura_tramo.png",
+   "w": 535,
+   "h": 782,
+   "ancla": [
+    267,
+    782
+   ],
+   "k": 0.785,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_llanura",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    64,
+    39,
+    470,
+    782
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 18,
+    "b": "011111111110011111111110011111111110011111111111011111111111011111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "acantilado_v_llanura_abj",
+   "tipo": "muro",
+   "archivo": "acantilado_v_llanura_abj.png",
+   "w": 535,
+   "h": 725,
+   "ancla": [
+    267,
+    725
+   ],
+   "k": 0.785,
+   "origen": "assets/gen/arcane/muros/llanura/acantilado_v_s1_0.png",
+   "tira": {
+    "id": "acantilado_v_llanura",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    64,
+    36,
+    470,
+    725
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 16,
+    "b": "011111111110011111111110011111111110011111111111011111111110011111111110011111111110011111111110011111111110001111111110000111111100000111111000000011111000000011111000000001110000000000100000"
+   }
+  },
+  {
+   "id": "montana_llanura",
+   "tipo": "roca",
+   "archivo": "montana_llanura.png",
+   "w": 1543,
+   "h": 1564,
+   "ancla": [
+    771,
+    1563
+   ],
+   "k": 0.7388,
+   "origen": "assets/gen/arcane/muros/llanura/montana_s1_0.png",
+   "huella": [
+    123,
+    781,
+    1419,
+    1516
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000000000000000101000000001111000000011111100001111111100011111111110111111111111111111111111011111111110001111111100000011110000000001100000"
+   }
+  },
+  {
+   "id": "arboleda_llanura",
+   "tipo": "roca",
+   "archivo": "arboleda_llanura.png",
+   "w": 1808,
+   "h": 1745,
+   "ancla": [
+    904,
+    1743
+   ],
+   "k": 0.5642,
+   "origen": "assets/gen/arcane/muros/llanura/arboleda_s2_0.png",
+   "sombra": {
+    "archivo": "arboleda_llanura_sombra.png",
+    "w": 1850,
+    "h": 902,
+    "dx": -37,
+    "dy": 885
+   },
+   "huella": [
+    144,
+    870,
+    1663,
+    1690
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "000000100000000111111000011111111110111111111111111111111111011111111111011111111110001111111100001111111100000111111000000011110000000000000000"
+   }
+  },
+  {
+   "id": "muro_llanura_izq",
+   "tipo": "muro",
+   "archivo": "muro_llanura_izq.png",
+   "w": 785,
+   "h": 432,
+   "ancla": [
+    392,
+    432
+   ],
+   "k": 0.5556,
+   "origen": "assets/gen/arcane/muros/llanura/muro_s1_0.png",
+   "tira": {
+    "id": "muro_llanura",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    250,
+    785,
+    432
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 7,
+    "b": "000000000000001110001110011111111111011111111111111111111111011111111111001111111111"
+   }
+  },
+  {
+   "id": "muro_llanura_tramo",
+   "tipo": "muro",
+   "archivo": "muro_llanura_tramo.png",
+   "w": 1083,
+   "h": 432,
+   "ancla": [
+    541,
+    418
+   ],
+   "k": 0.5556,
+   "origen": "assets/gen/arcane/muros/llanura/muro_s1_0.png",
+   "tira": {
+    "id": "muro_llanura",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    236,
+    1083,
+    418
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 5,
+    "b": "000000000000111111111111111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "muro_llanura_der",
+   "tipo": "muro",
+   "archivo": "muro_llanura_der.png",
+   "w": 554,
+   "h": 432,
+   "ancla": [
+    277,
+    428
+   ],
+   "k": 0.5556,
+   "origen": "assets/gen/arcane/muros/llanura/muro_s1_0.png",
+   "tira": {
+    "id": "muro_llanura",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    246,
+    554,
+    428
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 9,
+    "b": "000000000000000000110000111111111100111111111110111111111110111111111110111111111110111111111110111111111111"
+   }
+  },
+  {
+   "id": "porton_llanura",
+   "tipo": "muro",
+   "archivo": "porton_llanura.png",
+   "w": 1402,
+   "h": 432,
+   "ancla": [
+    701,
+    423
+   ],
+   "k": 0.5556,
+   "origen": "assets/gen/arcane/muros/llanura/muro_s1_0.png",
+   "tira": {
+    "id": "muro_llanura",
+    "parte": "porton",
+    "forma": "H"
+   },
+   "huella": null,
+   "huellas": [
+    [
+     0,
+     250,
+     420,
+     423
+    ],
+    [
+     981,
+     250,
+     1402,
+     423
+    ]
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 4,
+    "b": "011110011000111111111111111111111111111111111111"
+   }
+  },
+  {
+   "id": "muro_v_llanura_arr",
+   "tipo": "muro",
+   "archivo": "muro_v_llanura_arr.png",
+   "w": 771,
+   "h": 984,
+   "ancla": [
+    385,
+    984
+   ],
+   "k": 0.2335,
+   "origen": "assets/gen/arcane/muros/llanura/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_llanura",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    92,
+    295,
+    678,
+    984
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 15,
+    "b": "001000000010001111111110111111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "muro_v_llanura_tramo",
+   "tipo": "muro",
+   "archivo": "muro_v_llanura_tramo.png",
+   "w": 771,
+   "h": 774,
+   "ancla": [
+    385,
+    774
+   ],
+   "k": 0.2335,
+   "origen": "assets/gen/arcane/muros/llanura/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_llanura",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    92,
+    38,
+    678,
+    774
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "muro_v_llanura_abj",
+   "tipo": "muro",
+   "archivo": "muro_v_llanura_abj.png",
+   "w": 771,
+   "h": 513,
+   "ancla": [
+    385,
+    513
+   ],
+   "k": 0.2335,
+   "origen": "assets/gen/arcane/muros/llanura/muro_v_s1_0.png",
+   "tira": {
+    "id": "muro_v_llanura",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    92,
+    25,
+    678,
+    513
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111111011111111110001111111100"
+   }
+  },
+  {
+   "id": "valla_llanura_izq",
+   "tipo": "muro",
+   "archivo": "valla_llanura_izq.png",
+   "w": 923,
+   "h": 617,
+   "ancla": [
+    461,
+    617
+   ],
+   "k": 0.2528,
+   "origen": "assets/gen/arcane/muros/llanura/valla_s1_0.png",
+   "tira": {
+    "id": "valla_llanura",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    401,
+    923,
+    617
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "010000000000011000000000011111111111011000000011011000000000011111111111011000000001011111110000"
+   }
+  },
+  {
+   "id": "valla_llanura_tramo",
+   "tipo": "muro",
+   "archivo": "valla_llanura_tramo.png",
+   "w": 778,
+   "h": 617,
+   "ancla": [
+    389,
+    594
+   ],
+   "k": 0.2528,
+   "origen": "assets/gen/arcane/muros/llanura/valla_s1_0.png",
+   "tira": {
+    "id": "valla_llanura",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    378,
+    778,
+    594
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "000000000000000000000000000000000000111110000000111111111111100000000001111000000001111111111111100111100001100000000000"
+   }
+  },
+  {
+   "id": "valla_llanura_der",
+   "tipo": "muro",
+   "archivo": "valla_llanura_der.png",
+   "w": 731,
+   "h": 617,
+   "ancla": [
+    365,
+    602
+   ],
+   "k": 0.2528,
+   "origen": "assets/gen/arcane/muros/llanura/valla_s1_0.png",
+   "tira": {
+    "id": "valla_llanura",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": [
+    0,
+    386,
+    731,
+    602
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 10,
+    "b": "000000000000000000000000000000000000100000000000111100001100100011111100100000001100111111111100100000001000100000001110"
+   }
+  },
+  {
+   "id": "valla_v_llanura_arr",
+   "tipo": "muro",
+   "archivo": "valla_v_llanura_arr.png",
+   "w": 866,
+   "h": 826,
+   "ancla": [
+    433,
+    826
+   ],
+   "k": 0.1109,
+   "origen": "assets/gen/arcane/muros/llanura/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_llanura",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": [
+    103,
+    247,
+    762,
+    826
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 11,
+    "b": "010000000001011111111111111111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "valla_v_llanura_tramo",
+   "tipo": "muro",
+   "archivo": "valla_v_llanura_tramo.png",
+   "w": 866,
+   "h": 842,
+   "ancla": [
+    433,
+    842
+   ],
+   "k": 0.1109,
+   "origen": "assets/gen/arcane/muros/llanura/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_llanura",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": [
+    103,
+    42,
+    762,
+    842
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 12,
+    "b": "011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110011111111110"
+   }
+  },
+  {
+   "id": "valla_v_llanura_abj",
+   "tipo": "muro",
+   "archivo": "valla_v_llanura_abj.png",
+   "w": 866,
+   "h": 616,
+   "ancla": [
+    433,
+    616
+   ],
+   "k": 0.1109,
+   "origen": "assets/gen/arcane/muros/llanura/valla_v_s1_0.png",
+   "tira": {
+    "id": "valla_v_llanura",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": [
+    103,
+    30,
+    762,
+    616
+   ],
+   "cubre": {
+    "c": 12,
+    "f": 9,
+    "b": "011111111110011111111110011111111100011111111100011111111110011111111110011111111110011111111110001110000100"
+   }
+  },
+  {
+   "id": "puente_llanura_izq",
+   "tipo": "puente",
+   "archivo": "puente_llanura_izq.png",
+   "w": 862,
+   "h": 517,
+   "ancla": [
+    431,
+    517
+   ],
+   "k": 0.5338,
+   "origen": "assets/gen/arcane/muros/llanura/puente_s1_0.png",
+   "tira": {
+    "id": "puente_llanura",
+    "parte": "izq",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 7,
+    "b": "000100001000001111111111011111111111011111111111011111111111111111111111001111000000"
+   }
+  },
+  {
+   "id": "puente_llanura_tramo",
+   "tipo": "puente",
+   "archivo": "puente_llanura_tramo.png",
+   "w": 753,
+   "h": 517,
+   "ancla": [
+    376,
+    471
+   ],
+   "k": 0.5338,
+   "origen": "assets/gen/arcane/muros/llanura/puente_s1_0.png",
+   "tira": {
+    "id": "puente_llanura",
+    "parte": "tramo",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "000000000000011111111101111111111111111111111111111111111111111111111111111111111111000000000000"
+   }
+  },
+  {
+   "id": "puente_llanura_der",
+   "tipo": "puente",
+   "archivo": "puente_llanura_der.png",
+   "w": 723,
+   "h": 517,
+   "ancla": [
+    361,
+    496
+   ],
+   "k": 0.5338,
+   "origen": "assets/gen/arcane/muros/llanura/puente_s1_0.png",
+   "tira": {
+    "id": "puente_llanura",
+    "parte": "der",
+    "forma": "H"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 9,
+    "b": "000000000000011110001100111111111100111111111100111111111110111111111111111111111111111111111111000000000010"
+   }
+  },
+  {
+   "id": "puente_v_llanura_arr",
+   "tipo": "puente",
+   "archivo": "puente_v_llanura_arr.png",
+   "w": 819,
+   "h": 553,
+   "ancla": [
+    409,
+    553
+   ],
+   "k": 0.3223,
+   "origen": "assets/gen/arcane/muros/llanura/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_llanura",
+    "parte": "arr",
+    "forma": "V"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 8,
+    "b": "100000000001111111111111111111111110111111111110111111111111111111111110111111111110111111111110"
+   }
+  },
+  {
+   "id": "puente_v_llanura_tramo",
+   "tipo": "puente",
+   "archivo": "puente_v_llanura_tramo.png",
+   "w": 819,
+   "h": 1017,
+   "ancla": [
+    409,
+    1017
+   ],
+   "k": 0.3223,
+   "origen": "assets/gen/arcane/muros/llanura/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_llanura",
+    "parte": "tramo",
+    "forma": "V"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 15,
+    "b": "111111111111111111111110111111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111110111111111110111111111111111111111111111111111111111111111110"
+   }
+  },
+  {
+   "id": "puente_v_llanura_abj",
+   "tipo": "puente",
+   "archivo": "puente_v_llanura_abj.png",
+   "w": 819,
+   "h": 485,
+   "ancla": [
+    409,
+    485
+   ],
+   "k": 0.3223,
+   "origen": "assets/gen/arcane/muros/llanura/puente_v_s1_0.png",
+   "tira": {
+    "id": "puente_v_llanura",
+    "parte": "abj",
+    "forma": "V"
+   },
+   "huella": null,
+   "cubre": {
+    "c": 12,
+    "f": 7,
+    "b": "111111111111111111111110111111111111111111111111111111111111011111111110010000000010"
+   }
   }
  ]
 }

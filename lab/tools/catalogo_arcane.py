@@ -73,7 +73,8 @@ ABRIR_HUECOS = {"valla"}
 # Piezas de biomas con huecos entre ramas, juncos o tablas (el fondo verde se veia entre ellos): se abren todos los
 # huecos de color del fondo a partir de HUECO_FINO px. Rocas, estatuas y columnas no: ahi es brillo, no hueco.
 HUECOS_FINOS = {"arbol_muerto", "juncos_secos", "cerca_rota", "hierba_duna", "andamio", "arbusto_seco", "pino_seco",
-                "arbol_flores", "arco_ruinas", "farol_fuego_fatuo", "red_pesca", "palmera", "arbol_quemado", "pino_nevado"}
+                "arbol_flores", "arco_ruinas", "farol_fuego_fatuo", "red_pesca", "palmera", "arbol_quemado", "pino_nevado",
+                "arbol_viento", "arbol_partido", "hierba_alta"}
 HUECO_FINO = 40
 # Tipo en el juego distinto del de la huella: el nenúfar va a ras de suelo como un detalle, pero no puede ser
 # "detalle", porque Aventura reparte los detalles por el césped (y saldrían nenúfares en la hierba).

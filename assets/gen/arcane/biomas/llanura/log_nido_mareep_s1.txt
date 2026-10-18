@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\llanura\nido_mareep_s1_0.png
+142.4s

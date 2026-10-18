@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\llanura\pararrayos_roca_s2_0.png
+92.3s

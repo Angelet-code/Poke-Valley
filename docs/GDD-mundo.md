@@ -413,12 +413,18 @@ las ruinas (salida norte de las ruinas; en el mapa del mundo, una fila nueva arr
   lluvia Tympole, Chinchou y Tynamo.
 - **Líneas nuevas en la Pokédex** (17): mareep, shinx, electrike, voltorb, joltik, elekid, helioptile, emolga, plusle,
   minun, dedenne, tynamo, rotom, yamper, pawmi y tauros (stats oficiales; `node tools/datos_combate.mjs` para sus
-  movimientos; normales con `tools/normales_pokemon.py`). **Falta:** sus hojas y paletas shiny (`tools/shiny_paletas.py`,
-  descarga de SpriteCollab).
+  movimientos; normales con `tools/normales_pokemon.py`; hojas y paletas shiny de SpriteCollab con `tools/shiny_paletas.py`, 2,8 MB).
 - **Arte** (`assets/gen/arcane/biomas/piezas.txt` y `muros/piezas.txt`, bioma `llanura`): árbol doblado por el viento,
   árbol partido por un rayo, roca imán, aguja pararrayos, cristal eléctrico, hierba alta, flores amarillas, charco de
   tormenta, nido de lana de Mareep y la piedra trueno; tiras (acantilado, muro, valla, puente…), montaña y arboleda.
   Suelos: pradera y tierra mojada.
+- Elegidas: semillas en `biomas/elegidos.json` y `muros/elegidos.json` (acantilado s3 y arboleda s2, rehechos: el
+  acantilado s1 salía torcido y con grietas de lava, la arboleda s1 era un solo arbusto). Árboles con normales y sin
+  suelo pintado (`tools/normales_elementos.py --quitar-suelo`); árbol del viento, árbol partido y hierba alta en
+  `HUECOS_FINOS`. Suelos repetibles con `quilt.py --kind color` (pradera s2, tierra mojada s1).
+
+![Llanura Tormenta de día](img/llanura_tormenta_dia.jpg)
+![Aviso de rayo (círculo amarillo) de noche con lluvia](img/llanura_tormenta_aviso.jpg)
 
 ## 5. Diseño de zonas: lo investigado y cómo se aplica (2026-10-15)
 | Principio | De dónde | En el generador (`diseno` de cada bioma) |

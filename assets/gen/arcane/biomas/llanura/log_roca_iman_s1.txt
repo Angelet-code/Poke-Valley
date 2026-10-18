@@ -1,0 +1,2 @@
+assets\gen\arcane\biomas\llanura\roca_iman_s1_0.png
+111.7s
